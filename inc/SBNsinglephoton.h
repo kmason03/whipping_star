@@ -19,9 +19,12 @@
 #include "TLine.h"
 #include "TLatex.h"
 #include "TText.h"
+#include "TList.h"
 #include "TMath.h"
 #include "TGraph.h"
 #include "TSystem.h"
+#include "TMarker.h"
+#include "TObjArray.h"
 
 #include "TMath.h"
 #include <ctime>
@@ -131,6 +134,7 @@ namespace sbn{
 	int SaveHistogram();
 	int SaveHistogram(std::map<int, std::vector<double>>& );
 	TH2D* Do2DInterpolation(int, std::vector<double>& x, std::vector<double>& y, std::vector<double>& value);
+	std::vector<TGraph*> FindContour(TH2D*, int n);
 	int RemoveNan(TMatrixT<double>*); //remove the nan's from matrix
 	
 	int ModifyCV(double factor);
@@ -142,6 +146,7 @@ namespace sbn{
 
 	int OpenFiles();
 	int CloseFiles();	
+	int PoissonFluctuation(SBNspec *);
         /*//Member Functions
         
          int UpdateInverseCovarianceMatrixCNP(size_t best_grid_point, const std::vector<float> &datavec, TMatrixT<double>& inverse_collapsed, SBNchi * helper);

@@ -162,7 +162,7 @@ int SBNspec::SetAsFlat(double val){
 int SBNspec::ScalePoisson(){
 	TRandom3 *rangen = new TRandom3(0);
 	for(auto &h: hist){
-		for(int i=0; i<h.GetSize(); i++){
+		for(int i=1; i<h.GetSize()-1; i++){
 			h.SetBinContent(i, rangen->Poisson( h.GetBinContent(i)    ));
 		}
 	}
@@ -171,7 +171,7 @@ int SBNspec::ScalePoisson(){
 
 int SBNspec::ScalePoisson(TRandom3* rangen){
 	for(auto &h: hist){
-		for(int i=0; i<h.GetSize(); i++){
+		for(int i=1; i<h.GetSize()-1; i++){
 			h.SetBinContent(i, rangen->Poisson( h.GetBinContent(i)    ));
 		}
 	}
@@ -550,15 +550,32 @@ int SBNspec::WriteOut(std::string tag){
 	return 0;
 }
 
+int SBNspec::CompareSBNspecs(SBNspec * compsec, std::string tag){
+	TMatrixT<double> covar(this->num_bins_total_compressed, this->num_bins_total_compressed);
+        covar.Zero();
+	this->CompareSBNspecs(covar, compsec, true, tag);
+}
+
+int SBNspec::CompareSBNspecs(SBNspec * compsec, bool inbool, std::string tag){
+	TMatrixT<double> covar(this->num_bins_total_compressed, this->num_bins_total_compressed);
+	covar.Zero();
+	return this->CompareSBNspecs(covar,compsec, inbool, tag);
+}
+
+
+int SBNspec::CompareSBNspecs(TMatrixT<double> collapse_covar, SBNspec * compsec, std::string tag){
+	return this->CompareSBNspecs(collapse_covar,compsec, true, tag);
+}
 
 //compare 'this' spec with the compsec with tag
 //collapsed covariance matrix 'collapse_covar' gives the error of 'this' spec
-int SBNspec::CompareSBNspecs(TMatrixT<double> collapse_covar, SBNspec * compsec, std::string tag){
+int SBNspec::CompareSBNspecs(TMatrixT<double> collapse_covar, SBNspec * compsec, bool inbool, std::string tag){
 	//kWhite  = 0,   kBlack  = 1,   kGray    = 920,  kRed    = 632,  kGreen  = 416,
 	//kBlue   = 600, kYellow = 400, kMagenta = 616,  kCyan   = 432,  kOrange = 800,
 	//kSpring = 820, kTeal   = 840, kAzure   =  860, kViolet = 880,  kPink   = 900
 	std::vector<int> mycol = {kAzure -9, kRed-7, kGreen-3, kBlue-6, kMagenta-3, kYellow-7,  kOrange-3, kBlue, kBlue+2,  kGreen+1,kBlue-7, kPink, kViolet, kCyan,kMagenta,kAzure};
 
+	bool is_compare_data=inbool;//whether the compared spec should be treated as real data or not
 
 	//first check the dimension of covariance matrix
 	if(collapse_covar.GetNcols() != this->num_bins_total_compressed){
@@ -657,7 +674,7 @@ int SBNspec::CompareSBNspecs(TMatrixT<double> collapse_covar, SBNspec * compsec,
 				bool this_run = false;
 				bool this_run_comp = false;
 
-				TCanvas* Cstack= new TCanvas((tag+"_"+canvas_name).c_str(),canvas_name.c_str(),1200,1200);
+				TCanvas* Cstack= new TCanvas((tag+"_"+canvas_name).c_str(),(tag+" | "+canvas_name).c_str(),1450,1200);
 				//Cstack->SetFixedAspectRatio();
 
 				Cstack->cd();
@@ -780,25 +797,27 @@ int SBNspec::CompareSBNspecs(TMatrixT<double> collapse_covar, SBNspec * compsec,
 				for(int i=0; i<hsum->GetNbinsX(); i++){
 					double xbin_width = hsum->GetXaxis()->GetBinWidth(i+1);
 					double error = sqrt(pow(hsum->GetBinError(i+1), 2.0) + collapse_covar(error_bin+i, error_bin+i)/pow(xbin_width, 2.0));
-					//double error = hsum->GetBinError(i+1) + sqrt(collapse_covar(error_bin+i, error_bin+i));
 					//std::cout << collapse_covar(error_bin+i, error_bin+i) << std::endl;
-					//std::cout << "previous error: "<< hsum->GetBinError(i+1) << ", later one: " << error << std::endl;
+					std::cout << "previous error: "<< hsum->GetBinError(i+1) << ", later one: " << error << std::endl;
 					hsum->SetBinError(i+1, error);
+	
+					//treat compared spec as real data
+					if(is_compare_data){
+					   double comp_error = sqrt(hcomp->GetBinContent(i+1)/xbin_width);
+					   hcomp->SetBinError(i+1, comp_error);
+					}
 				}
 				error_bin +=hsum->GetNbinsX();
 
 				legStack.AddEntry(hsum, Form("MC Stack | %.2f", hsum_sum), "fl");
-				legStack.AddEntry(hcomp, Form("Compared Point | %.2f", hcomp_sum), "flp");
+				legStack.AddEntry(hcomp, Form("Data | %.2f", hcomp_sum), "flp");
 
-				/****Not sure why but this next line seg faults...******
-				 *	hs->GetYaxis()->SetTitle("Events/GeV");
-				 ******************************************************/
 				if(this_run && this_run_comp){
 					double plot_pot=5e19;
 
 					double title_size_ratio=0.11;
                                         double label_size_ratio=0.11;
-                                        double title_offSet_ratioY = 0.38;
+                                        double title_offSet_ratioY = 0.45;
                                         double title_offSet_ratioX = 1.1;
 
                                         double title_size_upper=0.048;
@@ -806,22 +825,24 @@ int SBNspec::CompareSBNspecs(TMatrixT<double> collapse_covar, SBNspec * compsec,
                                         double title_offSet_upper = 0.85;
 
 					Cstack->cd();
-					gStyle->SetErrorX(0);
+					//gStyle->SetErrorX(0);
 					TPad *pad0top = new TPad(("pad0top_"+canvas_name).c_str(), ("pad0top_"+canvas_name).c_str(), 0, 0.35, 1, 1.0);
 					pad0top->SetBottomMargin(0); // Upper and lower plot are joined
 					pad0top->Draw();             // Draw the upper pad: pad2top
 					pad0top->cd();               // pad2top becomes the current pad
-					gStyle->SetHatchesLineWidth(1);
+					//gStyle->SetHatchesLineWidth(1);
 					hs->Draw();
 					//draw error bar for 'this' SBNspec
 					hsum->SetFillColor(kBlack);
 					hsum->SetFillStyle(3354);
+					hsum->SetMarkerSize(0);
 					hsum->SetLineWidth(3);
 					hsum->Draw("E2 same");
+					//hsum->DrawClone("E2 same");
 					hs->GetYaxis()->SetTitle(("Events/"+channel_units.at(ic)).c_str());
 					hs->GetYaxis()->SetTitleSize(title_size_upper);
                                         hs->GetYaxis()->SetLabelSize(label_size_upper);
-                                        hs->GetYaxis()->SetTitleOffset(title_offSet_upper);
+                                        hs->GetYaxis()->SetTitleOffset(title_offSet_upper*1.2);
 					//hs->GetYaxis()->SetTitle("Events");
 					
 					//draw rectangular and dashed line for compared spectrum
@@ -840,23 +861,27 @@ int SBNspec::CompareSBNspecs(TMatrixT<double> collapse_covar, SBNspec * compsec,
 					hcompclone->Draw("same hist");
 					*/
 
-					hcomp->SetMarkerStyle(8);
+					gStyle->SetEndErrorSize(5);
+					hcomp->SetMarkerStyle(20);
 					hcomp->SetMarkerColor(kBlack);
 					hcomp->SetMarkerSize(1.5);
 					hcomp->SetLineWidth(3);
 					hcomp->SetLineColor(kBlack);
-					hcomp->Draw("EP same");
+					hcomp->Draw("E1P same");
 
 					//hcomp->Draw("hist same");
 					hs->SetMaximum(std::max(hs->GetMaximum(), hcomp->GetMaximum())*2.5);
 					//hs->SetMaximum(std::max(hs->GetMaximum(), hcomp->GetMaximum())*1.1);
 					hs->SetMinimum(0.001);
 
-					Cstack->Update();
+				        Cstack->Update();
 					legStack.Draw();
+					TText t_text(0.7*(hs->GetXaxis()->GetXmax()), 1.4*hs->GetMaximum(), (channel_names.at(ic)).c_str());
+					t_text.SetTextSize(0.08);
+					t_text.Draw();
 
 					Cstack->cd();
-					gStyle->SetOptStat(0);
+					//gStyle->SetOptStat(0);
 					TPad *pad0bot = new TPad(("padbot_"+canvas_name).c_str(),("padbot_"+canvas_name).c_str(), 0, 0.05, 1, 0.35);
 					pad0bot->SetTopMargin(0);
 					pad0bot->SetBottomMargin(0.351);
@@ -877,19 +902,20 @@ int SBNspec::CompareSBNspecs(TMatrixT<double> collapse_covar, SBNspec * compsec,
                                         }
 
 
-					ratpre->Draw("E");
+					ratpre->Draw("E1");
 					//ratpre->Draw("hist");
-					h_err->Draw("E2 same");
+					
 					ratpre->SetFillColor(kWhite);
-					ratpre->SetFillStyle(0);
+					//ratpre->SetFillStyle(0);
 					ratpre->SetLineWidth(2);
-
+					h_err->Draw("E2same");
+					Cstack->Update();
 					gStyle->SetOptStat(0);
 					TLine *line = new TLine(ratpre->GetXaxis()->GetXmin(),1.0,ratpre->GetXaxis()->GetXmax(),1.0 );
 					line->Draw("same");
 					ratpre->SetLineColor(kBlack);
 					ratpre->SetTitle("");
-					ratpre->GetYaxis()->SetTitle("Ratio");
+					ratpre->GetYaxis()->SetTitle("Data/Prediction");
 					ratpre->GetXaxis()->SetTitleOffset(title_offSet_ratioX);
 					ratpre->GetYaxis()->SetTitleOffset(title_offSet_ratioY);
 					ratpre->SetMinimum(std::min(0.5, ratpre->GetMinimum())*0.8);
@@ -903,9 +929,10 @@ int SBNspec::CompareSBNspecs(TMatrixT<double> collapse_covar, SBNspec * compsec,
 					ratpre->GetXaxis()->SetLabelSize(label_size_ratio);
 					//ratpre->GetXaxis()->SetTitle("Reconstructed Energy [GeV]");
 					ratpre->GetXaxis()->SetTitle(channel_units.at(ic).c_str()); 
-
+					Cstack->Update();
+                    			Cstack->SaveAs((tag+"_"+canvas_name+".pdf").c_str(),"pdf");
 					Cstack->Write(canvas_name.c_str() );
-                    Cstack->SaveAs((canvas_name+".pdf").c_str(),"pdf");
+					//Cstack->Print((tag+canvas_name+".pdf").c_str());
 
 				}
 
@@ -919,12 +946,15 @@ int SBNspec::CompareSBNspecs(TMatrixT<double> collapse_covar, SBNspec * compsec,
 }
 
 
+
+/*
 int SBNspec::CompareSBNspecs(SBNspec * compsec, std::string tag){
 	//kWhite  = 0,   kBlack  = 1,   kGray    = 920,  kRed    = 632,  kGreen  = 416,
 	//kBlue   = 600, kYellow = 400, kMagenta = 616,  kCyan   = 432,  kOrange = 800,
 	//kSpring = 820, kTeal   = 840, kAzure   =  860, kViolet = 880,  kPink   = 900
 	std::vector<int> mycol = {kAzure -9, kRed-7, kGreen-3, kBlue-6, kMagenta-3, kYellow-7,  kOrange-3, kBlue, kBlue+2,  kGreen+1,kBlue-7, kPink, kViolet, kCyan,kMagenta,kAzure};
 
+	bool is_compare_data=true;
 	bool gLEE_plot = true;  //control the style of the stacked histograms
 	if(gLEE_plot){
 		mycol.clear();
@@ -1012,13 +1042,13 @@ int SBNspec::CompareSBNspecs(SBNspec * compsec, std::string tag){
 				bool this_run = false;
 				bool this_run_comp = false;
 
-				TCanvas* Cstack= new TCanvas((tag+"_"+canvas_name).c_str(),canvas_name.c_str(),1200,1200);
+				TCanvas* Cstack= new TCanvas((tag+"_"+canvas_name).c_str(), (tag+" | "+canvas_name).c_str(),1200,1200);
 				//Cstack->SetFixedAspectRatio();
 
 				Cstack->cd();
 				THStack * hs = new THStack(canvas_name.c_str(),  canvas_name.c_str());
 				//TLegend legStack(0.50, 0.5, 0.89, 0.89);
-				TLegend legStack(0.11, 0.69, 0.89, 0.89);
+				TLegend legStack(0.11, 0.58, 0.89, 0.89);
 				legStack.SetNColumns(2);
 				legStack.SetLineWidth(0);
 				legStack.SetLineColor(kWhite);
@@ -1066,6 +1096,13 @@ int SBNspec::CompareSBNspecs(SBNspec * compsec, std::string tag){
 					}
 				}
 
+				//if it's treated as data, then should be careful when dealing with error bars
+				if(is_compare_data){
+				    for(int ibin=0; i<hcomp->GetNbinsX(); i++){
+					double error = sqrt(hcomp->GetBinContent(i+1)/hcomp->GetXaxis()->GetBinWidth(i+1));
+					hcomp->SetBinError(i+1, error);
+				    }
+				}
 
 				//Ok to sort the histograms based on "size" will need a few tricks
 				std::vector<double> integral_sorter;
@@ -1134,9 +1171,6 @@ int SBNspec::CompareSBNspecs(SBNspec * compsec, std::string tag){
 
 
 
-				/****Not sure why but this next line seg faults...******
-				 *	hs->GetYaxis()->SetTitle("Events/GeV");
-				 ******************************************************/
 				if(this_run && this_run_comp){
 					double plot_pot=5e19;
 
@@ -1162,13 +1196,13 @@ int SBNspec::CompareSBNspecs(SBNspec * compsec, std::string tag){
 					hsum->SetFillStyle(3354);
 					hsum->Draw("E2 same");
 					//hs->GetYaxis()->SetTitle("Events/GeV");
-					hs->GetYaxis()->SetTitle("Events");
+					hs->GetYaxis()->SetTitle("Events/bin");
 				        hs->GetYaxis()->SetTitleSize(title_size_upper);
                                         hs->GetYaxis()->SetLabelSize(label_size_upper);
                                         hs->GetYaxis()->SetTitleOffset(title_offSet_upper);
 	
 					//draw rectangular and dashed line for compared spectrum
-					/*hcomp->SetLineColor(kBlack);
+			hcomp->SetLineColor(kBlack);
 					hcomp->SetLineWidth(2);
 					hcomp->SetFillColor(kBlack);
 					hcomp->SetFillStyle(3244);
@@ -1181,7 +1215,7 @@ int SBNspec::CompareSBNspecs(SBNspec * compsec, std::string tag){
 					hcompclone->SetLineWidth(3);
 					hcompclone->SetLineStyle(9);
 					hcompclone->Draw("same hist");
-					*/
+					
 
 					hcomp->SetMarkerStyle(8);
 					hcomp->SetMarkerColor(kBlack);
@@ -1191,7 +1225,7 @@ int SBNspec::CompareSBNspecs(SBNspec * compsec, std::string tag){
 					hcomp->Draw("EP same");
 
 					//hcomp->Draw("hist same");
-					hs->SetMaximum(std::max(hs->GetMaximum(), hcomp->GetMaximum())*1.4);
+					hs->SetMaximum(std::max(hs->GetMaximum(), hcomp->GetMaximum())*2.5);
 					//hs->SetMaximum(std::max(hs->GetMaximum(), hcomp->GetMaximum())*1.1);
 					hs->SetMinimum(0.001);
 
@@ -1210,7 +1244,16 @@ int SBNspec::CompareSBNspecs(SBNspec * compsec, std::string tag){
 					TH1* ratpre = (TH1*)hcomp->Clone(("ratio_"+canvas_name).c_str());
 					ratpre->Divide(hsum);
 					ratpre->SetStats(false);
-					ratpre->Draw("hist");
+
+					TH1* h_err = (TH1*)hsum->Clone("error_band");
+                                        h_err->Divide(hsum);
+                                        for(int i=0; i<h_err->GetNbinsX(); i++){
+                                                h_err->SetBinError(i+1, hsum->GetBinError(i+1)/hsum->GetBinContent(i+1));
+                                                ratpre->SetBinError(i+1, hcomp->GetBinError(i+1)/hsum->GetBinContent(i+1));
+                                        }
+
+					ratpre->Draw("E1");
+					h_err->Draw("E2 SAME");
 					ratpre->SetFillColor(kWhite);
 					ratpre->SetFillStyle(0);
 					ratpre->SetLineWidth(2);
@@ -1236,7 +1279,7 @@ int SBNspec::CompareSBNspecs(SBNspec * compsec, std::string tag){
 					ratpre->GetXaxis()->SetTitle(channel_units.at(ic).c_str()); 
 
 					Cstack->Write(canvas_name.c_str() );
-                    Cstack->SaveAs((canvas_name+".pdf").c_str(),"pdf");
+		                        Cstack->SaveAs((tag+"_"+canvas_name+".pdf").c_str(),"pdf");
 
 				}
 
@@ -1248,6 +1291,8 @@ int SBNspec::CompareSBNspecs(SBNspec * compsec, std::string tag){
 
 	return 0;
 }
+
+*/
 
 int SBNspec::GetHistNumber(int f){
 	//Get which histogram (in hist) that a full_vector entry comes from	

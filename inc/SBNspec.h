@@ -16,6 +16,7 @@
 #include <TLine.h>
 #include <TColor.h>
 #include <TStyle.h>
+#include <TText.h>
 
 //#include <TROOT.h>
 #include <sstream>
@@ -138,7 +139,9 @@ namespace sbn{
 			
             std::vector<int> GetIndiciesFromSubchannel(std::string const & subchannel);
 			int CompareSBNspecs(SBNspec * compsec, std::string tag);
+			int CompareSBNspecs(SBNspec * compsec, bool, std::string tag);
 			int CompareSBNspecs(TMatrixT<double> M, SBNspec * compsec, std::string tag);
+			int CompareSBNspecs(TMatrixT<double> M, SBNspec * compsec, bool, std::string tag);
 			};
 
 
