@@ -118,6 +118,7 @@ namespace sbn{
 
 	int CalcChiGridScanShapeOnlyFit();  //calculate chi2 surface for NCpi0 fit.
 	int CalcChiGridScan();  //simply grid scan with one systematic covariance matrix
+	double CalcChi(bool use_cnp);
 
 	int SetStatOnly();
 	int SetFlatFullFracCovarianceMatrix(double );
@@ -134,7 +135,9 @@ namespace sbn{
 	int SaveHistogram();
 	int SaveHistogram(std::map<int, std::vector<double>>& );
 	TH2D* Do2DInterpolation(int, std::vector<double>& x, std::vector<double>& y, std::vector<double>& value);
-	std::vector<TGraph*> FindContour(TH2D*, int n);
+	std::vector<TGraph*> FindContour(TH2D, int n);
+	TCanvas* DrawContour(TH2D*, std::vector<TGraph*>&, std::vector<double>);
+	TCanvas* DrawContour(TH2D*, std::vector<TGraph*>&, std::string, std::vector<double>);
 	int RemoveNan(TMatrixT<double>*); //remove the nan's from matrix
 	
 	int ModifyCV(double factor);
@@ -147,64 +150,6 @@ namespace sbn{
 	int OpenFiles();
 	int CloseFiles();	
 	int PoissonFluctuation(SBNspec *);
-        /*//Member Functions
-        
-         int UpdateInverseCovarianceMatrixCNP(size_t best_grid_point, const std::vector<float> &datavec, TMatrixT<double>& inverse_collapsed, SBNchi * helper);
-         int UpdateInverseCovarianceMatrix(size_t best_grid_point, TMatrixT<double>& inverse_collapsed, SBNchi * helper);
-         std::vector<double> PerformIterativeGridFit(const std::vector<float> &datavec, const size_t grid_pt, const TMatrixT<double>& inverse_background_collapsed_covariance_matrix);
-
-
-        int UseCNP(){m_use_CNP = true;};
-        int FullFeldmanCousins();
-        int PointFeldmanCousins(size_t);
-        std::vector<double> GlobalScan();
-        std::vector<double> GlobalScan(int);
-        std::vector<double> GlobalScan2(int);
-        std::vector<double> GlobalScan(SBNspec *obs);
-        int RasterScan(); 
-       */ 
-/*
-        int LoadPreOscillatedSpectrum(int);
-        int LoadPreOscillatedSpectra();
-
-        int SetRandomSeed(double);
-
-        int GenerateBackgroundSpectrum(); 
-        int SetBackgroundSpectrum(std::string filein, std::string scale_nam, double val);
-        int LoadBackgroundSpectrum();
-        int LoadBackgroundSpectrum(std::string);
-
-        int CalcSBNchis();
-
-        int SetCoreSpectrum(std::string);
-        int SetFractionalCovarianceMatrix(TMatrixT<double> *);
-        int SetFractionalCovarianceMatrix(std::string, std::string);
-        int SetEmptyFractionalCovarianceMatrix();
-        int SetNumUniverses(int);
-        int SetStatOnly();
-
-        NeutrinoModel convert3p1(std::vector<double> ingrid);
-       
-
-        std::vector<double> getConfidenceRegion(TGraph *gmin, TGraph *gmax,double val);
-        
-        int AddFlatDetSystematic(double percent);
-        std::vector<TGraph*> LoadFCMaps(std::string filein);
-        std::vector<TGraph*> MakeFCMaps(std::string filein);
-        std::vector<TGraph*> MakeFCMaps(std::string filein,size_t);
-        
-
-        std::vector<double> MakeMedianMaps(std::string filein,size_t i);
-
-
-
-        int GenerateScaledSpectra();
-        std::string m_subchannel_to_scale;
-
-        //This is a stopgap for better SBNchi integration.Hrump, need to fix that wierd float oddity. 
-        float CalcChi(const std::vector<float>& data, const std::vector<double>& prediction, const TMatrixT<double> & inverse_covariance_matrix );
-
-*/
 
 
 

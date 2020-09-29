@@ -435,17 +435,21 @@ double SBNchi::CalcChi(double **invert_matrix, double* core, double *sig){
 }
 
 double SBNchi::CalcChi(TMatrixT<double> M_invert, std::vector<double>& spec, std::vector<double>& data){
-
-	double tchi = 0;
-	for(int i=0; i< num_bins_total_compressed; i++){
-		for(int j=0; j< num_bins_total_compressed ;j++){
-			tchi += M_invert(i,j)*(spec[i]- data[i])*(spec[j]-data[j]);
-		}
-	}
 	
-	return tchi;
+	return this->CalcChi(M_invert, spec, data, false);
 }
 
+double SBNchi::CalcChi(TMatrixT<double> M_invert, std::vector<double>& spec, std::vector<double>& data, bool print){
+      double tchi = 0;
+      for(int i=0; i< num_bins_total_compressed; i++){
+          for(int j=0; j< num_bins_total_compressed ;j++){
+              double this_contribution = M_invert(i,j)*(spec[i]- data[i])*(spec[j]-data[j]);
+              tchi += this_contribution;
+              if(print) std::cout<<i<<" "<<j<<" "<<this_contribution<<", "<<tchi<<", "<<" Invar: "<<M_invert(i,j)<<", "<<spec[i]<<", "<<data[i]<<", "<<spec[j]<<", "<<data[j]<<std::endl;
+          }
+      }
+      return tchi;
+}
 
 //same as above but passing in a vector instead of whole SBNspec
 double SBNchi::CalcChi(std::vector<double> sigVec){
@@ -768,6 +772,10 @@ TMatrixT<double> SBNchi::SplitCovarianceMatrix(TMatrixT<double>* frac_covar, std
 	}	
 
 	double N_T = std::accumulate(spec.begin(), spec.end(), 0.0);
+	if(N_T == 0){
+		Mout.Zero();
+		return Mout;
+	}
 	double f_1 = full_covar.Sum()/pow(N_T, 2.0);
 	std::vector<double> P_sum;
 	for(int i=0; i< matrix_bins; i++){
@@ -842,6 +850,10 @@ TMatrixT<double> SBNchi::CalcShapeOnlyCovarianceMatrix(TMatrixT<double> &M, SBNs
 
 
 	double sum_bkd = std::accumulate(bkgd_full.begin(), bkgd_full.end(), 0.0);
+	if(sum_bkd == 0){
+		full_shape_covar.Zero();
+		return full_shape_covar;
+	}
 	double N = full_systematic.Sum()/pow(sum_bkd, 2.0);
 	//vector of sum over rows for collapsed syst covariance matrix
 	std::vector<double> P_sum;
@@ -1157,7 +1169,7 @@ TMatrixT<double> SBNchi::FillSystMatrix(TMatrixT<double>& frac_covar, std::vecto
 
 		}
 	}
-
+	std::cout << "matrix_size " << matrix_size <<std::endl;
 	if(do_collapse == true){
 		TMatrixT<double> collapsed_syst(num_bins_total_compressed, num_bins_total_compressed);
 		CollapseModes(full_syst, collapsed_syst);

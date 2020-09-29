@@ -144,6 +144,7 @@ class SBNchi : public SBNconfig{
 	double CalcChi(double ** inv, double *, double *);
 	float CalcChi(float ** inv, float *, float *);
 	double CalcChi(TMatrixT<double> M, std::vector<double>& spec, std::vector<double>& data);
+	double CalcChi(TMatrixT<double> M, std::vector<double>& spec, std::vector<double>& data, bool);
 	double CalcShapeChi(TMatrixT<double> M, std::vector<double>& data, std::vector<double>& constrained_bkgd, std::vector<double>& mc, bool is_background);
 	std::vector<std::vector<double >> TMatrixDToVector(TMatrixT <double> McI);
 	
