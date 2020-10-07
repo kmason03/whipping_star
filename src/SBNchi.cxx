@@ -874,6 +874,58 @@ TMatrixT<double> SBNchi::CalcShapeOnlyCovarianceMatrix(TMatrixT<double> &M, SBNs
 }
 
 
+//calculate the shape+mixed part of a covariance matrix
+TMatrixT<double> SBNchi::CalcShapeMixedCovarianceMatrix(TMatrixT<double> &M, SBNspec *mc, SBNspec* bkg){
+
+
+	int mc_num_bins = mc->num_bins_total;
+	std::vector<double> mc_full = mc->full_vector;
+	std::vector<double> bkgd_full = bkg->full_vector;
+		
+	TMatrixT<double> full_systematic(mc_num_bins, mc_num_bins);
+	TMatrixT<double> full_shape_covar(mc_num_bins,mc_num_bins);
+
+	if(mc_full.size() != M.GetNcols()){
+		std::cout << "Dimension of MC  full vector " << mc_num_bins<< " does not match dimension of covariance matrix:" << M.GetNcols() << std::endl;
+		exit(EXIT_FAILURE);
+	}	
+
+
+        //fill the usual systematic covariance matrix
+	for(int i=0; i< mc_num_bins; i++){
+		for(int j=0; j< mc_num_bins; j++){
+			if( std::isnan(  M(i,j)  )) full_systematic(i,j) = 0.0;
+			else full_systematic(i,j) = M(i,j)*mc_full[i]*mc_full[j];
+		}
+	}
+
+
+
+	double sum_bkd = std::accumulate(bkgd_full.begin(), bkgd_full.end(), 0.0);
+	if(sum_bkd == 0){
+		full_shape_covar.Zero();
+		return full_shape_covar;
+	}
+	double N = full_systematic.Sum()/pow(sum_bkd, 2.0);
+	//vector of sum over rows for collapsed syst covariance matrix
+	std::vector<double> P_sum;
+	for(int i=0; i< mc_num_bins; i++){
+		double P_temp = 0;
+		for(int j=0; j< mc_num_bins; j++) P_temp += full_systematic(i,j);
+		P_sum.push_back(P_temp);
+	}
+	
+	//construct shape only systematic covariance matrix
+	for(int i=0; i< mc_num_bins; i++){
+		for(int j=0 ;j< mc_num_bins; j++){
+			full_shape_covar(i,j) = full_systematic(i,j) - bkgd_full[i]*bkgd_full[j]*N;
+		}
+	}	
+
+	return full_shape_covar;
+}
+
+
 double SBNchi::CalcChi_statonlyCNP(std::vector<double> &pred, std::vector<double>& data){
       std::vector<double> diag(pred.size());
       for(int j =0; j<pred.size(); j++)
@@ -1013,7 +1065,8 @@ TMatrixT<double> SBNchi::InvertMatrix(TMatrixT<double> &M){
         if(is_verbose)  std::cout<<otag<<"Covariance matrix is symmetric"<<std::endl;
     }else{
 
-        double tol = 1e-13;
+        //double tol = 1e-13;
+        double tol = 1e-10;
         double biggest_deviation = 0;
         int bi =0;
         int bj=0;
@@ -1041,6 +1094,7 @@ TMatrixT<double> SBNchi::InvertMatrix(TMatrixT<double> &M){
         if(biggest_deviation >tol){
 
             std::cout<<"ERROR: Thats too unsymettric, killing process. Better check your inputs."<<std::endl;
+            std::cout<<"ERROR: Biggest Relative Deviation from symmetry is i:"<<bi<<" j: "<<bj<<" of order "<<biggest_deviation<<" M(j,i)"<<M(bj,bi)<<" M(i,j)"<<M(bi,bj)<<std::endl;
 
             exit(EXIT_FAILURE);
         }else{
