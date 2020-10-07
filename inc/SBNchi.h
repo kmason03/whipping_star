@@ -118,6 +118,7 @@ class SBNchi : public SBNconfig{
     TMatrixT<double> CalcCovarianceMatrixCNP(TMatrixT<double>* M, std::vector<double>& spec, std::vector<double>& spec_collapse, const std::vector<float>& datavec );
     TMatrixT<double> CalcCovarianceMatrixCNP(TMatrixT<double>* M, std::vector<double>& spec, const std::vector<float>& datavec );
     TMatrixT<double> CalcShapeOnlyCovarianceMatrix(TMatrixT<double> &M, SBNspec *mc, SBNspec* bkg);    
+    TMatrixT<double> CalcShapeMixedCovarianceMatrix(TMatrixT<double> &M, SBNspec *mc, SBNspec* bkg);    
     TMatrixT<double> CalcNeymanCovarianceMatrix(TMatrixT<double>* M, std::vector<double>& spec, std::vector<double>& data_full_vec);
     TMatrixT<double> AddStatMatrixCNP(TMatrixT<double>* M, std::vector<double>& spec, const std::vector<double>& datavec );
     TMatrixT<double> AddStatMatrix(TMatrixT<double>* M, const std::vector<double>& datavec );

@@ -887,6 +887,58 @@ TMatrixT<double> SBNchi::CalcShapeOnlyCovarianceMatrix(TMatrixT<double> &M, SBNs
 }
 
 
+//calculate the shape+mixed part of a covariance matrix
+TMatrixT<double> SBNchi::CalcShapeMixedCovarianceMatrix(TMatrixT<double> &M, SBNspec *mc, SBNspec* bkg){
+
+
+	int mc_num_bins = mc->num_bins_total;
+	std::vector<double> mc_full = mc->full_vector;
+	std::vector<double> bkgd_full = bkg->full_vector;
+		
+	TMatrixT<double> full_systematic(mc_num_bins, mc_num_bins);
+	TMatrixT<double> full_shape_covar(mc_num_bins,mc_num_bins);
+
+	if(mc_full.size() != M.GetNcols()){
+		std::cout << "Dimension of MC  full vector " << mc_num_bins<< " does not match dimension of covariance matrix:" << M.GetNcols() << std::endl;
+		exit(EXIT_FAILURE);
+	}	
+
+
+        //fill the usual systematic covariance matrix
+	for(int i=0; i< mc_num_bins; i++){
+		for(int j=0; j< mc_num_bins; j++){
+			if( std::isnan(  M(i,j)  )) full_systematic(i,j) = 0.0;
+			else full_systematic(i,j) = M(i,j)*mc_full[i]*mc_full[j];
+		}
+	}
+
+
+
+	double sum_bkd = std::accumulate(bkgd_full.begin(), bkgd_full.end(), 0.0);
+	if(sum_bkd == 0){
+		full_shape_covar.Zero();
+		return full_shape_covar;
+	}
+	double N = full_systematic.Sum()/pow(sum_bkd, 2.0);
+	//vector of sum over rows for collapsed syst covariance matrix
+	std::vector<double> P_sum;
+	for(int i=0; i< mc_num_bins; i++){
+		double P_temp = 0;
+		for(int j=0; j< mc_num_bins; j++) P_temp += full_systematic(i,j);
+		P_sum.push_back(P_temp);
+	}
+	
+	//construct shape only systematic covariance matrix
+	for(int i=0; i< mc_num_bins; i++){
+		for(int j=0 ;j< mc_num_bins; j++){
+			full_shape_covar(i,j) = full_systematic(i,j) - bkgd_full[i]*bkgd_full[j]*N;
+		}
+	}	
+
+	return full_shape_covar;
+}
+
+
 double SBNchi::CalcChi_statonlyCNP(std::vector<double> &pred, std::vector<double>& data){
       std::vector<double> diag(pred.size());
       for(int j =0; j<pred.size(); j++)
@@ -1019,6 +1071,51 @@ TMatrixT<double> SBNchi::InvertMatrix(TMatrixT<double> &M){
     TMatrixT<double> McI(M.GetNrows(),M.GetNrows());
     McI.Zero();
 
+    otag = "SBNchi||\tInvertMatrix: ";
+
+    //check the matrix is symmetric
+    if(M.IsSymmetric() ){
+        if(is_verbose)  std::cout<<otag<<"Covariance matrix is symmetric"<<std::endl;
+    }else{
+
+        //double tol = 1e-13;
+        double tol = 1e-10;
+        double biggest_deviation = 0;
+        int bi =0;
+        int bj=0;
+
+        if(is_verbose) std::cout<<otag<<"WARNING: this covariance matrix appears to be not symmetric!"<<std::endl;
+        for(int i=0; i<M.GetNrows(); i++){
+            for(int j=0; j<M.GetNcols(); j++){
+                double dev = fabs(M(i,j)-M(j,i));
+                if(dev>biggest_deviation){
+                    biggest_deviation = 2*dev/(fabs(M(i,j))+fabs(M(j,i)));
+                    bi=i;
+                    bj=j;
+                }
+                if(M(i,j)!=M(i,j)){
+
+                    std::cout<<"ERROR: we have NAN's  Better check your inputs."<<std::endl;
+                    exit(EXIT_FAILURE);
+
+                }
+            }
+        }
+
+        if(is_verbose) std::cout<<otag<<"WARNING: Biggest Relative Deviation from symmetry is i:"<<bi<<" j: "<<bj<<" of order "<<biggest_deviation<<" M(j,i)"<<M(bj,bi)<<" M(i,j)"<<M(bi,bj)<<std::endl;
+
+        if(biggest_deviation >tol){
+
+            std::cout<<"ERROR: Thats too unsymettric, killing process. Better check your inputs."<<std::endl;
+            std::cout<<"ERROR: Biggest Relative Deviation from symmetry is i:"<<bi<<" j: "<<bj<<" of order "<<biggest_deviation<<" M(j,i)"<<M(bj,bi)<<" M(i,j)"<<M(bi,bj)<<std::endl;
+
+            exit(EXIT_FAILURE);
+        }else{
+
+            if(is_verbose)      std::cout<<otag<<"WARNING: Thats within tolderence. Continuing."<<std::endl;
+        }
+    }
+
     if(is_verbose) std::cout<<otag<<" About to do a SVD decomposition"<<std::endl;
     TDecompSVD svd(M);
 
@@ -1041,6 +1138,34 @@ TMatrixT<double> SBNchi::InvertMatrix(TMatrixT<double> &M){
         std::cout<<otag<<"ERROR: The inverted matrix isnt valid! Something went wrong.."<<std::endl;
         exit(EXIT_FAILURE);
 
+    }
+
+
+    //check if the matrix is positive, semi-definite;
+    bool is_small_negative_eigenvalue = false;
+    double tolerence_positivesemi = 1e-5;
+
+
+    TMatrixDEigen eigen (M);
+    TVectorD eigen_values = eigen.GetEigenValuesRe();
+
+
+    for(int i=0; i< eigen_values.GetNoElements(); i++){
+        if(eigen_values(i)<0){
+            is_small_negative_eigenvalue = true;
+            if(fabs(eigen_values(i))> tolerence_positivesemi ){
+                std::cout<<otag<<" covariance matrix contains (at least one)  negative eigenvalue: "<<eigen_values(i)<<std::endl;
+                M.Print();
+                exit(EXIT_FAILURE);
+            }
+        }
+    }
+
+
+    if(is_small_negative_eigenvalue){
+        if(is_verbose)  std::cout<<otag<<"Covariance matrix is (allmost) positive semi-definite. It did contain small negative values of absolute value <= :"<<tolerence_positivesemi<<std::endl;
+    }else{
+        if(is_verbose)  std::cout<<otag<<"Covariance matrix is also positive semi-definite."<<std::endl;
     }
 
 
