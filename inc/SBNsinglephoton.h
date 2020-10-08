@@ -93,6 +93,8 @@ namespace sbn{
         double m_random_seed;
         std::string tag;   //tag for the analysis: NCpi0, NCDelta etc
 
+	TFile* fin;  //file that has vector of chi, and BF index in it.
+	int m_interpolation_number;
 	std::map<int, std::vector<double>> m_map;   // map of best-fit point index and chi2 vector
 
 	//things used only when generating pre-scaled files
@@ -126,18 +128,21 @@ namespace sbn{
 	int SetGenieFractionalCovarianceMatrix(std::string filename);
 	int CalcFullButGenieFractionalCovarMatrix();
 	int PrintOutFitInfo(std::map<int, std::vector<double>>& , std::string tag, bool);
+	int WriteOutInfo(std::map<int, std::vector<double>>& );
 
 	int LoadCV();
 	int LoadData(std::string filename);
 	int SetPolyGrid(NGrid ingrid);
 	
 	//not finished yet, what information do we wnat to print out
+	int GrabFitMap();
+	void SetInterpolationNumber(int );
 	int SaveHistogram();
 	int SaveHistogram(std::map<int, std::vector<double>>& );
-	TH2D* Do2DInterpolation(int, std::vector<double>& x, std::vector<double>& y, std::vector<double>& value);
-	std::vector<TGraph*> FindContour(TH2D, int n);
-	TCanvas* DrawContour(TH2D*, std::vector<TGraph*>&, std::vector<double>);
-	TCanvas* DrawContour(TH2D*, std::vector<TGraph*>&, std::string, std::vector<double>);
+	TH2D Do2DInterpolation(int, std::vector<double>& x, std::vector<double>& y, std::vector<double>& value, std::string);
+	std::vector<TGraph> FindContour(TH2D&, int n, std::string);
+	void DrawContour(TH2D*, std::vector<TGraph>&, std::vector<double>);
+	void DrawContour(TH2D*, std::vector<TGraph>&, std::string, std::vector<double>);
 	int RemoveNan(TMatrixT<double>*); //remove the nan's from matrix
 	
 	int ModifyCV(double factor);
