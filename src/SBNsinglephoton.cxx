@@ -420,7 +420,7 @@ int SBNsinglephoton::CalcChiGridScanShapeOnlyFit(){
 
         //calculate the shape only covariance matrix for genie uncertainty, to get rid of normalization uncertainty
         for(int i=0; i<m_grid.f_num_dimensions; i++){
-            //	   if(m_grid.f_dimensions[i].f_name == "NCDeltaRadOverlayLEE") continue;
+            //if(m_grid.f_dimensions[i].f_name == "NCDeltaRadOverlayLEE") continue;
             SBNspec temp_comp = last_best_spectrum;
             temp_comp.Keep(m_grid.f_dimensions[i].f_name, 1.0);
             //only genie for the 3 scaled channels

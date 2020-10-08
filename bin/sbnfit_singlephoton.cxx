@@ -192,8 +192,8 @@ int main(int argc, char* argv[])
   //  mygrid.AddConstrainedDimension("NCPi0NotCoh", 0.4, 1.2, 0.05, 1.0);   //0.1 FULL
 
     //real 5
-    mygrid.AddConstrainedDimension("NCPi0Coh", 0, 6.0, 0.25, 1.0); //0.1full
-    mygrid.AddConstrainedDimension("NCPi0NotCoh", 0.7, 1.6, 0.1, 1.0);   //0.1 FULL
+    //mygrid.AddConstrainedDimension("NCPi0Coh", 0, 6.0, 0.25, 1.0); //0.1full
+    //mygrid.AddConstrainedDimension("NCPi0NotCoh", 0.7, 1.6, 0.1, 1.0);   //0.1 FULL
    
     //angle
     //mygrid.AddConstrainedDimension("NCPi0Coh", 0, 5, 0.1, 1.0); //0.1full
@@ -204,9 +204,14 @@ int main(int argc, char* argv[])
 
     //mygrid.AddDimension("NCDeltaRadOverlayLEE", -0.5, 3, 0.05 );
 
+    mygrid.AddConstrainedDimension("NCPi0NotCoh", 0.8, 1.55, 0.05, 1.0);   //0.1 FULL
+    mygrid.AddConstrainedDimension("NCPi0Coh", 0, 5, 0.1, 1.0); //0.1full
 
     //poly_grid.AddConstrainedDimension("NCPi0NotCoh", -1.5, -0.5, 0.05, 1);  //zoomed in first order
-    poly_grid.AddConstrainedDimension("NCPi0NotCoh", -3.0, 0.0, 0.1, 1.0);  //first order
+    //poly_grid.AddConstrainedDimension("NCPi0NotCoh", -3.0, 0.1, 0.1, 1);  //first order
+
+    poly_grid.AddConstrainedDimension("NCPi0NotCoh", -3.0, 0.1, 0.1, 1);  //zoomed in first order
+
     //poly_grid.AddFixedDimension("NCPi0NotCoh", -1.05); // second order 
 
     if(mode == "gen"){
