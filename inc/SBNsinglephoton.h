@@ -77,7 +77,7 @@ namespace sbn{
 
 	SBNspec* m_cv_spectrum;   //genie CV spectra
 	SBNspec* m_data_spectrum; // data spectra
-        SBNchi *m_chi;
+        SBNchi*  m_chi;
 
 	double m_cv_delta_scaling;   //NCdelta scaling,should only be applied to FAKE DATA for sensitivity study!
 	bool m_bool_modify_cv;  //if CV is modified for systematic covar matrix calculation

@@ -160,15 +160,10 @@ int main(int argc, char* argv[])
                 std::cout<<"\t-d\t--data\t\tInput observed data for fit to real data"<<std::endl;
                 std::cout<<"\t-m\t--mode\t\tInput running mode, default is 'fit' mode"<<std::endl;
                 std::cout<<"\t-m\t--option\t\t gen --- generate energy/momentum dependent pre-scaling file "<<std::endl;
-<<<<<<< HEAD
                 std::cout<<"\t-m\t--option\t\t fit --- perform the fit to extract BF value "<<std::endl;
                 std::cout<<"\t-m\t--option\t\t plot --- read files and draw plots "<<std::endl;
 		std::cout<<"\t-c\t--covariance matrix\t\tInput fractional covariance matrix"<< std::endl;
 		std::cout<<"\t-g\t--FluxXS covariance matrix\t\tInput FluxXS covariance matrix to extract genie matrix"<< std::endl;
-=======
-                std::cout<<"\t-c\t--covariance matrix\t\tInput fractional covariance matrix"<< std::endl;
-                std::cout<<"\t-g\t--FluxXS covariance matrix\t\tInput FluxXS covariance matrix to extract genie matrix"<< std::endl;
->>>>>>> 262e0e1b1b2a60f87cfb53895490b1a5df41ad51
                 std::cout<<"--- Optional arguments: ---"<<std::endl;
                 std::cout<<"\t-f\t--flat\t\t Input flat systematic fractional covariance matrix"<<std::endl;
                 std::cout<<"\t-s\t--stat\t\tStat only runs"<<std::endl;
@@ -193,32 +188,20 @@ int main(int argc, char* argv[])
     NGrid mygrid, poly_grid;
 
     //now only available for 2 subchannels only
-    
-    //This is usual PS1-4
-//    mygrid.AddConstrainedDimension("NCPi0Coh", 0, 5.5, 0.25, 1.0); //0.1full
-  //  mygrid.AddConstrainedDimension("NCPi0NotCoh", 0.4, 1.2, 0.05, 1.0);   //0.1 FULL
+    //mygrid.AddConstrainedDimension("All", 0.5, 1.5, 0.01, 1.19);   //0.1 FULL
+    mygrid.AddConstrainedDimension("NCPi0NotCoh", 0.8, 1.56, 0.02, 1.0);   //0.1 FULL
+    mygrid.AddConstrainedDimension("NCPi0Coh", 0, 8, 0.2, 1.0); //0.1full
+    //mygrid.AddConstrainedDimension("NCPi0NotCoh", 0.5, 1.25, 0.2, 1.0);   //0.1 FULL
+    //mygrid.AddConstrainedDimension("NCPi0Coh", 0, 5, 0.2, 1.25); //0.1full
+    //mygrid.AddFixedDimension("NCPi0NotCoh", 1.19);   //fixed
+    //mygrid.AddFixedDimension("NCPi0Coh", 1.5); //fixed
+    //mygrid.AddFixedDimension("NCDeltaRadOverlayLEE", 0.0);
+    //mygrid.AddDimension("NCDeltaRadOverlayLEE", -0.5, 3.5, 0.01 );
+    //mygrid.AddDimension("NCDeltaRadOverlayLEE", -0.5, 3.0, 0.05 );
 
-    //real 5
-    //mygrid.AddConstrainedDimension("NCPi0Coh", 0, 6.0, 0.25, 1.0); //0.1full
-    //mygrid.AddConstrainedDimension("NCPi0NotCoh", 0.7, 1.6, 0.1, 1.0);   //0.1 FULL
-   
-    //angle
-    //mygrid.AddConstrainedDimension("NCPi0Coh", 0, 5, 0.1, 1.0); //0.1full
-    //mygrid.AddConstrainedDimension("NCPi0NotCoh", 0.2, 1.5, 0.02, 1.0);   //0.1 FULL
-   
 
-    //mygrid.AddDimension("NCDeltaRadOverlaySM", 1.00, 1.01, 0.01 );
-
-    //mygrid.AddDimension("NCDeltaRadOverlayLEE", -0.5, 3, 0.05 );
-
-    mygrid.AddConstrainedDimension("NCPi0NotCoh", 0.8, 1.55, 0.05, 1.0);   //0.1 FULL
-    mygrid.AddConstrainedDimension("NCPi0Coh", 0, 5, 0.1, 1.0); //0.1full
-
-    //poly_grid.AddConstrainedDimension("NCPi0NotCoh", -1.5, -0.5, 0.05, 1);  //zoomed in first order
-    //poly_grid.AddConstrainedDimension("NCPi0NotCoh", -3.0, 0.1, 0.1, 1);  //first order
-
-    poly_grid.AddConstrainedDimension("NCPi0NotCoh", -3.0, 0.1, 0.1, 1);  //zoomed in first order
-
+    poly_grid.AddConstrainedDimension("NCPi0NotCoh", -3.0, 0.6, 0.2, 1);  //zoomed in first order
+    //poly_grid.AddConstrainedDimension("NCPi0NotCoh", -4.0, 2.0, 0.3, -1.1);  //first order
     //poly_grid.AddFixedDimension("NCPi0NotCoh", -1.05); // second order 
 
     if(mode == "gen"){
@@ -230,50 +213,62 @@ int main(int argc, char* argv[])
             sp.GeneratePreScaledSpectra();
         }
     }
-    else if(mode =="fit" || mode == "calc"){
-        SBNsinglephoton sp(xml, tag, mygrid);
-        if(bool_edependent){   //setup poly grid if it's an energy-dependent fit
-            sp.SetPolyGrid(poly_grid);
-        }
+    else if(mode =="fit"|| mode =="plot"|| mode == "calc"){
+	SBNsinglephoton sp(xml, tag, mygrid);
+	if(bool_edependent){   //setup poly grid if it's an energy-dependent fit
+	    sp.SetPolyGrid(poly_grid);
+	}
 
-        //load CV, data and prescaled spectra
-        sp.LoadCV();
-        if(input_data) sp.LoadData(data_filename);
+	if(mode == "fit"){
+		//load CV, data and prescaled spectra
+		sp.LoadCV();
+		if(input_data) sp.LoadData(data_filename);
 
-        //setup systematic fractional covariance matrix
-        if(bool_stat_only) sp.SetStatOnly();
-        else if(bool_flat_sys) sp.SetFlatFullFracCovarianceMatrix(flat_sys_percent);
-        else  sp.SetFullFractionalCovarianceMatrix(covmatrix_file, "frac_covariance");
+		//setup systematic fractional covariance matrix
+		if(bool_stat_only) sp.SetStatOnly();
+		else if(bool_flat_sys) sp.SetFlatFullFracCovarianceMatrix(flat_sys_percent);
+		//else  sp.SetFullFractionalCovarianceMatrix(covmatrix_file, "updated_frac_covariance");
+		else  sp.SetFullFractionalCovarianceMatrix(covmatrix_file, "frac_covariance");
 
-        if(mode == "fit"){
-                if(!bool_stat_only){
-                    sp.SetGenieFractionalCovarianceMatrix(genie_matrix_file);
-                    sp.CalcFullButGenieFractionalCovarMatrix();
-                }
-                sp.LoadSpectraApplyFullScaling();
-                //sp.CalcChiGridScan();
-                sp.CalcChiGridScanShapeOnlyFit();
-                
-                sp.SaveHistogram();
-                //if we want to modify NCpi0 to match the result from NCpi0 normalization fit before performing a combined fit
-                //if(bool_modify_genie_cv){
-                  //  sp.ModifyCV(delta_scaling);
-                    //sp.ModifyCV(delta_scaling, {1.0, 1.0});
-               // }
-            }
-        else if(mode=="plot"){
-                //sp.LoadFitResults();
-                sp.SaveHistogram();
-
-        }else{
-            if(bool_modify_genie_cv) sp.ModifyCV(delta_scaling);
-            double chi2=sp.CalcChi(true);
-            std::cout << "SBNsinglephoton || chi2 value between (modified) CV and data is " << chi2 << std::endl;
-        }
+		if(tag == "NCpi0"){
+			//NCpi0 fit need extra flux+XS syst covar matrix
+			if(!bool_stat_only){
+			    sp.SetGenieFractionalCovarianceMatrix(genie_matrix_file);
+			    sp.CalcFullButGenieFractionalCovarMatrix();
+			}
+			sp.LoadSpectraOnTheFly();
+			//sp.LoadSpectraApplyFullScaling();
+			//sp.CalcChiGridScan();
+			sp.CalcChiGridScanShapeOnlyFit();
+		}else if(tag == "NCDelta"){
+			//if we want to modify NCpi0 to match the result from NCpi0 normalization fit before performing a combined fit
+			if(bool_modify_genie_cv){
+			  sp.ModifyCV(delta_scaling);
+			  //sp.ModifyCV(delta_scaling, {1.0, 1.0});
+			}
+/*			if(!bool_stat_only){
+                            sp.SetGenieFractionalCovarianceMatrix(genie_matrix_file);
+                            sp.CalcFullButGenieFractionalCovarMatrix();
+                        }
+*/			sp.LoadSpectraApplyFullScaling();
+			//sp.CalcChiGridScanShapeOnlyFit();
+			sp.CalcChiGridScan();
+		}
+	}else if(mode == "plot"){
+		sp.GrabFitMap();
+		if(interpolation_number != -99) sp.SetInterpolationNumber(interpolation_number);
+		sp.SaveHistogram();	
+	}
+	else{
+		if(bool_modify_genie_cv) sp.ModifyCV(delta_scaling);
+		double chi2=sp.CalcChi(true);
+		std::cout << "SBNsinglephoton || chi2 value between (modified) CV and data is " << chi2 << std::endl;
+	}
     }
     else{
         std::cout << "Mode input is not identified, please try with a valid input.." << std::endl;
         std::cout << "Mode options: 'fit'  || Perform fit" << std::endl;
+        std::cout << "Mode options: 'plot' || Grab info from root file and plot variables" << std::endl;
         std::cout << "Mode options: 'gen'  || Generate energy/momentum dependent pre-scaling root files" << std::endl;
         std::cout << "Mode options: 'calc' || Calculate the chi2 value of (corrected) CV and data" << std::endl;
     }
