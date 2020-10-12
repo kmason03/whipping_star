@@ -1294,7 +1294,6 @@ TMatrixT<double> SBNchi::FillSystMatrix(TMatrixT<double>& frac_covar, std::vecto
 
 		}
 	}
-	std::cout << "matrix_size " << matrix_size <<std::endl;
 	if(do_collapse == true){
 		TMatrixT<double> collapsed_syst(num_bins_total_compressed, num_bins_total_compressed);
 		CollapseModes(full_syst, collapsed_syst);
