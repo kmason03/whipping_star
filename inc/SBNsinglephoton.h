@@ -146,9 +146,9 @@ namespace sbn{
 	int SaveHistogram();
 	int SaveHistogram(std::map<int, std::vector<double>>& );
 	TH2D Do2DInterpolation(int, std::vector<double>& x, std::vector<double>& y, std::vector<double>& value, std::string);
-	std::vector<TGraph*> FindContour(TH2D, int n, std::string);
-	void DrawContour(TH2D*, std::vector<TGraph*>&, std::vector<double>);
-	void DrawContour(TH2D*, std::vector<TGraph*>&, std::string, std::vector<double>);
+	std::vector<TGraph> FindContour(TH2D&, int n, std::string);
+	void DrawContour(TH2D*, std::vector<TGraph>&, std::vector<double>);
+	void DrawContour(TH2D*, std::vector<TGraph>&, std::string, std::vector<double>);
 	int RemoveNan(TMatrixT<double>*); //remove the nan's from matrix
 	
 	int ModifyCV(double factor);

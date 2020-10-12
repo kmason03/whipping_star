@@ -838,8 +838,7 @@ TMatrixT<double> SBNchi::CalcShapeOnlyCovarianceMatrix(TMatrixT<double> &M, SBNs
 		exit(EXIT_FAILURE);
 	}	
 
-
-        //fill the usual systematic covariance matrix
+    //fill the usual systematic covariance matrix
 	for(int i=0; i< mc_num_bins; i++){
 		for(int j=0; j< mc_num_bins; j++){
 			if( std::isnan(  M(i,j)  )) full_systematic(i,j) = 0.0;
@@ -847,15 +846,15 @@ TMatrixT<double> SBNchi::CalcShapeOnlyCovarianceMatrix(TMatrixT<double> &M, SBNs
 		}
 	}
 
-
-
 	double sum_bkd = std::accumulate(bkgd_full.begin(), bkgd_full.end(), 0.0);
 	if(sum_bkd == 0){
 		full_shape_covar.Zero();
 		return full_shape_covar;
 	}
-	double N = full_systematic.Sum()/pow(sum_bkd, 2.0);
-	//vector of sum over rows for collapsed syst covariance matrix
+	
+    double N = full_systematic.Sum()/pow(sum_bkd, 2.0);
+
+    //vector of sum over rows for collapsed syst covariance matrix
 	std::vector<double> P_sum;
 	for(int i=0; i< mc_num_bins; i++){
 		double P_temp = 0;
@@ -866,7 +865,21 @@ TMatrixT<double> SBNchi::CalcShapeOnlyCovarianceMatrix(TMatrixT<double> &M, SBNs
 	//construct shape only systematic covariance matrix
 	for(int i=0; i< mc_num_bins; i++){
 		for(int j=0 ;j< mc_num_bins; j++){
-			full_shape_covar(i,j) = full_systematic(i,j)+bkgd_full[i]*bkgd_full[j]*N - (bkgd_full[i]*P_sum[j]+bkgd_full[j]*P_sum[i])/sum_bkd;
+			//shape only
+            //full_shape_covar(i,j) = full_systematic(i,j)+bkgd_full[i]*bkgd_full[j]*N - (bkgd_full[i]*P_sum[j]+bkgd_full[j]*P_sum[i])/sum_bkd;
+			
+            //shape + mixed
+            full_shape_covar(i,j) = full_systematic(i,j) - bkgd_full[i]*bkgd_full[j]*N; 
+
+            //ALL Only
+            //full_shape_covar(i,j) = full_systematic(i,j); 
+
+            //Norm and mixed
+            //full_shape_covar(i,j) = -bkgd_full[i]*bkgd_full[j]*N + (bkgd_full[i]*P_sum[j]+bkgd_full[j]*P_sum[i])/sum_bkd;
+
+            //Norm Only
+            //full_shape_covar(i,j) = bkgd_full[i]*bkgd_full[j]*N ;
+
 		}
 	}	
 

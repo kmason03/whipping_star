@@ -13,9 +13,9 @@ SBNsinglephoton::SBNsinglephoton(std::string xmlname, std::string intag, NGrid i
 
     m_poly_total_gridpoints = 1;
     if(m_bool_poly_grid){
-	 m_poly_grid=in_polygrid;
-	 m_vec_poly_grid = m_poly_grid.GetGrid();
-         m_poly_total_gridpoints = m_poly_grid.f_num_total_points;
+        m_poly_grid=in_polygrid;
+        m_vec_poly_grid = m_poly_grid.GetGrid();
+        m_poly_total_gridpoints = m_poly_grid.f_num_total_points;
     }
 
     m_total_gridpoints = m_num_total_gridpoints*m_poly_total_gridpoints;
@@ -42,7 +42,7 @@ int SBNsinglephoton::SetPolyGrid(NGrid in_polygrid){
     m_poly_total_gridpoints = m_poly_grid.f_num_total_points;
 
     m_total_gridpoints = m_num_total_gridpoints*m_poly_total_gridpoints;
- 
+
     return 0;
 }
 
@@ -69,8 +69,8 @@ int SBNsinglephoton::OpenFiles(){
         std::cout<<"--TTree has "<<trees.back()->GetEntries()<<" entries. "<<std::endl;
     }
 
-   if(is_verbose) std::cout << "SBNsinglephoton::OpenFiles\t||Setup any friendtrees" << std::endl;
-   for(int i=0; i<montecarlo_file.size(); i++){
+    if(is_verbose) std::cout << "SBNsinglephoton::OpenFiles\t||Setup any friendtrees" << std::endl;
+    for(int i=0; i<montecarlo_file.size(); i++){
         const auto& fn = montecarlo_file.at(i);
         auto montecarlo_file_friend_treename_iter = montecarlo_file_friend_treename_map.find(fn);
         if (montecarlo_file_friend_treename_iter != montecarlo_file_friend_treename_map.end()) {
@@ -115,15 +115,15 @@ int SBNsinglephoton::OpenFiles(){
         for(int k=0; k<branch_variables.at(i).size(); k++){
             const auto branch_variable = branch_variables.at(i).at(k);
             std::cout<<"Setting Branch: "<<branch_variable->name<<std::endl;
-             branch_variable->branch_formula =  new TTreeFormula(("branch_form"+std::to_string(i)).c_str(), branch_variable->name.c_str(), trees[i]);
+            branch_variable->branch_formula =  new TTreeFormula(("branch_form"+std::to_string(i)).c_str(), branch_variable->name.c_str(), trees[i]);
 
             if(branch_variable->GetOscillate()){
                 std::cout<<"Setting true branch variables"<<std::endl;
-		//if true_param_name is given as a branch name
+                //if true_param_name is given as a branch name
                 //trees.at(i)->SetBranchAddress( branch_variable->true_param_name.c_str(), branch_variable->GetTrueValue() );
 
-		//if true_param_name is given in the form of a formula
-		branch_variable->branch_true_value_formula = new TTreeFormula(("branch_true_value_form"+std::to_string(i)).c_str(),branch_variable->true_param_name.c_str(), trees[i]);
+                //if true_param_name is given in the form of a formula
+                branch_variable->branch_true_value_formula = new TTreeFormula(("branch_true_value_form"+std::to_string(i)).c_str(),branch_variable->true_param_name.c_str(), trees[i]);
             }
         }
 
@@ -145,8 +145,8 @@ int SBNsinglephoton::OpenFiles(){
 int SBNsinglephoton::CloseFiles(){
     if(is_verbose) std::cout<< "SBNsinglephoton::CloseFiles\t|| Closing TFiles..."<< std::endl;
     for(auto f: files){
-            std::cout <<" TFile::Close() file=" << f->GetName() << " @" << f << std::endl;
-            f->Close();
+        std::cout <<" TFile::Close() file=" << f->GetName() << " @" << f << std::endl;
+        f->Close();
     }
     m_file_open=false;
     return 0;
@@ -226,8 +226,8 @@ int SBNsinglephoton::PreScaleSpectrum(std::string xmlname, double flat_factor, s
 
             double global_weight = 1.0;
             if( montecarlo_additional_weight_bool[j]){
-                    montecarlo_additional_weight_formulas[j]->GetNdata();
-                    global_weight = montecarlo_additional_weight_formulas[j]->EvalInstance();
+                montecarlo_additional_weight_formulas[j]->GetNdata();
+                global_weight = montecarlo_additional_weight_formulas[j]->EvalInstance();
             };//this will be 1.0 unless specified
             global_weight = global_weight*montecarlo_scale[j];
 
@@ -241,70 +241,70 @@ int SBNsinglephoton::PreScaleSpectrum(std::string xmlname, double flat_factor, s
 
 
             for(int t=0; t<branch_variables[j].size();t++){
-                    const auto branch_variable = branch_variables[j][t];
-                    int ih = temp_cv_spectrum.map_hist.at(branch_variable->associated_hist);
+                const auto branch_variable = branch_variables[j][t];
+                int ih = temp_cv_spectrum.map_hist.at(branch_variable->associated_hist);
 
-		    //grab reco info and determine which reco bin it belongs to
-                    branch_variable->GetFormula()->GetNdata();
-                    double reco_var = branch_variable->GetFormula()->EvalInstance();
-                    int reco_bin = temp_cv_spectrum.GetGlobalBinNumber(reco_var,ih);
+                //grab reco info and determine which reco bin it belongs to
+                branch_variable->GetFormula()->GetNdata();
+                double reco_var = branch_variable->GetFormula()->EvalInstance();
+                int reco_bin = temp_cv_spectrum.GetGlobalBinNumber(reco_var,ih);
 
-                    if(branch_variables[j][t]->GetOscillate()){
-			//truth info
-  			double true_var = *(static_cast<double*>(branch_variables[j][t]->GetTrueValue()));
+                if(branch_variables[j][t]->GetOscillate()){
+                    //truth info
+                    double true_var = *(static_cast<double*>(branch_variables[j][t]->GetTrueValue()));
 
-                        double prescale_factor = this->ScaleFactor(true_var, flat_factor, param);
+                    double prescale_factor = this->ScaleFactor(true_var, flat_factor, param);
 
-                        spec_prescale.hist[ih].Fill(reco_var, global_weight*prescale_factor);
-         		if(!m_bool_cv_spectrum_generated)  temp_cv_spectrum.hist[ih].Fill(reco_var,global_weight);
- 		    }else{
-                        if(!m_bool_cv_spectrum_generated) temp_cv_spectrum.hist[ih].Fill(reco_var,global_weight);
-  		    }
+                    spec_prescale.hist[ih].Fill(reco_var, global_weight*prescale_factor);
+                    if(!m_bool_cv_spectrum_generated)  temp_cv_spectrum.hist[ih].Fill(reco_var,global_weight);
+                }else{
+                    if(!m_bool_cv_spectrum_generated) temp_cv_spectrum.hist[ih].Fill(reco_var,global_weight);
+                }
             }
         } //end of entry loop
     } // end of nfile loop
 
- 
+
     if(is_verbose) std::cout<< "SBNsinglephoton::PreScaleSpectrum\t||Write out spectra" << std::endl;
     std::ostringstream prescale_tag;
     if(flat_factor != 0) prescale_tag << "Flat_" << std::fixed<< std::setprecision(3) << flat_factor << "_PreScaled";
     else prescale_tag << "PreScaled";
     //generate tag for prescaled spectra
     for(int i=0; i< param.size(); i++){
-	prescale_tag << "_" << std::fixed<< std::setprecision(3) << param[i]; 
+        prescale_tag << "_" << std::fixed<< std::setprecision(3) << param[i]; 
     }   
     if(param.size() != 0) spec_prescale.WriteOut(tag+"_"+prescale_tag.str());
     //if(param.size() != 0) spec_prescale.WriteOut(tag+"_PreScaled"+prescale_tag.str());
 
     if(!m_bool_cv_spectrum_generated){
-	   m_bool_cv_spectrum_generated = true;
-	   temp_cv_spectrum.WriteOut(tag+"_CV");
+        m_bool_cv_spectrum_generated = true;
+        temp_cv_spectrum.WriteOut(tag+"_CV");
     }
     return 0;
 }
 
 
 int SBNsinglephoton::PreScaleSpectrum(std::string xmlname, std::vector<double>& param){
-	return this->PreScaleSpectrum(xmlname, 0.0, param);
+    return this->PreScaleSpectrum(xmlname, 0.0, param);
 }
 
 
 int SBNsinglephoton::GeneratePreScaledSpectra(){
     if(!m_file_open) this->OpenFiles();
     if(!m_bool_poly_grid){
-	std::cout << "SBNsinglephoton::GeneratePreScaledSpectra\t|| No grid for polynomial scaling present------------------\n"<< std::endl;
-	std::cout << "SBNsinglephoton::GeneratePreScaledSpectra\t|| Gonna generate only CV, then exiting GeneratePreScaledSpectra ..." << std::endl;
-	std::vector<double> empty{};
-	this->PreScaleSpectrum(xmlname, empty);
+        std::cout << "SBNsinglephoton::GeneratePreScaledSpectra\t|| No grid for polynomial scaling present------------------\n"<< std::endl;
+        std::cout << "SBNsinglephoton::GeneratePreScaledSpectra\t|| Gonna generate only CV, then exiting GeneratePreScaledSpectra ..." << std::endl;
+        std::vector<double> empty{};
+        this->PreScaleSpectrum(xmlname, empty);
     }else{
-	
-    	//m_vec_poly_grid = m_poly_grid.GetGrid();
-    	//m_poly_total_gridpoints = m_poly_grid.f_num_total_points;
 
-    	for(int i=0; i< m_poly_total_gridpoints; i++){
-		std::vector<double> point = m_vec_poly_grid[i];
-		this->PreScaleSpectrum(xmlname, point);	
-    	}
+        //m_vec_poly_grid = m_poly_grid.GetGrid();
+        //m_poly_total_gridpoints = m_poly_grid.f_num_total_points;
+
+        for(int i=0; i< m_poly_total_gridpoints; i++){
+            std::vector<double> point = m_vec_poly_grid[i];
+            this->PreScaleSpectrum(xmlname, point);	
+        }
     }
 
     this->CloseFiles();
@@ -372,84 +372,86 @@ int SBNsinglephoton::LoadSpectraOnTheFly(){
 
 int SBNsinglephoton::LoadSpectraApplyFullScaling(){
 
-	//SBNspec temp_cv = *m_cv_spectrum;
-	SBNspec temp_cv(tag+"_CV.SBNspec.root", this->xmlname, false);
+    //SBNspec temp_cv = *m_cv_spectrum;
+    SBNspec temp_cv(tag+"_CV.SBNspec.root", this->xmlname, false);
 
 
-	//m_scaled_spec_grid.clear();
-	m_scaled_spec_grid.resize(m_total_gridpoints); 
+    //m_scaled_spec_grid.clear();
+    m_scaled_spec_grid.resize(m_total_gridpoints); 
 
 
-	int ip_processd = 0; 
-	if(m_bool_poly_grid){
-	    std::cout<<"SBNsinglephoton::LoadSpectraApplyFullScaling\t|| Grab pre-scaled spectra and build the final spectra!" << std::endl; 
- 	    //loop over polynomial grid
-	    for(int i=0;i< m_poly_total_gridpoints; i++){
-		std::vector<double> ipoint = m_vec_poly_grid[i];
+    int ip_processd = 0; 
+    if(m_bool_poly_grid){
+        std::cout<<"SBNsinglephoton::LoadSpectraApplyFullScaling\t|| Grab pre-scaled spectra and build the final spectra!" << std::endl; 
+        //loop over polynomial grid
+        for(int i=0;i< m_poly_total_gridpoints; i++){
+            std::vector<double> ipoint = m_vec_poly_grid[i];
 
-		//first initilize SBNspec with pre-scaled root file
-		std::ostringstream prescale_tag;
-        	for(int ip=0; ip< ipoint.size(); ip++){
-                	prescale_tag << "_" << std::fixed<< std::setprecision(3) << ipoint[ip];
-                }	
-		std::string full_filename = this->tag+"_PreScaled"+prescale_tag.str() + ".SBNspec.root";
-		SBNspec temp_prescaled(full_filename, this->xmlname, false);	
+            //first initilize SBNspec with pre-scaled root file
+            std::ostringstream prescale_tag;
+            for(int ip=0; ip< ipoint.size(); ip++){
+                prescale_tag << "_" << std::fixed<< std::setprecision(3) << ipoint[ip];
+            }	
+            std::string full_filename = this->tag+"_PreScaled"+prescale_tag.str() + ".SBNspec.root";
+            SBNspec temp_prescaled(full_filename, this->xmlname, false);	
 
-		//loop over regular grid
-		for(int j=0; j< m_num_total_gridpoints;j++){
-			if(is_verbose && j%100==0 ) std::cout << "On Point " << i*m_num_total_gridpoints+j <<"/"<<m_total_gridpoints << std::endl;
+            //loop over regular grid
+            for(int j=0; j< m_num_total_gridpoints;j++){
+                if(is_verbose && j%100==0 ) std::cout << "On Point " << i*m_num_total_gridpoints+j <<"/"<<m_total_gridpoints << std::endl;
 
-			std::vector<double> jpoint = m_vec_grid[j];
-		
-			//m_scaled_spec_grid.push_back(new SBNspec((tag+"_CV.SBNspec.root").c_str(), this->xmlname, false));//start with genie CV
-			m_scaled_spec_grid[ip_processd] = temp_cv; //start with genie CV
-			for(int jp=0; jp< jpoint.size(); jp++){
-				//m_scaled_spec_grid.back()->Scale(m_grid.f_dimensions[jp].f_name, jpoint[jp]); // scale corresponding subchannel
-				m_scaled_spec_grid[ip_processd].Scale(m_grid.f_dimensions[jp].f_name, jpoint[jp]); // scale corresponding subchannel
-			}
-			
-			//m_scaled_spec_grid.back()->Add(&temp_prescaled); //here we get the scaled spectra at final stage!!!
-			m_scaled_spec_grid[ip_processd].Add(&temp_prescaled); //here we get the scaled spectra at final stage!!!
+                std::vector<double> jpoint = m_vec_grid[j];
 
-			// do not want to keep LEE in it
-			if(tag == "NCpi0") m_scaled_spec_grid[ip_processd].Scale("NCDeltaRadOverlayLEE", 0.0);
-			ip_processd++;
+                //m_scaled_spec_grid.push_back(new SBNspec((tag+"_CV.SBNspec.root").c_str(), this->xmlname, false));//start with genie CV
+                m_scaled_spec_grid[ip_processd] = temp_cv; //start with genie CV
+                for(int jp=0; jp< jpoint.size(); jp++){
+                    //m_scaled_spec_grid.back()->Scale(m_grid.f_dimensions[jp].f_name, jpoint[jp]); // scale corresponding subchannel
+                    m_scaled_spec_grid[ip_processd].Scale(m_grid.f_dimensions[jp].f_name, jpoint[jp]); // scale corresponding subchannel
+                }
 
-		}//end loop over regular grid
+                //m_scaled_spec_grid.back()->Add(&temp_prescaled); //here we get the scaled spectra at final stage!!!
+                m_scaled_spec_grid[ip_processd].Add(&temp_prescaled); //here we get the scaled spectra at final stage!!!
 
-	     }// end loop over poly grid
-	}
-	else{
-	    std::cout<<"SBNsinglephoton::LoadSpectraApplyFullScaling\t|| Scale the spectra for the whole grid " << std::endl;
-	     for(int j=0; j< m_num_total_gridpoints;j++){
-                        if(is_verbose && (j%1000 ==0)) std::cout << "On Point " << j <<"/"<<m_total_gridpoints << std::endl;
+                // do not want to keep LEE in it
+                //m_scaled_spec_grid.back()->Scale("NCDeltaRadOverlayLEE", 0.0);
+                if(tag == "NCpi0") m_scaled_spec_grid[ip_processd].Scale("NCDeltaRadOverlayLEE", 0.0);
+                ip_processd++;
 
-			std::vector<double> jpoint = m_vec_grid[j];
+            }//end loop over regular grid
 
-                        //m_scaled_spec_grid.push_back(new SBNspec((tag+"_CV.SBNspec.root").c_str(), this->xmlname, false));//start with genie CV
-			m_scaled_spec_grid[ip_processd] = temp_cv; //start with genie CV
-			for(int jp=0; jp< jpoint.size(); jp++){
-                                //m_scaled_spec_grid.back()->Scale(m_grid.f_dimensions[jp].f_name, jpoint[jp]); // scale corresponding subchannel
-                                m_scaled_spec_grid[ip_processd].Scale(m_grid.f_dimensions[jp].f_name, jpoint[jp]); // scale corresponding subchannel
-                                //m_scaled_spec_grid[ip_processd].ScaleAll(jpoint[jp]); // scale corresponding subchannel
-			}
+        }// end loop over poly grid
+    }
+    else{
+        std::cout<<"SBNsinglephoton::LoadSpectraApplyFullScaling\t|| Scale the spectra for the whole grid " << std::endl;
+        for(int j=0; j< m_num_total_gridpoints;j++){
+            if(is_verbose && (j%1000 ==0)) std::cout << "On Point " << j <<"/"<<m_total_gridpoints << std::endl;
 
-	     		// do not want to keep LEE in it
-			if(tag == "NCpi0") m_scaled_spec_grid[ip_processd].Scale("NCDeltaRadOverlayLEE", 0.0);
-	
-			ip_processd++;
-	    }
-	}
+            std::vector<double> jpoint = m_vec_grid[j];
 
-	return 0;
+            //m_scaled_spec_grid.push_back(new SBNspec((tag+"_CV.SBNspec.root").c_str(), this->xmlname, false));//start with genie CV
+            m_scaled_spec_grid[ip_processd] = temp_cv; //start with genie CV
+            for(int jp=0; jp< jpoint.size(); jp++){
+                //m_scaled_spec_grid.back()->Scale(m_grid.f_dimensions[jp].f_name, jpoint[jp]); // scale corresponding subchannel
+                m_scaled_spec_grid[ip_processd].Scale(m_grid.f_dimensions[jp].f_name, jpoint[jp]); // scale corresponding subchannel
+                //m_scaled_spec_grid[ip_processd].ScaleAll(jpoint[jp]); // scale corresponding subchannel
+            }
+
+            // do not want to keep LEE in it
+            //m_scaled_spec_grid[ip_processd].Scale("NCDeltaRadOverlayLEE", 0.0);
+            if(tag == "NCpi0") m_scaled_spec_grid[ip_processd].Scale("NCDeltaRadOverlayLEE", 0.0);
+
+            ip_processd++;
+        }
+    }
+
+    return 0;
 }
 
 
 
 int SBNsinglephoton::CalcChiGridScanShapeOnlyFit(){
     if(!m_bool_cv_spectrum_loaded){
-	std::cout << "SBNsinglephoton::CalcChiGridScanShapeOnlyFit\t|| CV spec hasn't been loaded yet, load CV..." << std::endl;
-	this->LoadCV();
+        std::cout << "SBNsinglephoton::CalcChiGridScanShapeOnlyFit\t|| CV spec hasn't been loaded yet, load CV..." << std::endl;
+        this->LoadCV();
     }	
 
     if(!m_bool_data_spectrum_loaded){
@@ -469,15 +471,15 @@ int SBNsinglephoton::CalcChiGridScanShapeOnlyFit(){
 
 	temp_data = *m_cv_spectrum;
         temp_data.Scale("NCDeltaRadOverlayLEE", 0.0);
-	temp_data.CompareSBNspecs(m_data_spectrum, tag+"CV_vs_FakeData");
+        temp_data.CompareSBNspecs(m_data_spectrum, tag+"CV_vs_FakeData");
     }else{
         m_cv_spectrum->CompareSBNspecs(m_data_spectrum, tag+"_CVvsData_NoErrorBar");
     }    
 
 
     if(m_scaled_spec_grid.size() != m_total_gridpoints){
-	std::cout << "SBNsinglephoton::CalcChiGridScanShapeOnlyFit\t|| ERROR!! # of scaled spectra: "<<m_scaled_spec_grid.size()<<" does NOT match grid size: " << m_total_gridpoints << " !!" <<std::endl;
-	exit(EXIT_FAILURE);
+        std::cout << "SBNsinglephoton::CalcChiGridScanShapeOnlyFit\t|| ERROR!! # of scaled spectra: "<<m_scaled_spec_grid.size()<<" does NOT match grid size: " << m_total_gridpoints << " !!" <<std::endl;
+        exit(EXIT_FAILURE);
     }
 
     //std::cout << "SBNsinglephoton::CalcChiGridScanShapeOnlyFit\t" << __LINE__ << std::endl;
@@ -500,102 +502,144 @@ int SBNsinglephoton::CalcChiGridScanShapeOnlyFit(){
     TMatrixT<double> inversed_total_covariance_matrix(num_bins_total_compressed, num_bins_total_compressed);
 
     for(int n_iter =0; n_iter < m_max_number_iterations; n_iter ++){
-	std::cout << "SBNsinglephoton::CalcChiGridScanShapeOnlyFit\t|| On fit iteration "<< n_iter << std::endl;
-	//reset everything at the biginning of each iteration
-	best_chi = DBL_MAX;
-	vec_chi.clear();
+        std::cout << "SBNsinglephoton::CalcChiGridScanShapeOnlyFit\t|| On fit iteration "<< n_iter << std::endl;
+        //reset everything at the biginning of each iteration
+        best_chi = DBL_MAX;
+        vec_chi.clear();
 
 
-	if(n_iter == 0){
-		last_best_spectrum = *m_cv_spectrum;
-		last_best_spectrum.Scale("NCDeltaRadOverlayLEE", 0.0);
-	}else{
-		last_best_spectrum = m_scaled_spec_grid[last_best_point];		
-	}
+        if(n_iter == 0){
+            last_best_spectrum = *m_cv_spectrum;
+            last_best_spectrum.Scale("NCDeltaRadOverlayLEE", 0.0);
+        }else{
+            last_best_spectrum = m_scaled_spec_grid[last_best_point];		
+        }
 
-	background_spectrum = last_best_spectrum;
-
-
-	//============================Calculate covariance matrix and its invert====================================/
-	//full systematic covariance matrix, except genie uncertainty
-	full_systematic_covariance = m_chi->FillSystMatrix(*m_full_but_genie_fractional_covariance_matrix, last_best_spectrum.full_vector);
-	//calculate the shape only covariance matrix for genie uncertainty, to get rid of normalization uncertainty
-	for(int i=0; i<m_grid.f_num_dimensions; i++){
-	   //if(m_grid.f_dimensions[i].f_name == "NCDeltaRadOverlayLEE") continue;
-	   SBNspec temp_comp = last_best_spectrum;
-	   temp_comp.Keep( m_grid.f_dimensions[i].f_name, 1.0 );
-
-	   genie_systematic_matrix = m_chi->FillSystMatrix(*m_genie_fractional_covariance_matrix, temp_comp.full_vector);
-	   fout->cd();
-	   genie_systematic_matrix.Write(Form("full_genie_%s_%d", m_grid.f_dimensions[i].f_name.c_str(), n_iter));	
-	
-	    //shape only matrix
-	   //genie_systematic_matrix = m_chi->CalcShapeOnlyCovarianceMatrix(*m_genie_fractional_covariance_matrix, &temp_comp, &temp_comp);
-
-	   //shape_mixed
-	   genie_systematic_matrix = m_chi->CalcShapeMixedCovarianceMatrix(*m_genie_fractional_covariance_matrix, &temp_comp, &temp_comp);
-	   genie_systematic_matrix.Write(Form("ShapeMixed_genie_%s_%d", m_grid.f_dimensions[i].f_name.c_str(), n_iter));	
-	   full_systematic_covariance += genie_systematic_matrix;
-
-	   background_spectrum.Scale(m_grid.f_dimensions[i].f_name, 0.0);   
-	}
-	//add genie uncertainties for other subchannels to total covariance matrix
-	genie_systematic_matrix = m_chi->FillSystMatrix(*m_genie_fractional_covariance_matrix, background_spectrum.full_vector);
-	full_systematic_covariance += genie_systematic_matrix;
-
-	m_chi->CollapseModes(full_systematic_covariance, collapsed_full_systematic_matrix);
-
-	//use CNP statistical covariance matrix
-	total_covariance_matrix = m_chi->AddStatMatrixCNP(&collapsed_full_systematic_matrix, last_best_spectrum.collapsed_vector, m_data_spectrum->collapsed_vector);
-	//std::cout << "SBNsinglephoton::CalcChiGridScanShapeOnlyFit\t||check " << __LINE__ << std::endl;
-	fout->cd();
-	genie_systematic_matrix.Write(Form("full_genie_otherbkg_%d", n_iter));
-	full_systematic_covariance.Write(Form("syst_uncollapsed_matrix_%d", n_iter));
-	collapsed_full_systematic_matrix.Write(Form("syst_collapsed_matrix_%d", n_iter));
-	total_covariance_matrix.Write(Form("total_collapsed_matrix_%d", n_iter));
-
-	inversed_total_covariance_matrix= m_chi->InvertMatrix(total_covariance_matrix);
+        background_spectrum = last_best_spectrum;
 
 
-	if(is_verbose && m_bool_data_spectrum_loaded) last_best_spectrum.CompareSBNspecs(collapsed_full_systematic_matrix, m_data_spectrum, tag+"_Iter_"+std::to_string(n_iter));	
-	//============================Done calculating covariance matrix ============================================/
+        /*
+            fractional genie(F);
+            coherent blocks of fractional genie (C); 
+            make a new matrix where all of the non-zero elements in the coherent (C) above are replaced with 1.0 (M);
+            Fixed fractiona genie  (F') =(F)-(C)+(M);
+            Fixed fractiona genie  (F') =(F)+(C)// simplier but probably works
+        */
 
 
-	for(int i=0 ;i <m_total_gridpoints; i++){
-	   if(i%1000 == 0) std::cout<< "On Point " << i << "/" << m_total_gridpoints << std::endl;
-	   double temp_chi = m_chi->CalcChi(inversed_total_covariance_matrix, m_scaled_spec_grid[i].collapsed_vector, m_data_spectrum->collapsed_vector);
-	   vec_chi.push_back(temp_chi);
 
-	   if(temp_chi < best_chi){
-		best_chi = temp_chi;
-	        best_point = i;
-	   }
-	}
+        //============================Calculate covariance matrix and its invert====================================/
 
-	if(is_verbose) std::cout << "SBNsinglephoton::CalcChiGridScanShapeOnlyFit\t|| chi2 minimum :" << best_chi << " at point " << best_point << "/" << m_total_gridpoints << std::endl;
+        if(true){//METHOD1
+        //The Full except for genie. We will be adding select bins on later
+        full_systematic_covariance = m_chi->FillSystMatrix(*m_full_but_genie_fractional_covariance_matrix, last_best_spectrum.full_vector);
 
-	if(n_iter != 0){
-	   if(fabs(best_chi - last_best_chi) < m_chi_min_convergance_tolerance){
-		std::cout << "SBNsinglephoton::CalcChiGridScanShapeOnlyFit\t|| chi2 has converged with best chi2 value " << best_chi << " at point " << best_point << "/" << m_total_gridpoints << std::endl;
-		break;
-	   }
-	}
 
-	last_best_chi = best_chi;
-	last_best_point = best_point;
-	last_vec_chi = vec_chi;
+        //calculate the shape only covariance matrix for genie uncertainty, to get rid of normalization uncertainty
+        for(int i=0; i<m_grid.f_num_dimensions; i++){
+            //if(m_grid.f_dimensions[i].f_name == "NCDeltaRadOverlayLEE") continue;
+            SBNspec temp_comp = last_best_spectrum;
+            temp_comp.Keep(m_grid.f_dimensions[i].f_name, 1.0);
+            //only genie for the 3 scaled channels
+            genie_systematic_matrix = m_chi->FillSystMatrix(*m_genie_fractional_covariance_matrix, temp_comp.full_vector);
+            fout->cd();
+            genie_systematic_matrix.Write(Form("full_genie_%s_%d", m_grid.f_dimensions[i].f_name.c_str(), n_iter));	
+            //Actually fudged to calculate just the shape+mixed, i.e when added it will be like subtracting the norm;
+            
+            //This is then the either Shape or Shape plus Mixed genie for 3 scaled channels
+            genie_systematic_matrix = m_chi->CalcShapeOnlyCovarianceMatrix(*m_genie_fractional_covariance_matrix, &temp_comp, &temp_comp);
+            genie_systematic_matrix.Write(Form("ShapeOnly_genie_%s_%d", m_grid.f_dimensions[i].f_name.c_str(), n_iter));	
+            full_systematic_covariance += genie_systematic_matrix;//this point its flux all+det all + genie only 3 param shape+mixed
+            background_spectrum.Scale(m_grid.f_dimensions[i].f_name, 0.0);   
+        }
+        //add genie uncertainties for other subchannels to total covariance matrix. Its being Re-Used here. 
+        genie_systematic_matrix = m_chi->FillSystMatrix(*m_genie_fractional_covariance_matrix, background_spectrum.full_vector);
+        full_systematic_covariance += genie_systematic_matrix;//This is all everything EXCEPT 3 param norm
+
+    }else{//METHOD2
+
+        //The Full. In its entirety. 
+        full_systematic_covariance = m_chi->FillSystMatrix(*m_full_fractional_covariance_matrix, last_best_spectrum.full_vector);
+
+        //ALL genie
+        genie_systematic_matrix = m_chi->FillSystMatrix(*m_genie_fractional_covariance_matrix, last_best_spectrum.full_vector);
+
+        //calculate the shape only covariance matrix for genie uncertainty, to get rid of normalization uncertainty
+        for(int i=0; i<m_grid.f_num_dimensions; i++){
+            //	   if(m_grid.f_dimensions[i].f_name == "NCDeltaRadOverlayLEE") continue;
+            SBNspec temp_comp = last_best_spectrum;
+            temp_comp.Keep(m_grid.f_dimensions[i].f_name, 1.0);
+            //only genie for the 3 scaled channels
+            genie_systematic_matrix = m_chi->FillSystMatrix(*m_genie_fractional_covariance_matrix, temp_comp.full_vector);
+            fout->cd();
+            genie_systematic_matrix.Write(Form("full_genie_%s_%d", m_grid.f_dimensions[i].f_name.c_str(), n_iter));	
+            //Actually fudged to calculate just the shape+mixed, i.e when added it will be like subtracting the norm;
+            
+            //This is then the either Shape or Shape plus Mixed genie for 3 scaled channels
+            genie_systematic_matrix = m_chi->CalcShapeOnlyCovarianceMatrix(*m_genie_fractional_covariance_matrix, &temp_comp, &temp_comp);
+            genie_systematic_matrix.Write(Form("ShapeOnly_genie_%s_%d", m_grid.f_dimensions[i].f_name.c_str(), n_iter));	
+            full_systematic_covariance -= genie_systematic_matrix;//this point its flux all+det all + genie only 3 param shape+mixed
+        }
+
+        }
+
+
+
+
+
+        m_chi->CollapseModes(full_systematic_covariance, collapsed_full_systematic_matrix);
+
+        //use CNP statistical covariance matrix
+        total_covariance_matrix = m_chi->AddStatMatrixCNP(&collapsed_full_systematic_matrix, last_best_spectrum.collapsed_vector, m_data_spectrum->collapsed_vector);
+        //std::cout << "SBNsinglephoton::CalcChiGridScanShapeOnlyFit\t||check " << __LINE__ << std::endl;
+        fout->cd();
+        genie_systematic_matrix.Write(Form("full_genie_otherbkg_%d", n_iter));
+        full_systematic_covariance.Write(Form("syst_uncollapsed_matrix_%d", n_iter));
+        collapsed_full_systematic_matrix.Write(Form("syst_collapsed_matrix_%d", n_iter));
+        total_covariance_matrix.Write(Form("total_collapsed_matrix_%d", n_iter));
+
+        inversed_total_covariance_matrix= m_chi->InvertMatrix(total_covariance_matrix);
+
+
+        if(is_verbose && m_bool_data_spectrum_loaded) last_best_spectrum.CompareSBNspecs(collapsed_full_systematic_matrix, m_data_spectrum, tag+"_Iter_"+std::to_string(n_iter));	
+        //============================Done calculating covariance matrix ============================================/
+
+
+        for(int i=0 ;i <m_total_gridpoints; i++){
+            if(i%1000 == 0) std::cout<< "On Point " << i << "/" << m_total_gridpoints << std::endl;
+            double temp_chi = m_chi->CalcChi(inversed_total_covariance_matrix, m_scaled_spec_grid[i].collapsed_vector, m_data_spectrum->collapsed_vector);
+            vec_chi.push_back(temp_chi);
+
+            if(temp_chi < best_chi){
+                best_chi = temp_chi;
+                best_point = i;
+            }
+        }
+
+        if(is_verbose) std::cout << "SBNsinglephoton::CalcChiGridScanShapeOnlyFit\t|| chi2 minimum :" << best_chi << " at point " << best_point << "/" << m_total_gridpoints << std::endl;
+
+        if(n_iter != 0){
+            if(fabs(best_chi - last_best_chi) < m_chi_min_convergance_tolerance){
+                std::cout << "SBNsinglephoton::CalcChiGridScanShapeOnlyFit\t|| chi2 has converged with best chi2 value " << best_chi << " at point " << best_point << "/" << m_total_gridpoints << std::endl;
+                break;
+            }
+        }
+
+        last_best_chi = best_chi;
+        last_best_point = best_point;
+        last_vec_chi = vec_chi;
+
     }//end loop for iteration
 
     fout->Close();
     if(is_verbose ){
-       // collapsed_full_systematic_matrix = m_chi->FillSystMatrix(*m_full_fractional_covariance_matrix, m_scaled_spec_grid[best_point].full_vector, true);
-        //SBNspec temp_best_spec = this->GeneratePointSpectra(best_point);
-        SBNspec temp_best_spec = m_scaled_spec_grid[best_point];
-	if(tag == "NCpi0") temp_best_spec.Scale("NCDeltaRadOverlayLEE", 0.0);
+        // collapsed_full_systematic_matrix = m_chi->FillSystMatrix(*m_full_fractional_covariance_matrix, m_scaled_spec_grid[best_point].full_vector, true);
+        SBNspec temp_best_spec = this->GeneratePointSpectra(best_point);
+        if(tag == "NCpi0") temp_best_spec.Scale("NCDeltaRadOverlayLEE", 0.0);
         temp_best_spec.CompareSBNspecs(collapsed_full_systematic_matrix, m_data_spectrum, tag+"_BFvsData");
     }
-	
-    //std::cout << "SBNsinglephoton::CalcChiGridScanShapeOnlyFit\t||check " << __LINE__ << std::endl;
+
+    std::cout << "SBNsinglephoton::CalcChiGridScanShapeOnlyFit\t||check " << __LINE__ << std::endl;
     m_map={{best_point, vec_chi}};
     this->PrintOutFitInfo(m_map, "SBNsinglephoton::CalcChiGridScanShapeOnlyFit\t||"+tag, true);
     this->WriteOutInfo(m_map);
@@ -607,8 +651,8 @@ int SBNsinglephoton::CalcChiGridScanShapeOnlyFit(){
 
 int SBNsinglephoton::CalcChiGridScan(){
     if(!m_bool_cv_spectrum_loaded){
-	std::cout << "SBNsinglephoton::CalcChiGridScan\t|| CV spec hasn't been loaded yet, load CV..." << std::endl;
-	this->LoadCV();
+        std::cout << "SBNsinglephoton::CalcChiGridScan\t|| CV spec hasn't been loaded yet, load CV..." << std::endl;
+        this->LoadCV();
     }	
 
     if(!m_bool_data_spectrum_loaded){
@@ -628,13 +672,13 @@ int SBNsinglephoton::CalcChiGridScan(){
 	temp_data.CompareSBNspecs(m_data_spectrum, tag+"_CorrectedCV_vs_Data");
 
     }else{
-	m_cv_spectrum->CompareSBNspecs(m_data_spectrum, tag+"_CVvsData_NoErrorBar");
+        m_cv_spectrum->CompareSBNspecs(m_data_spectrum, tag+"_CVvsData_NoErrorBar");
     }    
 
 
     if(m_scaled_spec_grid.size() != m_total_gridpoints){
-	std::cout << "SBNsinglephoton::CalcChiGridScan\t|| ERROR!! # of scaled spectra: "<<m_scaled_spec_grid.size()<<" does NOT match grid size: " << m_total_gridpoints << " !!" <<std::endl;
-	exit(EXIT_FAILURE);
+        std::cout << "SBNsinglephoton::CalcChiGridScan\t|| ERROR!! # of scaled spectra: "<<m_scaled_spec_grid.size()<<" does NOT match grid size: " << m_total_gridpoints << " !!" <<std::endl;
+        exit(EXIT_FAILURE);
     }
 
 
@@ -655,82 +699,82 @@ int SBNsinglephoton::CalcChiGridScan(){
     TMatrixT<double>* collapse_frac;
 
     for(int n_iter =0; n_iter < m_max_number_iterations; n_iter ++){
-	std::cout << "SBNsinglephoton::CalcChiGridScan\t|| On fit iteration "<< n_iter << std::endl;
-	//reset everything at the biginning of each iteration
-	best_chi = DBL_MAX;
-	vec_chi.clear();
+        std::cout << "SBNsinglephoton::CalcChiGridScan\t|| On fit iteration "<< n_iter << std::endl;
+        //reset everything at the biginning of each iteration
+        best_chi = DBL_MAX;
+        vec_chi.clear();
 
 
-	if(n_iter == 0){
-		last_best_spectrum = *m_cv_spectrum;
-		last_best_spectrum.Scale("NCDeltaRadOverlayLEE", 0.0);
-	}else{
-		last_best_spectrum = m_scaled_spec_grid[last_best_point];		
-	}
+        if(n_iter == 0){
+            last_best_spectrum = *m_cv_spectrum;
+            last_best_spectrum.Scale("NCDeltaRadOverlayLEE", 0.0);
+        }else{
+            last_best_spectrum = m_scaled_spec_grid[last_best_point];		
+        }
 
 
-	//============================Calculate covariance matrix and its invert====================================/
-	//full systematic covariance matrix, except genie uncertainty
+        //============================Calculate covariance matrix and its invert====================================/
+        //full systematic covariance matrix, except genie uncertainty
 
-	//for(int i=0; i<last_best_spectrum.full_vector.size(); i++)
-	//	std::cout << last_best_spectrum.full_vector[i] << ",";
-	//std::cout << std::endl;
+        //for(int i=0; i<last_best_spectrum.full_vector.size(); i++)
+        //	std::cout << last_best_spectrum.full_vector[i] << ",";
+        //std::cout << std::endl;
 
-	//SBNspec temp_signal = last_best_spectrum; temp_signal.Keep("NCDeltaRadOverlaySM", 1.0);
-	//SBNspec temp_other = last_best_spectrum; temp_other.Scale("NCDeltaRadOverlaySM", 0.0);
-	//collapsed_full_systematic_matrix = m_chi->FillSystMatrix(*m_full_fractional_covariance_matrix, temp_signal.full_vector, true) + m_chi->FillSystMatrix(*m_full_fractional_covariance_matrix, temp_other.full_vector, true);
+        //SBNspec temp_signal = last_best_spectrum; temp_signal.Keep("NCDeltaRadOverlaySM", 1.0);
+        //SBNspec temp_other = last_best_spectrum; temp_other.Scale("NCDeltaRadOverlaySM", 0.0);
+        //collapsed_full_systematic_matrix = m_chi->FillSystMatrix(*m_full_fractional_covariance_matrix, temp_signal.full_vector, true) + m_chi->FillSystMatrix(*m_full_fractional_covariance_matrix, temp_other.full_vector, true);
 
-	collapsed_full_systematic_matrix = m_chi->FillSystMatrix(*m_full_fractional_covariance_matrix, last_best_spectrum.full_vector, true);
-	collapse_frac = (TMatrixT<double>*)collapsed_full_systematic_matrix.Clone();
-	for(int i=0; i<num_bins_total_compressed ;i ++){
-	   for(int j=0 ; j< num_bins_total_compressed; j++)
-		(*collapse_frac)(i,j) /= last_best_spectrum.collapsed_vector[i]* last_best_spectrum.collapsed_vector[j];
-	}
-	//use CNP statistical covariance matrix
-	//total_covariance_matrix = m_chi->AddStatMatrix(&collapsed_full_systematic_matrix, m_data_spectrum->collapsed_vector);
-	total_covariance_matrix = m_chi->AddStatMatrixCNP(&collapsed_full_systematic_matrix, last_best_spectrum.collapsed_vector, m_data_spectrum->collapsed_vector);
+        collapsed_full_systematic_matrix = m_chi->FillSystMatrix(*m_full_fractional_covariance_matrix, last_best_spectrum.full_vector, true);
+        collapse_frac = (TMatrixT<double>*)collapsed_full_systematic_matrix.Clone();
+        for(int i=0; i<num_bins_total_compressed ;i ++){
+            for(int j=0 ; j< num_bins_total_compressed; j++)
+                (*collapse_frac)(i,j) /= last_best_spectrum.collapsed_vector[i]* last_best_spectrum.collapsed_vector[j];
+        }
+        //use CNP statistical covariance matrix
+        //total_covariance_matrix = m_chi->AddStatMatrix(&collapsed_full_systematic_matrix, m_data_spectrum->collapsed_vector);
+        total_covariance_matrix = m_chi->AddStatMatrixCNP(&collapsed_full_systematic_matrix, last_best_spectrum.collapsed_vector, m_data_spectrum->collapsed_vector);
 
-	inversed_total_covariance_matrix= m_chi->InvertMatrix(total_covariance_matrix);
+        inversed_total_covariance_matrix= m_chi->InvertMatrix(total_covariance_matrix);
 
-	fout->cd();
-	collapsed_full_systematic_matrix.Write(Form("syst_collapsed_matrix_%d", n_iter));
-	total_covariance_matrix.Write(Form("total_collapsed_matrix_%d", n_iter));
-	collapse_frac->Write(Form("collapsed_fractional_matrix_%d", n_iter));
-	inversed_total_covariance_matrix.Write(Form("inversed_matrix_%d", n_iter));
+        fout->cd();
+        collapsed_full_systematic_matrix.Write(Form("syst_collapsed_matrix_%d", n_iter));
+        total_covariance_matrix.Write(Form("total_collapsed_matrix_%d", n_iter));
+        collapse_frac->Write(Form("collapsed_fractional_matrix_%d", n_iter));
+        inversed_total_covariance_matrix.Write(Form("inversed_matrix_%d", n_iter));
 
-	if(is_verbose && m_bool_data_spectrum_loaded) last_best_spectrum.CompareSBNspecs(collapsed_full_systematic_matrix, m_data_spectrum, tag+"_Iter_"+std::to_string(n_iter));	
-	//============================Done calculating covariance matrix ============================================/
+        if(is_verbose && m_bool_data_spectrum_loaded) last_best_spectrum.CompareSBNspecs(collapsed_full_systematic_matrix, m_data_spectrum, tag+"_Iter_"+std::to_string(n_iter));	
+        //============================Done calculating covariance matrix ============================================/
 
 
-	for(int i=0 ;i <m_total_gridpoints; i++){
-	   if(i%1000 ==0) std::cout<< "On Point " << i << "/" << m_total_gridpoints << std::endl;
-	   double temp_chi;
-	   //if(i == 400 || i== 950){ 
-	   //	std::cout << " On point " << i << std::endl;
-	   //	temp_chi = m_chi->CalcChi(inversed_total_covariance_matrix, m_scaled_spec_grid[i].collapsed_vector, m_data_spectrum->collapsed_vector, true);
-	   //}
-	   //else temp_chi = m_chi->CalcChi(inversed_total_covariance_matrix, m_scaled_spec_grid[i].collapsed_vector, m_data_spectrum->collapsed_vector, false);
-	   temp_chi = m_chi->CalcChi(inversed_total_covariance_matrix, m_scaled_spec_grid[i].collapsed_vector, m_data_spectrum->collapsed_vector, false);
-	   vec_chi.push_back(temp_chi);
+        for(int i=0 ;i <m_total_gridpoints; i++){
+            if(i%1000 ==0) std::cout<< "On Point " << i << "/" << m_total_gridpoints << std::endl;
+            double temp_chi;
+            //if(i == 400 || i== 950){ 
+            //	std::cout << " On point " << i << std::endl;
+            //	temp_chi = m_chi->CalcChi(inversed_total_covariance_matrix, m_scaled_spec_grid[i].collapsed_vector, m_data_spectrum->collapsed_vector, true);
+            //}
+            //else temp_chi = m_chi->CalcChi(inversed_total_covariance_matrix, m_scaled_spec_grid[i].collapsed_vector, m_data_spectrum->collapsed_vector, false);
+            temp_chi = m_chi->CalcChi(inversed_total_covariance_matrix, m_scaled_spec_grid[i].collapsed_vector, m_data_spectrum->collapsed_vector, false);
+            vec_chi.push_back(temp_chi);
 
-	   if(temp_chi < best_chi){
-		best_chi = temp_chi;
-	        best_point = i;
-	   }
-	}
+            if(temp_chi < best_chi){
+                best_chi = temp_chi;
+                best_point = i;
+            }
+        }
 
-	if(is_verbose) std::cout << "SBNsinglephoton::CalcChiGridScan\t|| chi2 minimum :" << best_chi << " at point " << best_point << "/" << m_total_gridpoints << std::endl;
+        if(is_verbose) std::cout << "SBNsinglephoton::CalcChiGridScan\t|| chi2 minimum :" << best_chi << " at point " << best_point << "/" << m_total_gridpoints << std::endl;
 
-	if(n_iter != 0){
-	   if(fabs(best_chi - last_best_chi) < m_chi_min_convergance_tolerance){
-		std::cout << "SBNsinglephoton::CalcChiGridScan\t|| chi2 has converged with best chi2 value " << best_chi << " at point " << best_point << "/" << m_total_gridpoints << std::endl;
-		break;
-	   }
-	}
+        if(n_iter != 0){
+            if(fabs(best_chi - last_best_chi) < m_chi_min_convergance_tolerance){
+                std::cout << "SBNsinglephoton::CalcChiGridScan\t|| chi2 has converged with best chi2 value " << best_chi << " at point " << best_point << "/" << m_total_gridpoints << std::endl;
+                break;
+            }
+        }
 
-	last_best_chi = best_chi;
-	last_best_point = best_point;
-	last_vec_chi = vec_chi;
+        last_best_chi = best_chi;
+        last_best_point = best_point;
+        last_vec_chi = vec_chi;
     }//end loop for iteration
 
     fout->Close();
@@ -739,15 +783,15 @@ int SBNsinglephoton::CalcChiGridScan(){
     //if(is_verbose && m_bool_data_spectrum_loaded){
     if(is_verbose ){
         collapsed_full_systematic_matrix = m_chi->FillSystMatrix(*m_full_fractional_covariance_matrix, m_scaled_spec_grid[best_point].full_vector, true);
-	SBNspec temp_best_spec = this->GeneratePointSpectra(best_point);
-	if(tag == "NCpi0") temp_best_spec.Scale("NCDeltaRadOverlayLEE", 0.0);
+        SBNspec temp_best_spec = this->GeneratePointSpectra(best_point);
+        if(tag == "NCpi0") temp_best_spec.Scale("NCDeltaRadOverlayLEE", 0.0);
         temp_best_spec.CompareSBNspecs(collapsed_full_systematic_matrix, m_data_spectrum, tag+"_BFvsData");
     }
 
-   std::cout << " BEST-FIT \t\t\t Data \t\t\t CV " << std::endl;
-   for(int i=0 ; i< m_data_spectrum->collapsed_vector.size(); i++){
-	std::cout <<i << ": " << m_scaled_spec_grid[best_point].collapsed_vector[i] << "\t\t\t " << m_data_spectrum->collapsed_vector[i] << " \t\t\t " << m_cv_spectrum->collapsed_vector[i] << std::endl;
-   }
+    std::cout << " BEST-FIT \t\t\t Data \t\t\t CV " << std::endl;
+    for(int i=0 ; i< m_data_spectrum->collapsed_vector.size(); i++){
+        std::cout <<i << ": " << m_scaled_spec_grid[best_point].collapsed_vector[i] << "\t\t\t " << m_data_spectrum->collapsed_vector[i] << " \t\t\t " << m_cv_spectrum->collapsed_vector[i] << std::endl;
+    }
     m_map={{best_point, vec_chi}};
     this->PrintOutFitInfo(m_map, "SBNsinglephoton::CalcChiGridScan\t|| "+tag, true);
     this->WriteOutInfo(m_map);
@@ -760,9 +804,9 @@ int SBNsinglephoton::LoadCV(){
     if(is_verbose) std::cout << "SBNsinglephoton::LoadCV\t|| Setup CV spectrum" << std::endl;
     m_cv_spectrum = new SBNspec(tag+"_CV.SBNspec.root", xmlname, false);
     m_cv_spectrum->CollapseVector();
-//    m_cv_spectrum->Scale("NCPi0Coh", 1.25);
-//    m_cv_spectrum->Scale("NCPi0NotCoh", 0.9);
-//    m_cv_spectrum->CollapseVector();
+    //    m_cv_spectrum->Scale("NCPi0Coh", 1.25);
+    //    m_cv_spectrum->Scale("NCPi0NotCoh", 0.9);
+    //    m_cv_spectrum->CollapseVector();
     m_bool_cv_spectrum_loaded = true;
 
 
@@ -845,12 +889,14 @@ int SBNsinglephoton::SetFullFractionalCovarianceMatrix(std::string filename, std
 
 int SBNsinglephoton::SetGenieFractionalCovarianceMatrix(std::string filename){
 
-	//check with Gray, are matrices added directly before checking the nan's?
-	if(is_verbose) std::cout <<"SBNsinglephoton::SetGenieFractionalCovarianceMatrix||\tOpen genie matrix file: " << filename << std::endl;
-	TFile* f_syst = new TFile(filename.c_str(), "read");
-	//TFile* f_syst = new TFile(filename.c_str(), "UPDATE");
-	//m_genie_fractional_covariance_matrix = new TMatrixT<double>(num_bins_total, num_bins_total);
-	m_genie_fractional_covariance_matrix  = (TMatrixT<double>*)f_syst->Get("individualDir/All_UBGenie_frac_covariance");
+    //check with Gray, are matrices added directly before checking the nan's?
+    TFile* f_syst = new TFile(filename.c_str(), "read");
+
+    bool remove_genie_only = true;
+
+    m_genie_fractional_covariance_matrix = new TMatrixT<double>(num_bins_total, num_bins_total);
+    if(remove_genie_only){
+        m_genie_fractional_covariance_matrix  = (TMatrixT<double>*)f_syst->Get("individualDir/All_UBGenie_frac_covariance");
         *m_genie_fractional_covariance_matrix += *((TMatrixT<double>*)f_syst->Get("individualDir/AxFFCCQEshape_UBGenie_frac_covariance"));
         *m_genie_fractional_covariance_matrix += *((TMatrixT<double>*)f_syst->Get("individualDir/DecayAngMEC_UBGenie_frac_covariance"));
         *m_genie_fractional_covariance_matrix += *((TMatrixT<double>*)f_syst->Get("individualDir/NormCCCOH_UBGenie_frac_covariance"));
@@ -948,14 +994,19 @@ int SBNsinglephoton::SetGenieFractionalCovarianceMatrix(std::string filename){
 */
 
 
-	//get a sub of matrix
-/*	TMatrixT<double> temp_matrix = *m_genie_fractional_covariance_matrix;
-	m_genie_fractional_covariance_matrix->ResizeTo(num_bins_total, num_bins_total);
-	*m_genie_fractional_covariance_matrix  = temp_matrix.GetSub(90, 329, 90, 329, "S");
-*/
-	std::cout << "total bins " << num_bins_total << ", matrix size " << m_genie_fractional_covariance_matrix->GetNrows() << std::endl;
+    }else{
+        (*m_genie_fractional_covariance_matrix)  = (*m_full_fractional_covariance_matrix) ;// 
+    }
 
-//	this->RemoveNan(m_genie_fractional_covariance_matrix);
+    //get a sub of matrix
+    /*	TMatrixT<double> temp_matrix = *m_genie_fractional_covariance_matrix;
+        m_genie_fractional_covariance_matrix->ResizeTo(num_bins_total, num_bins_total);
+     *m_genie_fractional_covariance_matrix  = temp_matrix.GetSub(90, 329, 90, 329, "S");
+     */
+    std::cout << "total bins " << num_bins_total << ", matrix size " << m_genie_fractional_covariance_matrix->GetNrows() << std::endl;
+
+    this->RemoveNan(m_genie_fractional_covariance_matrix);
+
 
 	TMatrixT<double>* temp = (TMatrixT<double>*)f_syst->Get("frac_covariance");
 	this->RemoveNan(temp);
@@ -971,57 +1022,55 @@ int SBNsinglephoton::SetGenieFractionalCovarianceMatrix(std::string filename){
 
 int SBNsinglephoton::CalcFullButGenieFractionalCovarMatrix(){
 
-	if(m_full_fractional_covariance_matrix==NULL || m_genie_fractional_covariance_matrix==NULL){
-	   std::cout<< "SBNsinglephoton::CalcFullButGenieFractionalCovarMatrix\t|| Either full fractional covar matrix or genie fractional covariance matrix has NOT been setup yet."<< std::endl;
-	   exit(EXIT_FAILURE); 
-	}
+    if(m_full_fractional_covariance_matrix==NULL || m_genie_fractional_covariance_matrix==NULL){
+        std::cout<< "SBNsinglephoton::CalcFullButGenieFractionalCovarMatrix\t|| Either full fractional covar matrix or genie fractional covariance matrix has NOT been setup yet."<< std::endl;
+        exit(EXIT_FAILURE); 
+    }
 
-	if(is_verbose) std::cout << "SBNsinglephoton::CalcFullButGenieFractionalCovarMatrix\t|| as the name says.." << std::endl;
-	m_full_but_genie_fractional_covariance_matrix = new TMatrixT<double>(num_bins_total, num_bins_total);
-	*m_full_but_genie_fractional_covariance_matrix  = (*m_full_fractional_covariance_matrix) - (*m_genie_fractional_covariance_matrix);
+    if(is_verbose) std::cout << "SBNsinglephoton::CalcFullButGenieFractionalCovarMatrix\t|| as the name says.." << std::endl;
+    m_full_but_genie_fractional_covariance_matrix = new TMatrixT<double>(num_bins_total, num_bins_total);
+    *m_full_but_genie_fractional_covariance_matrix  = (*m_full_fractional_covariance_matrix) - (*m_genie_fractional_covariance_matrix);
 
-	return 0;
+    return 0;
 }
 
 
 double SBNsinglephoton::ScaleFactor(double E, double factor, std::vector<double>& vec){
-	double scale = factor;
-	switch(vec.size()){
-	   case 0:
-		//std::cout<< "SBNsinglephoton::ScaleFactor\t|| No energy/momentum dependent scaling applied" << std::endl;
-		break;
-	   case 1:
-		//std::cout << "SBNsinglephoton::ScaleFactor\t|| Applying Linear energy/momentum dependent scaling!";
-		scale += vec[0]*E;
-		//std::cout << " " << scale << std::endl;
-		break;
-	   case 2:
-		//std::cout << "SBNsinglephoton::ScaleFactor\t|| Applying 2nd order polynomial energy/momentum dependent scaling!" << std::endl;
-		scale += vec[0]*E+vec[1]*E*E;
-		break;
-	   default: scale += 0;
-	}
+    double scale = factor;
+    switch(vec.size()){
+        case 0:
+            //std::cout<< "SBNsinglephoton::ScaleFactor\t|| No energy/momentum dependent scaling applied" << std::endl;
+            break;
+        case 1:
+            //std::cout << "SBNsinglephoton::ScaleFactor\t|| Applying Linear energy/momentum dependent scaling!";
+            scale += vec[0]*E;
+            //std::cout << " " << scale << std::endl;
+            break;
+        case 2:
+            //std::cout << "SBNsinglephoton::ScaleFactor\t|| Applying 2nd order polynomial energy/momentum dependent scaling!" << std::endl;
+            scale += vec[0]*E+vec[1]*E*E;
+            break;
+        default: scale += 0;
+    }
 
-	//if(scale < 0) scale = 1.0;  //don't allow negative weight
-	if(scale < 0) scale = 0;  //don't allow negative weight
-	return scale;
+    return scale;
 
 }
 
 
 int SBNsinglephoton::RemoveNan(TMatrixT<double>* M){
 
-	int row_size = M->GetNrows();
-	int col_size = M->GetNcols();
+    int row_size = M->GetNrows();
+    int col_size = M->GetNcols();
 
-	if(is_verbose) std::cout<< "SBNsinglephoton::RemoveNan\t|| Remove the nan's from matrix " << M->GetName() << std::endl;
-        for(int i=0; i< row_size; i++){
-            for(int j=0; j< col_size; j++){
-                if(std::isnan((*M)(i,j))) (*M)(i,j) =0.0;
-            }
+    if(is_verbose) std::cout<< "SBNsinglephoton::RemoveNan\t|| Remove the nan's from matrix " << M->GetName() << std::endl;
+    for(int i=0; i< row_size; i++){
+        for(int j=0; j< col_size; j++){
+            if(std::isnan((*M)(i,j))) (*M)(i,j) =0.0;
         }
+    }
 
-	return 0;	
+    return 0;	
 }
 
 
@@ -1044,6 +1093,7 @@ int SBNsinglephoton::GrabFitMap(){
 int SBNsinglephoton::SaveHistogram(){	
         return this->SaveHistogram(m_map);
 }
+
 
 int SBNsinglephoton::SaveHistogram(std::map<int, std::vector<double>>& inmap){
 
@@ -1084,7 +1134,7 @@ int SBNsinglephoton::SaveHistogram(std::map<int, std::vector<double>>& inmap){
 	        TH2D* hr=(TH2D*)h_chi_surface.Clone(); 
 
 		//draw contours
-		std::vector<TGraph*> contour_graph = this->FindContour(h_chi_surface, 3, tag);  //want 3 contour
+		std::vector<TGraph> contour_graph = this->FindContour(h_chi_surface, 3, tag);  //want 3 contour
 	        //TCanvas* c_canvas=(TCanvas*)this->DrawContour(hr, contour_graph, m_vec_grid[m_best_index]).Clone();	
 	        this->DrawContour(hr, contour_graph, m_vec_grid[m_best_index]);	
 		
@@ -1180,14 +1230,15 @@ int SBNsinglephoton::SaveHistogram(std::map<int, std::vector<double>>& inmap){
 
 		//draw the contour
 		TH2D h_mchi_flatinter = this->Do2DInterpolation(m_interpolation_number, grid_fother.f_points, grid_flat.f_points, marginalized_chi_flat, tag+"_Flat");
-		std::vector<TGraph*> vg_mchi_flat_contour = this->FindContour(h_mchi_flatinter, 3, tag+"_Flat");
+		std::vector<TGraph> vg_mchi_flat_contour = this->FindContour(h_mchi_flatinter, 3, tag+"_Flat");
 		h_mchi_flat.GetXaxis()->SetRangeUser(h_mchi_flatinter.GetXaxis()->GetXmin(), h_mchi_flatinter.GetXaxis()->GetXmax());
                 h_mchi_flat.GetYaxis()->SetRangeUser(h_mchi_flatinter.GetYaxis()->GetXmin(), h_mchi_flatinter.GetYaxis()->GetXmax());
 		this->DrawContour(&h_mchi_flat, vg_mchi_flat_contour, tag+"_Flat",std::vector<double>{});
 
 		//draw the contour
 		TH2D h_mchi_polyinter = this->Do2DInterpolation(m_interpolation_number, grid_flat.f_points, grid_1order.f_points, marginalized_chi_poly, tag+"_Poly");
-		std::vector<TGraph*> vg_mchi_contour = this->FindContour(h_mchi_polyinter, 3, tag+"_Poly");
+		std::cout << "check " << __LINE__ << std::endl;
+		std::vector<TGraph> vg_mchi_contour = this->FindContour(h_mchi_polyinter, 2, tag+"_Poly");
 		h_mchi_poly.GetXaxis()->SetRangeUser(h_mchi_polyinter.GetXaxis()->GetXmin(), h_mchi_polyinter.GetXaxis()->GetXmax());
                 h_mchi_poly.GetYaxis()->SetRangeUser(h_mchi_polyinter.GetYaxis()->GetXmin(), h_mchi_polyinter.GetYaxis()->GetXmax());
 		this->DrawContour(&h_mchi_poly, vg_mchi_contour,tag+"_Poly", std::vector<double>{});
@@ -1325,7 +1376,7 @@ int SBNsinglephoton::SaveHistogram(std::map<int, std::vector<double>>& inmap){
 		if(grid_x.f_N >=5 && grid_y.f_N>=5){
 			//draw 1,2,3 sigma contours for h_mchi2_zy
 			TH2D h_mchi2_xy_inter =this->Do2DInterpolation(m_interpolation_number,grid_x.f_points, grid_y.f_points, mchi_xy, tag+"_XY"); 
-			std::vector<TGraph*> g_mchi_contour = this->FindContour(h_mchi2_xy_inter, 2, tag+"_XY");
+			std::vector<TGraph> g_mchi_contour = this->FindContour(h_mchi2_xy_inter, 2, tag+"_XY");
 
 			h_mchi2_xy->GetXaxis()->SetRangeUser(h_mchi2_xy_inter.GetXaxis()->GetXmin(), h_mchi2_xy_inter.GetXaxis()->GetXmax());
 			h_mchi2_xy->GetYaxis()->SetRangeUser(h_mchi2_xy_inter.GetYaxis()->GetXmin(), h_mchi2_xy_inter.GetYaxis()->GetXmax());
@@ -1342,6 +1393,7 @@ int SBNsinglephoton::SaveHistogram(std::map<int, std::vector<double>>& inmap){
 
     return 0;
 }
+
 
 
 //2D interpolation
@@ -1396,7 +1448,7 @@ TH2D SBNsinglephoton::Do2DInterpolation(int inter_number, std::vector<double>& x
 
 
 //return 1/2/3/4/5 sigma contours as vector of TGraph
-std::vector<TGraph*> SBNsinglephoton::FindContour(TH2D hin, int n, std::string intag){
+std::vector<TGraph> SBNsinglephoton::FindContour(TH2D &hin, int n, std::string intag){
    if(is_verbose) std::cout<< "SBNsinglephoton::FindContour\t||\tTrying to find " << n << "contours" << std::endl;
    
    std::vector<double> full_contour{2.30, 6.18,11.83, 19.35, 28.23}; // chi2 value for 2 dof with 1, 2, 3, 4, 5 sigma confidence level
@@ -1411,160 +1463,149 @@ std::vector<TGraph*> SBNsinglephoton::FindContour(TH2D hin, int n, std::string i
    std::vector<std::string> Name_string(full_name_string.begin(), full_name_string.begin()+n);
    std::vector<int> color_vec(full_color.begin(), full_color.begin()+n); 
    std::vector<int> style_vec(full_style.begin(), full_style.begin()+n);
-   std::vector<int> mstyle_vec(full_marker_style.begin(), full_marker_style.begin()+n); 
+   std::vector<TGraph> out_graph(n);
+
 
    //draw contour
-   TCanvas c((intag+"c").c_str(), (intag+"c").c_str());
-   c.cd();
+   TCanvas *c =  new TCanvas((intag+"c").c_str(), (intag+"c").c_str());
+   c->cd();
+   std::cout << "check: " <<__LINE__ << std::endl;
    hin.SetContour((int)contour.size(), &contour[0]);
    hin.Draw("CONT Z LIST");//"LIST" generates a list of TGraph for each contour
-   
-   std::vector<TGraph*> out_graph;
-   out_graph.resize(n);
-   //TGraph vg_temp();
-   //std::vector<TGraph> out_graph(n,vg_temp);	
-   //std::cout << "check " << __LINE__ << std::endl;
-
-   //grab contour object
-   c.Update();
    std::cout << "check: " <<__LINE__ << std::endl;
+   c->Update();
+   
+   gROOT->GetListOfSpecials()->Print();
    TObjArray *conts = (TObjArray*)gROOT->GetListOfSpecials()->FindObject("contours");
+   
    //loop over contours
    for(int i=0; i<conts->GetSize(); i++){
-	//create a new TList pointer inside a loop, it will get deleted everytime during the loop --> no memory leak here.
-        TList* con_list = (TList*)conts->At(i);   //a list of TGraph for i'th contour.
+        TList * con_list = (TList*)conts->At(i);   //a list of TGraph for i'th contour.
         double x_min = DBL_MAX;
         double x_max = DBL_MIN;
         double y_min = DBL_MAX;
         double y_max = DBL_MIN;
 
-        out_graph[i] = new TGraph();   // one TGraph for one contour
-        out_graph[i]->SetName(Form("graph_%s", CL_string[i].c_str()));
-        out_graph[i]->SetTitle(Form("%s", Name_string[i].c_str()));
-        //out_graph[i]->SetLineColor(color_vec[i]);
-	out_graph[i]->SetLineStyle(style_vec[i]);
-        out_graph[i]->SetLineWidth(2);
-        out_graph[i]->SetMarkerColor(color_vec[i]);
-	out_graph[i]->SetMarkerStyle(mstyle_vec[i]);
-	out_graph[i]->SetMarkerSize(0.1);
-        TGraph* c_graph = (TGraph*)con_list->First();  //grab the TGraph
-
+        //out_graph[i] = new TGraph();   // one TGraph for one contour
+        out_graph[i].SetName(Form("graph_%s", CL_string[i].c_str()));
+        out_graph[i].SetTitle(Form("%s", Name_string[i].c_str()));
+        out_graph[i].SetLineStyle(style_vec[i]);
+        out_graph[i].SetLineWidth(2);
+        out_graph[i].SetMarkerColor(color_vec[i]);
+        TGraph * c_graph = (TGraph*)con_list->First();  //grab the TGraph
 
         for(int j=0; j< con_list->GetSize() ; j++){
-                TGraph* temp_graph= (TGraph*)c_graph->Clone();
-		double x,y;
-                for(int k =0; k< temp_graph->GetN(); k++){
-                        temp_graph->GetPoint(k, x, y);
-                        if(x < x_min) x_min = x;
-                        if(x > x_max) x_max = x;
+            TGraph * temp_graph= (TGraph*)c_graph->Clone();
+            double x,y;
+            for(int k =0; k< temp_graph->GetN(); k++){
+                temp_graph->GetPoint(k, x, y);
+                if(x < x_min) x_min = x;
+                if(x > x_max) x_max = x;
 
-                        if(y < y_min) y_min =y;
-                        if(y > y_max) y_max = y;
+                if(y < y_min) y_min =y;
+                if(y > y_max) y_max = y;
 
-                        out_graph[i]->SetPoint(out_graph[i]->GetN(), x, y);
-                }
-		c_graph=(TGraph*)con_list->After(c_graph);
+                out_graph[i].SetPoint(out_graph[i].GetN(), x, y);
+            }
+            c_graph=(TGraph*)con_list->After(c_graph);
         }
 
-
-	std::cout << "Contour " << CL_string[i] << ": " << contour[i] << std::endl;
+        std::cout << "Contour " << CL_string[i] << ": " << contour[i] << std::endl;
         std::cout << "range for x : " << std::setprecision(3) << x_min << "~" << x_max << std::endl;
         std::cout << "range for y : " << std::setprecision(3) << y_min << "~" << y_max << std::endl;
-   }
+    }
 
-   //conts->SetOwner(kTRUE);
-   //conts->Clear();
-   return out_graph;
+  return out_graph;
 }
 
 
 
-void SBNsinglephoton::DrawContour(TH2D* h, std::vector<TGraph*>& v_graph, std::vector<double> bf_point){
+void SBNsinglephoton::DrawContour(TH2D* h, std::vector<TGraph>& v_graph, std::vector<double> bf_point){
 	this->DrawContour(h, v_graph, tag, bf_point);
 	return;
 }
 
-void SBNsinglephoton::DrawContour(TH2D* h, std::vector<TGraph*>& v_graph, std::string intag,  std::vector<double> bf_point){
+void SBNsinglephoton::DrawContour(TH2D* h, std::vector<TGraph>& v_graph, std::string intag,  std::vector<double> bf_point){
 
    if(is_verbose) std::cout << "SBNsinglephoton::DrawContour||\tCreating contour pdf: "<<intag<<"_pretty_chi_contours.pdf"<< std::endl;
-   delete gROOT->FindObject((intag+"_pretty_contour").c_str());
-   TCanvas c_canvas((intag+"_pretty_contour").c_str(), (intag+"_pretty_contour").c_str());
-   gStyle->SetOptStat(0);
-   //TLatex txt(3.8, 1.0, "#splitline{MicroBooNE}{Preliminary}");
-   TLegend leg(0.68, 0.7, 0.9,0.9);
-   leg.SetFillStyle(0); 
-   leg.SetBorderSize(0);
+   //delete gROOT->FindObject((intag+"_pretty_contour").c_str());
+
+   TCanvas *c_canvas = new TCanvas((intag+"_pretty_contour").c_str(), (intag+"_pretty_contour").c_str());
+   c_canvas->cd();
+   TLegend *leg = new TLegend(0.68, 0.7, 0.9,0.9);
+   leg->SetFillStyle(0); 
+   leg->SetBorderSize(0);
+
    h->Draw("colz");
    TMarker* marker=nullptr;
+  
    if(bf_point.size() == 2){
 	marker=new TMarker(bf_point.at(1), bf_point.at(0), 29);
 	marker->SetMarkerColor(kWhite);
 	marker->SetMarkerSize(2);
 	marker->Draw();
-	leg.AddEntry(marker, "Best-fit Point", "P");
+	leg->AddEntry(marker, "Best-fit Point", "P");
    }
 
-   c_canvas.cd();
    for(auto& g:v_graph){
-        g->SetLineColor(kWhite);
-        g->SetMarkerColor(kWhite);
-        g->Draw("same l");
-        //g->Draw("same C");
-        leg.AddEntry(g, g->GetTitle(), "L");
+        g.SetLineColor(kWhite);
+        g.SetMarkerColor(kWhite);
+        g.Draw("same l");
+        leg->AddEntry(&g, g.GetTitle(), "LP");
   }
-  leg.SetTextSize(0.043);
-  leg.Draw();
-  c_canvas.Update();
-  c_canvas.SaveAs((intag+"_pretty_chi_contours.pdf").c_str(),"pdf");
-  delete marker;
+  leg->SetTextSize(0.043);
+  leg->Draw();
+  c_canvas->SaveAs((intag+"_pretty_chi_contours.pdf").c_str(),"pdf");
+
+  //delete marker;
   return;
 }
 
 
 int SBNsinglephoton::PrintOutFitInfo(std::map<int, std::vector<double>>& inmap, std::string intag, bool print_all){
-	std::map<int, std::vector<double>> map_chi = inmap;
-        std::map<int, std::vector<double>>::iterator itmap = map_chi.begin();
+    std::map<int, std::vector<double>> map_chi = inmap;
+    std::map<int, std::vector<double>>::iterator itmap = map_chi.begin();
 
-        int best_point = itmap->first;
-        std::vector<double> vec_chi = itmap->second;
-        double chi_min = *std::min_element(vec_chi.begin(), vec_chi.end());
+    int best_point = itmap->first;
+    std::vector<double> vec_chi = itmap->second;
+    double chi_min = *std::min_element(vec_chi.begin(), vec_chi.end());
 
-	//best-fit point index at two grid
-	int m_poly_grid_index = best_point/m_num_total_gridpoints;
-	int m_grid_index = best_point%m_num_total_gridpoints;
+    //best-fit point index at two grid
+    int m_poly_grid_index = best_point/m_num_total_gridpoints;
+    int m_grid_index = best_point%m_num_total_gridpoints;
 
-	//print out info
-	std::vector<double> m_point = m_vec_grid[m_grid_index];
-	std::cout << intag<<": Best chi value is " << chi_min << " at flat point";
-	for(int i=0; i<m_point.size(); i++)
-	   std::cout << ", " << m_grid.f_dimensions[i].f_name << ": "<< m_point[i] ;
-	if(m_bool_poly_grid){
-	   std::vector<double> m_poly_point = m_vec_poly_grid[m_poly_grid_index];
-	   
-	   std::cout << ", and energy/momentum dependent shift for NCpi0 non-coherent component with";
-	   for(int i=0 ; i< m_poly_point.size();i++)
-		std::cout << ", "<< i+1 <<"nd order factor "<< m_poly_point[i];
-	}
-	std::cout << ". "<< std::endl;
+    //print out info
+    std::vector<double> m_point = m_vec_grid[m_grid_index];
+    std::cout << intag<<": Best chi value is " << chi_min << " at flat point";
+    for(int i=0; i<m_point.size(); i++)
+        std::cout << ", " << m_grid.f_dimensions[i].f_name << ": "<< m_point[i] ;
+    if(m_bool_poly_grid){
+        std::vector<double> m_poly_point = m_vec_poly_grid[m_poly_grid_index];
 
-	if(print_all){
-	   std::cout << intag<< "========================Below are detailed chi2 and coordinate values==========================" << std::endl;
-	   for(int i=0;i<vec_chi.size(); i++){
-		int temp_poly_grid_index = i/m_num_total_gridpoints;
-		int temp_grid_index = i%m_num_total_gridpoints;
-		std::cout << "Point " << i << " Chi:" << vec_chi[i] << " Coordinate: ";
-		std::vector<double> temp_point = m_vec_grid[temp_grid_index];
-		for(int j=0 ;j<temp_point.size();j++) std::cout << temp_point[j] << ", ";
-		if(m_bool_poly_grid){
-		    std::vector<double> temp_poly_point = m_vec_poly_grid[temp_poly_grid_index];
-		    std::cout << "PolyFactor: ";
-		    for(int j=0; j<temp_poly_point.size();j++) std::cout << j+1<<"nd order: "<< temp_poly_point[j]<< ", ";
-		}
-		std::cout<< std::endl;
-	   }
-	   std::cout <<intag << "=========================End of detailed chi info=============================================="<< std::endl;
-	}
-	return 0;
+        std::cout << ", and energy/momentum dependent shift for NCpi0 non-coherent component with";
+        for(int i=0 ; i< m_poly_point.size();i++)
+            std::cout << ", "<< i+1 <<"nd order factor "<< m_poly_point[i];
+    }
+    std::cout << ". "<< std::endl;
+
+    if(print_all){
+        std::cout << intag<< "========================Below are detailed chi2 and coordinate values==========================" << std::endl;
+        for(int i=0;i<vec_chi.size(); i++){
+            int temp_poly_grid_index = i/m_num_total_gridpoints;
+            int temp_grid_index = i%m_num_total_gridpoints;
+            std::cout << "Point " << i << " Chi:" << vec_chi[i] << " Coordinate: ";
+            std::vector<double> temp_point = m_vec_grid[temp_grid_index];
+            for(int j=0 ;j<temp_point.size();j++) std::cout << temp_point[j] << ", ";
+            if(m_bool_poly_grid){
+                std::vector<double> temp_poly_point = m_vec_poly_grid[temp_poly_grid_index];
+                std::cout << "PolyFactor: ";
+                for(int j=0; j<temp_poly_point.size();j++) std::cout << j+1<<"nd order: "<< temp_poly_point[j]<< ", ";
+            }
+            std::cout<< std::endl;
+        }
+        std::cout <<intag << "=========================End of detailed chi info=============================================="<< std::endl;
+    }
+    return 0;
 }
 
 int SBNsinglephoton::WriteOutInfo(std::map<int, std::vector<double>>& inmap){
@@ -1585,173 +1626,181 @@ int SBNsinglephoton::WriteOutInfo(std::map<int, std::vector<double>>& inmap){
 
 int SBNsinglephoton::SetFlatFullFracCovarianceMatrix(double flat){
 
-	m_full_fractional_covariance_matrix = new TMatrixT<double>(num_bins_total, num_bins_total);
-	for(int i=0;i<num_bins_total; i++) (*m_full_fractional_covariance_matrix)(i,i) = flat*flat;
+    m_full_fractional_covariance_matrix = new TMatrixT<double>(num_bins_total, num_bins_total);
+    for(int i=0;i<num_bins_total; i++) (*m_full_fractional_covariance_matrix)(i,i) = flat*flat;
 
-	return 0;	
+    return 0;	
 }
 
 int SBNsinglephoton::SetStatOnly(){
-	m_full_fractional_covariance_matrix = new TMatrixT<double>(num_bins_total, num_bins_total);
-	m_full_but_genie_fractional_covariance_matrix = new TMatrixT<double>(num_bins_total, num_bins_total);
-	m_genie_fractional_covariance_matrix = new TMatrixT<double>(num_bins_total, num_bins_total);
+    m_full_fractional_covariance_matrix = new TMatrixT<double>(num_bins_total, num_bins_total);
+    m_full_but_genie_fractional_covariance_matrix = new TMatrixT<double>(num_bins_total, num_bins_total);
+    m_genie_fractional_covariance_matrix = new TMatrixT<double>(num_bins_total, num_bins_total);
 
-	m_full_fractional_covariance_matrix->Zero();
-	m_full_but_genie_fractional_covariance_matrix->Zero();
-	m_genie_fractional_covariance_matrix->Zero();
+    m_full_fractional_covariance_matrix->Zero();
+    m_full_but_genie_fractional_covariance_matrix->Zero();
+    m_genie_fractional_covariance_matrix->Zero();
 
-	return 0;
+    return 0;
 }
 
 int SBNsinglephoton::ModifyCV(double infactor){
 
-	std::vector<double> temp_constrain_param;
-	for(int i=0 ; i<m_grid.f_num_dimensions; i++){
-	    if(m_grid.f_dimensions[i].f_has_constrain){
-		temp_constrain_param.push_back(m_grid.f_dimensions[i].f_constrain_value);
-	    }
-	}
+    std::vector<double> temp_constrain_param;
+    for(int i=0 ; i<m_grid.f_num_dimensions; i++){
+        if(m_grid.f_dimensions[i].f_has_constrain){
+            temp_constrain_param.push_back(m_grid.f_dimensions[i].f_constrain_value);
+        }
+    }
 
-	if(m_bool_poly_grid){
+    if(m_bool_poly_grid){
 
-           for(int i=0; i< m_poly_grid.f_num_dimensions; i++){
-              if(m_poly_grid.f_dimensions[i].f_has_constrain){
-		     temp_constrain_param.push_back(m_poly_grid.f_dimensions[i].f_constrain_value);
-              }
-	   }
-	}
-	
-	return this->ModifyCV(infactor, temp_constrain_param);
+        for(int i=0; i< m_poly_grid.f_num_dimensions; i++){
+            if(m_poly_grid.f_dimensions[i].f_has_constrain){
+                temp_constrain_param.push_back(m_poly_grid.f_dimensions[i].f_constrain_value);
+            }
+        }
+    }
+
+    return this->ModifyCV(infactor, temp_constrain_param);
 }
 
 int SBNsinglephoton::ModifyCV(double infactor, std::vector<double> param){
 
 
-	if(!m_bool_cv_spectrum_loaded){
-                this->LoadCV();
+    if(!m_bool_cv_spectrum_loaded){
+        this->LoadCV();
+    }
+
+
+    std::cout<< "SBNsinglephoton::ModifyCV\t|| Start modifying CV spectrum" <<std::endl;
+    int index = 0;
+    //apply flat normalization
+    for(int i=0 ; i<m_grid.f_num_dimensions; i++){
+        if(m_grid.f_dimensions[i].f_has_constrain  && (index < param.size()) ){
+            m_cv_spectrum->Scale(m_grid.f_dimensions[i].f_name, param[index]);
+            index++;
         }
+    }
 
-
-	std::cout<< "SBNsinglephoton::ModifyCV\t|| Start modifying CV spectrum" <<std::endl;
-	int index = 0;
-	//apply flat normalization
-	for(int i=0 ; i<m_grid.f_num_dimensions; i++){
-            if(m_grid.f_dimensions[i].f_has_constrain  && (index < param.size()) ){
-                m_cv_spectrum->Scale(m_grid.f_dimensions[i].f_name, param[index]);
-		index++;
+    //energy/momentum dependent scaling
+    if(m_bool_poly_grid){
+        std::ostringstream prescale_tag;
+        std::vector<double> temp_scale_parameter;
+        for(int i=0; i< m_poly_grid.f_num_dimensions; i++){
+            if(m_poly_grid.f_dimensions[i].f_has_constrain && (index < param.size())  ){   
+                prescale_tag << "_" << std::fixed<< std::setprecision(3) << param[index];
+                temp_scale_parameter.push_back(param[index]);
+                index++;
             }
         }
 
-	//energy/momentum dependent scaling
-	//now that we reset negative weight to 1, this needs to be modified, tho it's probably never gonna be used
-	if(m_bool_poly_grid){
-	   std::ostringstream prescale_tag;
-	   std::vector<double> temp_scale_parameter;
-           for(int i=0; i< m_poly_grid.f_num_dimensions; i++){
-              if(m_poly_grid.f_dimensions[i].f_has_constrain && (index < param.size())  ){   
-                     prescale_tag << "_" << std::fixed<< std::setprecision(3) << param[index];
-		     temp_scale_parameter.push_back(param[index]);
-		     index++;
-              }
-           }
+        if(temp_scale_parameter.size() != 0){
+            std::string temp_filename = tag+"_PreScaled"+prescale_tag.str()+".SBNspec.root";
+            //check if a file exits
+            if(gSystem->AccessPathName(temp_filename.c_str())){
+                std::cout << "SBNsinglephoton::ModifyCV\t|| Prescaled file doesn't exist, start generating it..." << std::endl;
+                this->OpenFiles();
+                this->PreScaleSpectrum(xmlname, temp_scale_parameter);
+                this->CloseFiles();
+            }
 
-	   if(temp_scale_parameter.size() != 0){
-	       std::string temp_filename = tag+"_PreScaled"+prescale_tag.str()+".SBNspec.root";
-	       //check if a file exits
-	       if(gSystem->AccessPathName(temp_filename.c_str())){
-		   std::cout << "SBNsinglephoton::ModifyCV\t|| Prescaled file doesn't exist, start generating it..." << std::endl;
-		   if(!m_file_open) this->OpenFiles();
-		   this->PreScaleSpectrum(xmlname, temp_scale_parameter);
-	       }
-
-	       std::cout <<"SBNsinglephoton::ModifyCV\t|| Adding pre-scaled spectrum to the CV." << std::endl;
-	       SBNspec temp_prescale(temp_filename.c_str(), xmlname, false);
-	       m_cv_spectrum->Add(&temp_prescale); 
-	   }
-	}
-
-	if(m_bool_data_spectrum_loaded){
-		 m_cv_spectrum->Scale("NCDeltaRadOverlayLEE", (infactor-1)*0.5);
-		 m_cv_spectrum->CompareSBNspecs(m_data_spectrum, "ModifiedCV_Data");
+            std::cout <<"SBNsinglephoton::ModifyCV\t|| Adding pre-scaled spectrum to the CV." << std::endl;
+            SBNspec temp_prescale(temp_filename.c_str(), xmlname, false);
+            m_cv_spectrum->Add(&temp_prescale); 
         }
+    }
 
-	m_bool_modify_cv = true;
-	m_cv_delta_scaling = infactor;
+    if(m_bool_data_spectrum_loaded){
+        m_cv_spectrum->Scale("NCDeltaRadOverlayLEE", (infactor-1)*0.5);
+        m_cv_spectrum->CompareSBNspecs(m_data_spectrum, "ModifiedCV_Data");
+    }
 
-	m_cv_spectrum->WriteOut("ModifiedCV");
+    m_bool_modify_cv = true;
+    m_cv_delta_scaling = infactor;
 
-	return 0;
+    m_cv_spectrum->WriteOut("ModifiedCV");
+
+    return 0;
 }
 
 SBNspec SBNsinglephoton::GeneratePointSpectra(int np){
-	int m_poly_grid_index = np/m_num_total_gridpoints;
-        int m_grid_index = np%m_num_total_gridpoints;
+    int m_poly_grid_index = np/m_num_total_gridpoints;
+    int m_grid_index = np%m_num_total_gridpoints;
 
-	//SBNspec spec_rgrid_part(tag+"_CV.SBNspec.root", xmlname, false);
-	SBNspec spec_rgrid_part = *m_cv_spectrum;
+   SBNspec spec_rgrid_part(tag+"_CV.SBNspec.root", xmlname, false);
+    //SBNspec spec_rgrid_part = *m_cv_spectrum;
 
-//	spec_rgrid_part.Scale("NCPi0Coh", 2.0);
-//        spec_rgrid_part.Scale("NCPi0NotCoh", 0.8);
+    //	spec_rgrid_part.Scale("NCPi0Coh", 2.0);
+    //        spec_rgrid_part.Scale("NCPi0NotCoh", 0.8);
 
-	std::vector<double> temp_p_grid = m_vec_grid[m_grid_index];
-	for(int i=0;i<m_grid.f_num_dimensions; i++){
-	    if(m_grid.f_dimensions[i].f_name == "NCDeltaRadOverlayLEE" && temp_p_grid[i]<0 ){
-		spec_rgrid_part.Scale("NCDeltaRadOverlayLEE", 0.0);
-		spec_rgrid_part.Scale("NCDeltaRadOverlaySM", 1+temp_p_grid[i]*2.0);
-	    }
-	    else
-		spec_rgrid_part.Scale(m_grid.f_dimensions[i].f_name, temp_p_grid[i]);
-		//spec_rgrid_part.ScaleAll(temp_p_grid[i]);
-	}
+    std::vector<double> temp_p_grid = m_vec_grid[m_grid_index];
+    for(int i=0;i<m_grid.f_num_dimensions; i++){
+        if(m_grid.f_dimensions[i].f_name == "NCDeltaRadOverlayLEE" && temp_p_grid[i]<0 ){
+            spec_rgrid_part.Scale("NCDeltaRadOverlayLEE", 0.0);
+            spec_rgrid_part.Scale("NCDeltaRadOverlaySM", 1+temp_p_grid[i]*2.0);
+        }
+        else
+            spec_rgrid_part.Scale(m_grid.f_dimensions[i].f_name, temp_p_grid[i]);
+        //spec_rgrid_part.ScaleAll(temp_p_grid[i]);
+    }
 
-	if(m_bool_poly_grid){
-	    double non_coh_factor;   
-	    for(int i=0;i<m_grid.f_num_dimensions; i++){
-		if(m_grid.f_dimensions[i].f_name == "NCPi0NotCoh"){
-		    non_coh_factor=temp_p_grid[i];
-		    spec_rgrid_part.Scale("NCPi0NotCoh", 0.0);
-		}
-	    }
+    if(m_bool_poly_grid){
+        double non_coh_factor;   
+        for(int i=0;i<m_grid.f_num_dimensions; i++){
+            if(m_grid.f_dimensions[i].f_name == "NCPi0NotCoh"){
+                non_coh_factor=temp_p_grid[i];
+                spec_rgrid_part.Scale("NCPi0NotCoh", 0.0);
+            }
+        }
 
-	    std::vector<double> temp_p_polygrid=m_vec_poly_grid[m_poly_grid_index];
+        std::vector<double> temp_p_polygrid=m_vec_poly_grid[m_poly_grid_index];
+        std::ostringstream prescale_tag;
+        //generate tag for prescaled spectra
+        prescale_tag<< "Flat_"<< std::fixed<<std::setprecision(3) <<non_coh_factor << "_PreScaled";
+        for(int i=0; i< temp_p_polygrid.size(); i++){
+            prescale_tag << "_" << std::fixed<< std::setprecision(3) << temp_p_polygrid[i];
+        }
 
-	    if(!m_file_open) this->OpenFiles();
-	    if(!m_bool_cv_spectrum_generated) m_bool_cv_spectrum_generated=true;
-	    SBNspec spec_polygrid_part(xmlname, -1, false);
-	    this->ScaleSpectrum(&spec_polygrid_part, non_coh_factor, temp_p_polygrid);
+        this->OpenFiles();
+        m_bool_cv_spectrum_generated=true;
+        this->PreScaleSpectrum(xmlname, non_coh_factor, temp_p_polygrid);
+        this->CloseFiles();
 
-	    spec_rgrid_part.Add(&spec_polygrid_part);
-	}
+        SBNspec spec_polygrid_part(tag+"_"+prescale_tag.str()+".SBNspec.root", xmlname, false); 
+
+        spec_rgrid_part.Add(&spec_polygrid_part);
+    }
 
 
-	return spec_rgrid_part;
+    return spec_rgrid_part;
 }
 
 
 int SBNsinglephoton::PoissonFluctuation(SBNspec *inspec){
-	std::cout << "SBNsinglephoton::PoissonFluctuation\t || Poisson fluctuation the spectrum!!" << std::endl;
-	inspec->CollapseVector();
+    std::cout << "SBNsinglephoton::PoissonFluctuation\t || Poisson fluctuation the spectrum!!" << std::endl;
+    inspec->CollapseVector();
 
-	inspec->ScalePoisson();
-	inspec->CollapseVector();
+    inspec->ScalePoisson();
+    inspec->CollapseVector();
 
-	return 0;
+    return 0;
 }
 
 
 double SBNsinglephoton::CalcChi(bool use_cnp){
 
-	m_chi = new SBNchi(*m_cv_spectrum, m_full_fractional_covariance_matrix);
-	if(!use_cnp){
-	    return m_chi->CalcChi(m_data_spectrum);
-	}else{
-	    m_cv_spectrum->CollapseVector();
-	    m_data_spectrum->CollapseVector();
+    m_chi = new SBNchi(*m_cv_spectrum, m_full_fractional_covariance_matrix);
+    if(!use_cnp){
+        return m_chi->CalcChi(m_data_spectrum);
+    }else{
+        m_cv_spectrum->CollapseVector();
+        m_data_spectrum->CollapseVector();
 
-	    TMatrixT<double> Mtemp = m_chi->CalcCovarianceMatrixCNP(*m_full_fractional_covariance_matrix, m_cv_spectrum->full_vector, m_cv_spectrum->collapsed_vector, m_data_spectrum->collapsed_vector);
-	    TMatrixT<double> Invert_temp = m_chi->InvertMatrix(Mtemp);
-	    return m_chi->CalcChi(Invert_temp, m_cv_spectrum->collapsed_vector, m_data_spectrum->collapsed_vector, true);
-	}
+        TMatrixT<double> Mtemp = m_chi->CalcCovarianceMatrixCNP(*m_full_fractional_covariance_matrix, m_cv_spectrum->full_vector, m_cv_spectrum->collapsed_vector, m_data_spectrum->collapsed_vector);
+        TMatrixT<double> Invert_temp = m_chi->InvertMatrix(Mtemp);
+        return m_chi->CalcChi(Invert_temp, m_cv_spectrum->collapsed_vector, m_data_spectrum->collapsed_vector, true);
+    }
 
 }
 
