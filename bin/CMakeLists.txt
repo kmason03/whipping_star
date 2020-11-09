@@ -9,6 +9,9 @@ target_link_libraries (sbnfit_make_spec SBNfitlib tinyxmllib EventWeight)
 add_executable (sbnfit_feldman_cousins sbnfit_feldman_cousins.cxx)
 target_link_libraries (sbnfit_feldman_cousins SBNfitlib tinyxmllib EventWeight)
 
+add_executable (sbnfit_conditional_constraint sbnfit_conditional_constraint.cxx)
+target_link_libraries (sbnfit_conditional_constraint SBNfitlib tinyxmllib EventWeight)
+
 add_executable (sbnfit_singlephoton sbnfit_singlephoton.cxx)
 target_link_libraries (sbnfit_singlephoton SBNfitlib tinyxmllib EventWeight)
 
