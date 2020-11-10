@@ -821,6 +821,8 @@ SBNcovariance::SBNcovariance(std::string xmlname) : SBNconfig(xmlname) {
 		//start modify 'multi_vecspec'
 		for(int l=0; l< universes_used; l++){
 		    //now, multi_vecspec[l] is a spectra vector of 1 universe
+			std::string var_l = map_universe_to_var.at(l);
+			if(var_l.find("Genie") == std::string::npos) continue;
 
 			// loop over each histogram that has certain names		    
 			for(auto const& lmap:map_index_global_bin){
