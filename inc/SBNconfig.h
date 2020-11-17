@@ -179,8 +179,8 @@ class SBNconfig {
 	std::vector<int> montecarlo_maxevents;	
 	std::vector<double> montecarlo_scale;	
 	std::vector<double> montecarlo_pot;	
-
-
+	std::vector<bool> montecarlo_fake;
+	
 	std::vector<double> pot_scaling;
 	std::vector<double> pot;
 	

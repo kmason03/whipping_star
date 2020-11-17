@@ -133,6 +133,7 @@ namespace sbn{
 	int SetFullFractionalCovarianceMatrix(std::string filename, std::string matrix_name);
 	int SetGenieFractionalCovarianceMatrix(std::string filename);
 	int CalcFullButGenieFractionalCovarMatrix();
+	void ZeroOutGenieCorrelation(std::string );
 	int PrintOutFitInfo(std::map<int, std::vector<double>>& , std::string tag, bool);
 	int WriteOutInfo(std::map<int, std::vector<double>>& );
 
