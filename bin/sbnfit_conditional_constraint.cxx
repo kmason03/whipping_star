@@ -167,14 +167,14 @@ int main(int argc, char* argv[])
     data.CollapseVector();
 
     std::vector<SBNspec> vec_spec(2.0, cv);
-    //std::string constrain_str="NCDeltaRadOverlayLEE";
-    std::string constrain_str="NCDeltaRadOverlaySM";
-    //get the CV
+    std::string constrain_str="NCDeltaRadOverlayLEE";
+    //std::string constrain_str="NCDeltaRadOverlaySM";
+    //get the NULL spectrum
     vec_spec[0].Scale("NCDeltaRadOverlayLEE", 0.0);
-    vec_spec[0].Scale("NCDeltaRadOverlaySM", 0.0);
+    //vec_spec[0].Scale("NCDeltaRadOverlaySM", 0.0);
     //get the BF values
-    vec_spec[1].Scale("NCDeltaRadOverlayLEE", 0.0);
-    vec_spec[1].Scale("NCDeltaRadOverlaySM", 3.22);
+    vec_spec[1].Scale("NCDeltaRadOverlayLEE", 1.23);
+    //vec_spec[1].Scale("NCDeltaRadOverlaySM", 3.74);
     
     std::cout<<"Loading fractional covariance matrix from "<<covar_file<<std::endl;
 
@@ -184,7 +184,7 @@ int main(int argc, char* argv[])
     
     if(!stats_only){
         fsys = new TFile(covar_file.c_str(),"read");
-        cov = (TMatrixT<double>*)fsys->Get("frac_covariance");
+        cov = (TMatrixT<double>*)fsys->Get("total_frac_covariance");
 	fsys->Close();
    
         TMatrixT<double> frac_flat_matrix(cv.num_bins_total, cv.num_bins_total);
@@ -249,7 +249,7 @@ int main(int argc, char* argv[])
 
 	*cov -= *genie_cov;
 
-	 // get rid of the off-diagonal block
+	 //remove correlation in genie
 	SBNspec temp_cv(cv);
         temp_cv.Keep(constrain_str, 1.0);
         temp_cv.CalcFullVector();
@@ -260,11 +260,11 @@ int main(int argc, char* argv[])
 
         for(int i=0; i<temp_full.size(); i++){
            for(int j=0;j<temp_full.size(); j++){
-                if(temp_full[i]*temp_full[j]==0 && temp_others[i]*temp_others[j]==0) (*cov)(i,j)=0.0;
+                if(temp_full[i]*temp_full[j]==0 && temp_others[i]*temp_others[j]==0) (*genie_cov)(i,j)=0.0;
            }
         }
 
-
+	*cov += *genie_cov;
     }
 
     //starts
@@ -290,32 +290,15 @@ int main(int argc, char* argv[])
 	    double chi_total=0;
 
 	    TMatrixT<double> collapsed_covar(cv.num_bins_total_compressed, cv.num_bins_total_compressed);
+	    SigChi.FillCollapsedCovarianceMatrix(&collapsed_covar);   //gq: has both nue and numu stats
 
-	    if(use_genie){
-	         //get the genie-norm removed covariance matrix
-	         SBNspec temp_genie(fspec); 
-	         SBNspec temp_other(fspec); 
-	         temp_genie.Keep(constrain_str, 1.0);
-	         temp_other.Scale(constrain_str, 0.0);
-	         TMatrixT<double> full_covar = SigChi.CalcShapeMixedCovarianceMatrix(*genie_cov, &temp_genie, &temp_genie);
-	         full_covar += SigChi.FillSystMatrix(*genie_cov, temp_other.full_vector);
-	         full_covar += SigChi.FillSystMatrix(*cov, fspec.full_vector);
-	         SigChi.CollapseModes(full_covar, collapsed_covar);
-	    	 //Add on stats for the constraining bit ONLY
-	    	 for(int i=start_pt; i< cv.num_bins_total_compressed;i++){
-		    collapsed_covar(i,i) += fspec.collapsed_vector.at(i);
-		   //   collapsed_covar(i,i) += data.collapsed_vector.at(i);
-	    	 }
-	    }else{
-	    	 SigChi.FillCollapsedCovarianceMatrix(&collapsed_covar);   //gq: has both nue and numu stats
-
-	    	 //Add on stats for the constraining bit ONLY
-	    	 for(int i=0; i< cv.num_bins_total_compressed;i++){
-		    collapsed_covar(i,i) -= fspec.collapsed_vector.at(i);
-		    //if(i >= start_pt) collapsed_covar(i,i) += data.collapsed_vector.at(i);  //use the data stats for constrained matrix
-		    if(i >= start_pt) collapsed_covar(i,i) += fspec.collapsed_vector.at(i);  //use the data stats for constrained matrix
-	    	 }
+	    //Add on stats for the constraining bit ONLY
+	    for(int i=0; i< cv.num_bins_total_compressed;i++){
+	         collapsed_covar(i,i) -= fspec.collapsed_vector.at(i);
+	         //if(i >= start_pt) collapsed_covar(i,i) += data.collapsed_vector.at(i);  //use the data stats for constrained matrix
+	         if(i >= start_pt) collapsed_covar(i,i) += fspec.collapsed_vector.at(i);  //use the MC stats for constrained matrix
 	    }
+    
 
 
 	    // ****************************calculate chi constrain***************************************
@@ -350,18 +333,7 @@ int main(int argc, char* argv[])
             }
 	    // **************************calculate original nue+numu chi2 ********************************
 	    TMatrixT<double> total_collapsed_mat(cv.num_bins_total_compressed, cv.num_bins_total_compressed);
-	    if(use_genie){
-	    	SBNspec temp_genie(fspec); 
-	    	SBNspec temp_other(fspec); 
-	    	temp_genie.Keep(constrain_str, 1.0);
-	    	temp_other.Scale(constrain_str, 0.0);
-	         TMatrixT<double> full_covar = SigChi.CalcShapeMixedCovarianceMatrix(*genie_cov, &temp_genie, &temp_genie);
-	         full_covar += SigChi.FillSystMatrix(*genie_cov, temp_other.full_vector);
-	         full_covar += SigChi.FillSystMatrix(*cov, fspec.full_vector);
-	         SigChi.CollapseModes(full_covar, total_collapsed_mat);
-	    }else{
-		total_collapsed_mat = SigChi.FillSystMatrix(*cov, fspec.full_vector, true);
-	    }
+	    total_collapsed_mat = SigChi.FillSystMatrix(*cov, fspec.full_vector, true);
 	    TMatrixT<double> total_mat = SigChi.AddStatMatrixCNP(&total_collapsed_mat, fspec.collapsed_vector, data.collapsed_vector);
 	    TMatrixT<double> total_invert = SigChi.InvertMatrix(total_mat);
 	    for(int i=0; i<cv.num_bins_total_compressed; i++){
@@ -409,7 +381,7 @@ int main(int argc, char* argv[])
 		//reset error bars
 		h_1g0p_original->SetBinError(i+1, sqrt(original_mat(local_index, local_index)));
 		h_1g0p_constrain->SetBinError(i+1, sqrt(full_constrained_mat(local_index, local_index)));
-		h_1g0p_data->SetBinError(i+1, sqrt(h_1g1p_data->GetBinContent(i+1)));
+		h_1g0p_data->SetBinError(i+1, sqrt(h_1g0p_data->GetBinContent(i+1)));
 	        //std::cout << " " << sqrt(original_mat(local_index, local_index)) << " " << sqrt(full_constrained_mat(local_index, local_index)) << std::endl;
 	   }
 
@@ -426,13 +398,10 @@ int main(int argc, char* argv[])
 		  vec_hist_original[i]->SetLineColor(kMagenta+3);
 		  vec_hist_original[i]->SetLineWidth(2);
 		  TH1D* h_1g_original_copy= (TH1D*)vec_hist_original[i]->Clone();
-		  //vec_hist_original[i]->SetFillColorAlpha(kMagenta -10, 0.6);
-		  vec_hist_original[i]->SetFillColor(kMagenta -10);
+		  vec_hist_original[i]->SetFillColorAlpha(kMagenta -10, 0.8);
+		  //vec_hist_original[i]->SetFillColor(kMagenta -10);
 		  vec_hist_original[i]->SetTitle(Form("%s; Reco shower energy/GeV; Events", vec_string[i].c_str()));
 		  //h_1g1p_original->SetFillStyle(4050);  //only useful for TPad
-		  vec_hist_original[i]->Draw("E2");
-		  h_1g_original_copy->Draw("HIST SAME");
-		  leg->AddEntry(vec_hist_original[i], Form("%s Orignal", vec_string[i].c_str()), "LF");
 
 		  vec_hist_constrain[i]->SetLineColor(kGreen+3);
 		  vec_hist_constrain[i]->SetLineWidth(2);
@@ -440,10 +409,17 @@ int main(int argc, char* argv[])
 		  vec_hist_constrain[i]->SetFillColorAlpha(kGreen-7, 0.9);
 		  //vec_hist_constrain[i]->SetFillColor(kGreen -10);
 		  gStyle->SetHatchesLineWidth(3);
+		  vec_hist_constrain[i]->SetTitle(Form("%s; Reco shower energy/GeV; Events", vec_string[i].c_str()));
+		  vec_hist_constrain[i]->SetMinimum(0);
 		  vec_hist_constrain[i]->SetFillStyle(3345);
+		  leg->AddEntry(vec_hist_constrain[i], Form("%s Constrained",vec_string[i].c_str()), "LF");
+
+		  //vec_hist_constrain[i]->Draw("E2");
+		  vec_hist_original[i]->Draw("E2");
+		  h_1g_original_copy->Draw("HIST SAME");
 		  vec_hist_constrain[i]->Draw("E2same");
 		  h_1g_constrain_copy->Draw("HIST SAME");
-		  leg->AddEntry(vec_hist_constrain[i], Form("%s Constrained",vec_string[i].c_str()), "LF");
+		  leg->AddEntry(vec_hist_original[i], Form("%s Orignal", vec_string[i].c_str()), "LF");
 
 		  leg->AddEntry(vec_hist_data[i], Form("%s Toy Data",vec_string[i].c_str()), "ep");
 

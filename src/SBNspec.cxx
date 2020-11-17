@@ -416,11 +416,10 @@ int SBNspec::WriteOut(std::string tag){
 	}
 	f2->Close();
 
-	TFile *f = new TFile(("SBNfit_spectrum_plots_"+tag+".root").c_str(),"RECREATE");
-	f->cd();
-
 	std::vector<TH1D> temp_hists = hist;
 
+	TFile *f = new TFile(("SBNfit_spectrum_plots_"+tag+".root").c_str(),"RECREATE");
+	f->cd();
 
 	for(int im = 0; im <mode_names.size(); im++){
 		for(int id = 0; id <detector_names.size(); id++){
@@ -437,10 +436,10 @@ int SBNspec::WriteOut(std::string tag){
 
 				Cstack->cd();
 				THStack * hs = new THStack(canvas_name.c_str(),  canvas_name.c_str());
-				TLegend legStack(0.11,0.7,0.89,0.89);
-				legStack.SetNColumns(2);
-				legStack.SetLineWidth(0);
-				legStack.SetLineColor(kWhite);
+				TLegend* legStack = new TLegend(0.11,0.7,0.89,0.89);
+				legStack->SetNColumns(2);
+				legStack->SetLineWidth(0);
+				legStack->SetLineColor(kWhite);
 				int n=0;
 				int nc=0;
 				TH1D *hsum;
@@ -490,7 +489,7 @@ int SBNspec::WriteOut(std::string tag){
 
 						if(gLEE_plot){
 							hs->Add(&h);
-							legStack.AddEntry(&h, tmp.c_str(),"f");
+							legStack->AddEntry(&h, tmp.c_str(),"f");
 						}
 					}
 				}
@@ -499,7 +498,7 @@ int SBNspec::WriteOut(std::string tag){
 				if(!gLEE_plot){
 					for (int i: SortIndexes(integral_sorter)) {
 						hs->Add(to_sort.at(i));
-						legStack.AddEntry(to_sort.at(i), l_to_sort.at(i).c_str(),"f");
+						legStack->AddEntry(to_sort.at(i), l_to_sort.at(i).c_str(),"f");
 					}
 				}
 
@@ -529,18 +528,13 @@ int SBNspec::WriteOut(std::string tag){
 					hs->SetMinimum(0.001);
 
 					Cstack->Update();
-					legStack.Draw();
+					legStack->Draw();
 
 					f->cd();
 
 					Cstack->Write(canvas_name.c_str() );
 
 				}
-
-
-
-
-
 			}
 		}
 	}
@@ -626,13 +620,13 @@ int SBNspec::CompareSBNspecs(TMatrixT<double> collapse_covar, SBNspec * compsec,
 		
 	} 
 
+	std::vector<TH1D> temp = hist;
+	std::vector<TH1D> temp_comp = compsec->hist;
+
 
 	TFile *f = new TFile(("SBNfit_compare_plots_"+tag+".root").c_str(),"RECREATE");
 	f->cd();
 
-
-	std::vector<TH1D> temp = hist;
-	std::vector<TH1D> temp_comp = compsec->hist;
 
 	for(int k=0; k< fullnames.size(); k++){
 		TCanvas *ctmp = new TCanvas((tag+"_"+std::to_string(k)+"_"+fullnames.at(k)).c_str(), (std::to_string(k)+"_"+fullnames.at(k)).c_str(),1200,1200);

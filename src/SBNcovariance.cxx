@@ -656,10 +656,10 @@ SBNcovariance::SBNcovariance(std::string xmlname) : SBNconfig(xmlname) {
             //Grab newwer variation specfic weights;
             m_variation_weight_formulas[fileid][vid]->GetNdata();
             double indiv_variation_weight = m_variation_weight_formulas[fileid][vid]->EvalInstance();
-            if(indiv_variation_weight!= indiv_variation_weight || indiv_variation_weight <0){
-                                    std::cout<<"ERROR! the additional wight is nan or negative "<<indiv_variation_weight<<" Breakign!"<<std::endl;
-                                    exit(EXIT_FAILURE);
-                                }
+            if((indiv_variation_weight!= indiv_variation_weight || indiv_variation_weight <0) && !montecarlo_fake[fileid]){
+                std::cout<<"ERROR! the additional wight is nan or negative "<<indiv_variation_weight<<" Breakign!"<<std::endl;
+                exit(EXIT_FAILURE);
+            }
             //std::cout<<var<<" "<<indiv_variation_weight<<" "<<fileid<<" "<<vid<<std::endl;
 
             //is  
@@ -721,7 +721,12 @@ SBNcovariance::SBNcovariance(std::string xmlname) : SBNconfig(xmlname) {
                     wei=1.0;
                 }
 
-                weights[wid1] *= wei*indiv_variation_weight;
+		if(montecarlo_fake[fileid]){
+                	weights[wid1] *= wei;
+		}
+                else{
+			 weights[wid1] *= wei*indiv_variation_weight;
+		}
             }
 
             woffset += expected_num_universe_sz;
@@ -793,12 +798,16 @@ SBNcovariance::SBNcovariance(std::string xmlname) : SBNconfig(xmlname) {
 
 	// ********************* beginning of histograms normalization **********************
 
-	std::map<bool, std::string> map_shape_only{{true, "NCDeltaRadOverlayLEE"}};
+	std::map<bool, std::string> map_shape_only{{true, "NCDeltaRadOverlaySM"}};
+	//std::map<bool, std::string> map_shape_only{{false, "NCDeltaRadOverlayLEE"}};
+	//std::map<bool, std::string> map_shape_only{{false, "NCPi0NotCoh"}};
+	//std::map<bool, std::string> map_shape_only{{true, "NCPi0NotCoh"}};
+
 	for(auto const& imap : map_shape_only){
 		bool lshape_only = imap.first;
 		if(lshape_only == false) continue;
 		std::string lname_subchannel = imap.second;
-		if(is_verbose) std::cout << "Subchannel " << lname_subchannel << " will be constructed as shape-only matrix ? " << lshape_only << std::endl;	
+		if(is_verbose) std::cout << "SBNcovariance::FormCovariancematrix\t||\tSubchannel " << lname_subchannel << " will be constructed as shape-only matrix ? " << lshape_only << std::endl;	
 
 
 
@@ -809,7 +818,7 @@ SBNcovariance::SBNcovariance(std::string xmlname) : SBNconfig(xmlname) {
 		for(auto const& lh:spec_central_value.hist){
 			std::string lname = lh.GetName();
 			if(lname.find(lname_subchannel) != std::string::npos){
-
+				//store the max/min global bin index for histogram
 				std::vector<double> lglobal_bin{spec_central_value.GetGlobalBinNumber(1, lname), spec_central_value.GetGlobalBinNumber(lh.GetNbinsX(), lname)};
 				map_index_global_bin.insert( std::pair<int, std::vector<double>>( (int)CV_tot_count.size(), lglobal_bin)  );
 
@@ -822,7 +831,7 @@ SBNcovariance::SBNcovariance(std::string xmlname) : SBNconfig(xmlname) {
 		for(int l=0; l< universes_used; l++){
 		    //now, multi_vecspec[l] is a spectra vector of 1 universe
 			std::string var_l = map_universe_to_var.at(l);
-			if(var_l.find("Genie") == std::string::npos) continue;
+			if(var_l.find("UBGenie") == std::string::npos) continue;
 
 			// loop over each histogram that has certain names		    
 			for(auto const& lmap:map_index_global_bin){
