@@ -84,8 +84,6 @@ SBNspec::SBNspec(std::vector<double> input_full_vec, std::string whichxml, int u
 
 
 
-
-
 int SBNspec::Add(std::string which_hist, TH1 * histin){
 	//Addes all hists toGether
 	if(map_hist.count(which_hist) <= 0){
@@ -323,6 +321,41 @@ int SBNspec::CollapseVector(){
 			}
 		}
 	}
+	return 0;
+}
+
+
+int SBNspec::CalcErrorVector(){
+
+	full_err_vector.clear();
+	collapsed_err_vector.clear();
+
+	int index=0;
+	for(int im=0; im < num_modes ; im++){
+	    for(int id = 0; id< num_detectors; id++){
+		for(int ic= 0; ic< num_channels; ic++){
+		    TH1D* hsum= nullptr;
+
+		    for(int is=0; is< num_subchannels[ic]; is++){
+			TH1D& h = hist[index];
+
+			for(int ibin=0; ibin < h.GetNbinsX(); ibin++) full_err_vector.push_back(h.GetBinError(ibin+1));
+
+			if(hsum == nullptr){
+				hsum = (TH1D*)h.Clone();
+				hsum->Reset();
+			}	
+			hsum->Add(&h);
+			index++;
+		    }
+
+		   for(int ibin=0; ibin < hsum->GetNbinsX(); ibin++)
+			collapsed_err_vector.push_back(hsum->GetBinError(ibin+1));
+
+		}
+	    }
+	}	
+
 	return 0;
 }
 

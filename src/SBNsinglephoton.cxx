@@ -406,18 +406,14 @@ int SBNsinglephoton::LoadSpectraApplyFullScaling(){
 
                 std::vector<double> jpoint = m_vec_grid[j];
 
-                //m_scaled_spec_grid.push_back(new SBNspec((tag+"_CV.SBNspec.root").c_str(), this->xmlname, false));//start with genie CV
                 m_scaled_spec_grid[ip_processd] = temp_cv; //start with genie CV
                 for(int jp=0; jp< jpoint.size(); jp++){
-                    //m_scaled_spec_grid.back()->Scale(m_grid.f_dimensions[jp].f_name, jpoint[jp]); // scale corresponding subchannel
                     m_scaled_spec_grid[ip_processd].Scale(m_grid.f_dimensions[jp].f_name, jpoint[jp]); // scale corresponding subchannel
                 }
 
-                //m_scaled_spec_grid.back()->Add(&temp_prescaled); //here we get the scaled spectra at final stage!!!
                 m_scaled_spec_grid[ip_processd].Add(&temp_prescaled); //here we get the scaled spectra at final stage!!!
 
                 // do not want to keep LEE in it
-                //m_scaled_spec_grid.back()->Scale("NCDeltaRadOverlayLEE", 0.0);
                 if(tag == "NCpi0") m_scaled_spec_grid[ip_processd].Scale("NCDeltaRadOverlayLEE", 0.0);
                 ip_processd++;
 
@@ -431,16 +427,13 @@ int SBNsinglephoton::LoadSpectraApplyFullScaling(){
 
             std::vector<double> jpoint = m_vec_grid[j];
 
-            //m_scaled_spec_grid.push_back(new SBNspec((tag+"_CV.SBNspec.root").c_str(), this->xmlname, false));//start with genie CV
             m_scaled_spec_grid[ip_processd] = temp_cv; //start with genie CV
             for(int jp=0; jp< jpoint.size(); jp++){
-                //m_scaled_spec_grid.back()->Scale(m_grid.f_dimensions[jp].f_name, jpoint[jp]); // scale corresponding subchannel
                 m_scaled_spec_grid[ip_processd].Scale(m_grid.f_dimensions[jp].f_name, jpoint[jp]); // scale corresponding subchannel
                 //m_scaled_spec_grid[ip_processd].ScaleAll(jpoint[jp]); // scale corresponding subchannel
             }
 
             // do not want to keep LEE in it
-            //m_scaled_spec_grid[ip_processd].Scale("NCDeltaRadOverlayLEE", 0.0);
             if(tag == "NCpi0") m_scaled_spec_grid[ip_processd].Scale("NCDeltaRadOverlayLEE", 0.0);
 
             ip_processd++;
@@ -732,7 +725,11 @@ int SBNsinglephoton::CalcChiGridScan(){
         collapse_frac->Write(Form("collapsed_fractional_matrix_%d", n_iter));
         inversed_total_covariance_matrix.Write(Form("inversed_matrix_%d", n_iter));
 
-        if(is_verbose && m_bool_data_spectrum_loaded) last_best_spectrum.CompareSBNspecs(collapsed_full_systematic_matrix, m_data_spectrum, tag+"_Iter_"+std::to_string(n_iter));	
+        if(is_verbose && m_bool_data_spectrum_loaded && (n_iter==0)){
+	    //last_best_spectrum.CompareSBNspecs(collapsed_full_systematic_matrix, m_data_spectrum, tag+"_Iter_"+std::to_string(n_iter));	
+	    //m_chi->DrawComparisonIndividual(last_best_spectrum, *m_data_spectrum, *m_full_fractional_covariance_matrix, tag+"_Iter_0");
+	    m_chi->DrawComparisonIndividual(last_best_spectrum, *m_data_spectrum, *m_full_fractional_covariance_matrix, tag+"_Iter_0");
+	}
         //============================Done calculating covariance matrix ============================================/
 
 
@@ -777,10 +774,11 @@ int SBNsinglephoton::CalcChiGridScan(){
     //best-fit vs data comparison	
     //if(is_verbose && m_bool_data_spectrum_loaded){
     if(is_verbose ){
-        collapsed_full_systematic_matrix = m_chi->FillSystMatrix(*m_full_fractional_covariance_matrix, m_scaled_spec_grid[best_point].full_vector, true);
+        //collapsed_full_systematic_matrix = m_chi->FillSystMatrix(*m_full_fractional_covariance_matrix, m_scaled_spec_grid[best_point].full_vector, true);
         SBNspec temp_best_spec = this->GeneratePointSpectra(best_point);
         if(tag == "NCpi0") temp_best_spec.Scale("NCDeltaRadOverlayLEE", 0.0);
-        temp_best_spec.CompareSBNspecs(collapsed_full_systematic_matrix, m_data_spectrum, tag+"_BFvsData");
+	m_chi->DrawComparisonIndividual(temp_best_spec, *m_data_spectrum, *m_full_fractional_covariance_matrix, tag+"_BFvsData");
+        //temp_best_spec.CompareSBNspecs(collapsed_full_systematic_matrix, m_data_spectrum, tag+"_BFvsData");
     }
 
     std::cout << " BEST-FIT \t\t\t Data \t\t\t CV " << std::endl;

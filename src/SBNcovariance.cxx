@@ -798,8 +798,8 @@ SBNcovariance::SBNcovariance(std::string xmlname) : SBNconfig(xmlname) {
 
 	// ********************* beginning of histograms normalization **********************
 
-	std::map<bool, std::string> map_shape_only{{true, "NCDeltaRadOverlaySM"}};
-	//std::map<bool, std::string> map_shape_only{{false, "NCDeltaRadOverlayLEE"}};
+	//std::map<bool, std::string> map_shape_only{{true, "NCDeltaRadOverlaySM"}};
+	std::map<bool, std::string> map_shape_only{{true, "NCDeltaRadOverlayLEE"}};
 	//std::map<bool, std::string> map_shape_only{{false, "NCPi0NotCoh"}};
 	//std::map<bool, std::string> map_shape_only{{true, "NCPi0NotCoh"}};
 
@@ -928,7 +928,10 @@ SBNcovariance::SBNcovariance(std::string xmlname) : SBNconfig(xmlname) {
             }else if(varmode==1){
                 //Instead, assign the covariance to be identicall the difference between this and the next universe (they come in 2's)
                 for(int i=0; i<num_bins_total; i++) {
-                    a_vec_full_covariance[varid][i*num_bins_total+i] = fabs(a_multi_vecspec[k][i]-a_multi_vecspec[k+1][i]);
+                       for(int j=0; j<num_bins_total; j++){
+        	            a_vec_full_covariance[varid][i*num_bins_total+j] = (a_multi_vecspec[k][i]-a_multi_vecspec[k+1][i])* (a_multi_vecspec[k][j]-a_multi_vecspec[k+1][j]);
+ 	               }
+                //a_vec_full_covariance[varid][i*num_bins_total+i] = fabs(a_multi_vecspec[k][i]-a_multi_vecspec[k+1][i]);
                 }
                 //we will also need to jump th universe count ahead by 1, just to skip the variation on the other side too.
                 k++;

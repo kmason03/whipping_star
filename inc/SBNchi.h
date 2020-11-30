@@ -20,7 +20,8 @@
 #include "TFile.h"
 #include "TStyle.h"
 #include "TLine.h"
-
+#include "TMath.h"
+#include "TLatex.h"
 #include "params.h"
 
 #include "TDecompChol.h"
@@ -187,8 +188,9 @@ class SBNchi : public SBNconfig{
 		//some plotting things
 	TH2D* GetChiogram();
 	int PrintMatricies(std::string);
-    int DrawSampleCovariance(std::string);
-
+        int DrawSampleCovariance(std::string);
+	int DrawComparisonIndividual(SBNspec&, SBNspec&, TMatrixT<double>&, std::string);
+	int DrawComparisonIndividual(SBNspec&, SBNspec&, TMatrixT<double>&, std::string, bool);
 };
 
 

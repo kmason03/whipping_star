@@ -80,7 +80,10 @@ namespace sbn{
 			std::vector<double > collapsed_vector;
 			std::vector<float > f_collapsed_vector;
 
-
+			//error vector for full subchannels, and for the collapsed channel
+			//would be instrisinc statistical error
+			std::vector<double> full_err_vector;
+			std::vector<double> collapsed_err_vector;
 
 			//need to store a history of the scales for oscillation purposes.  FIX THIS
 			std::string scale_hist_name;
@@ -122,6 +125,9 @@ namespace sbn{
 			//Recaculates the full_vector and collapsed_vector's
 			int CalcFullVector();
 			int CollapseVector();
+
+			//calculate the error vector
+			int CalcErrorVector();
 
 			double GetTotalEvents();
 

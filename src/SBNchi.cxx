@@ -2314,3 +2314,344 @@ TH1D SBNchi::SamplePoissonVaryCore(SBNspec *specin, int num_MC){
     return ans;
 }
 
+int SBNchi::DrawComparisonIndividual(SBNspec& sig, SBNspec& data, TMatrixT<double>& frac_matrix, std::string tag){
+	return this->DrawComparisonIndividual(sig, data, frac_matrix, tag, false);
+}
+
+
+//This one compares two SBNspec, and print the chi2, pvalue for each individual distribution
+//basically very similar to SBNspec::CompareSBNspecs()
+int SBNchi::DrawComparisonIndividual(SBNspec& sig, SBNspec& data, TMatrixT<double>& frac_matrix, std::string tag, bool width_norm){
+	// default color scheme
+	std::vector<int> mycol = {kAzure -9, kRed-7, kGreen-3, kBlue-6, kMagenta-3, kYellow-7,  kOrange-3, kBlue, kBlue+2,  kGreen+1,kBlue-7, kPink, kViolet, kCyan,kMagenta,kAzure};
+		
+	if((frac_matrix.GetNcols()!= frac_matrix.GetNrows()) ||  (frac_matrix.GetNcols() != this->num_bins_total)){
+		std::cout<< "ERROR: dimension of the matrix doesn't match the total bin number, or it's not a symetric matrix"<< std::endl;
+		exit(EXIT_FAILURE);
+	}
+	
+
+
+	// single photon color scheme
+	bool gLEE_plot= true;
+	if(gLEE_plot){
+                mycol.clear();
+                
+                std::map<std::string, int> color_channel_map;
+                std::map<std::string, std::vector<double>> rgb_channel_map={
+                        {"NCDeltaRadOverlaySM", {255./255.,255./255.,153./255.}},
+                        {"NCDeltaRadOverlayLEE", {0.97,0.75,0}},
+                        {"NCPi0Coh", {255./255,189./255.,189./255.}},
+                        {"NCPi0NotCoh", {1,0.4,0.4}},
+                        {"NCMultiPi0", {0.9,0.9,1.0}},
+                        {"CC1Pi0", {0.4,0.4,1.0}},
+                        {"BNBOther", {0.6,0.8,1.0}},
+                        {"NueOverlays",{0.9,0.5,0.9}},
+                        {"Dirt", {0.6,0.4,0.2}},
+                        {"BNBext", {0.2,0.8,0.2}}
+                };
+                
+                std::map<std::string, std::vector<double>>::iterator iter;
+                std::map<std::string, int>::iterator iter_int;
+                TColor* t_col = NULL;
+                for(iter = rgb_channel_map.begin(); iter!= rgb_channel_map.end(); ++iter){
+                        int color_index = TColor::GetFreeColorIndex();
+                        t_col = new TColor(color_index, iter->second.at(0),iter->second.at(1),iter->second.at(2));
+                        color_channel_map.insert({iter->first, t_col->GetNumber()});
+                }
+                
+                for(int is = 0; is <subchannel_names[0].size(); is++){
+                        std::string isubchannel_name = subchannel_names[0][is];
+                        iter_int = color_channel_map.find(isubchannel_name);
+                        if(iter_int == color_channel_map.end()){
+                                std::cout << "Color of " << isubchannel_name << " is not defined, choose a random color" << std::endl;
+                                mycol.push_back(is);
+                        }
+                        else{   
+				 mycol.push_back(iter_int->second);
+                        }
+                }
+         
+        }
+
+	sig.CalcFullVector(); 
+	data.CalcFullVector();
+
+	std::vector<TH1D> temp = sig.hist;
+        std::vector<TH1D> temp_comp = data.hist;
+	std::vector<double> sig_collapse = sig.collapsed_vector;
+	std::vector<double> data_collapse = data.collapsed_vector;
+
+	TMatrixT<double> collapsed_syst_matrix = this->FillSystMatrix(frac_matrix, sig.full_vector, true);
+
+	TFile* fcompare = new TFile(("SBNfit_compare_individual_plots_"+tag+".root").c_str(), "recreate");
+	fcompare->cd();
+	collapsed_syst_matrix.Write("collapsed_syst_matrix");
+
+	int matrix_index= 0;
+
+	for(int im = 0; im <mode_names.size(); im++){
+                for(int id = 0; id <detector_names.size(); id++){
+                        for(int ic = 0; ic <channel_names.size(); ic++){
+
+
+				bool this_run = false;
+                                bool this_run_comp = false;
+				std::string canvas_name = mode_names.at(im)+"_"+detector_names.at(id)+"_"+channel_names.at(ic);
+				TCanvas* Cstack= new TCanvas((tag+"_"+canvas_name).c_str(),(tag+" | "+canvas_name).c_str(),1450,1200);
+				Cstack->cd();
+                                THStack * hs = new THStack(canvas_name.c_str(),  canvas_name.c_str());
+				TLegend legStack(0.11, 0.58, 0.89, 0.89);
+                                legStack.SetNColumns(2);
+                                legStack.SetLineWidth(0);
+                                legStack.SetLineColor(kWhite);
+                                int n=0;
+                                int nc=0;
+                                TH1D * hcomp;
+                                TH1D *hsum;
+                                double hcomp_sum=0;
+                                double hsum_sum=0;
+
+				for(auto &h : temp_comp){
+                                        std::string test = h.GetName();
+                                        if(test.find(canvas_name)!=std::string::npos){
+                                                double total_events = h.GetSumOfWeights();
+                                                hcomp_sum += total_events;
+						if(width_norm) h.Scale(1,"width");
+						h.SetLineColor(kBlack);
+						if(!this_run_comp){
+                                                        hcomp = (TH1D*)h.Clone(("comp_"+canvas_name).c_str());
+                                                        hcomp->Reset();
+                                                }
+
+                                                std::ostringstream out;
+                                                out << std::setprecision(2) << total_events;
+                                                std::string hmm = "\t";
+                                                std::string tmp = h.GetName() +hmm+ out.str();
+
+
+                                                hcomp->Add(&h);
+                                                nc++;
+
+                                                this_run_comp=true;
+
+                                        }
+                                }
+
+				std::vector<double> integral_sorter;
+                                std::vector<TH1*> to_sort;
+                                std::vector<std::string> l_to_sort;
+
+                                for(auto &h : temp){
+                                        std::string test = h.GetName();
+                                        if(test.find(canvas_name)!=std::string::npos ){
+
+                                                double total_events = h.GetSumOfWeights();
+                                                hsum_sum += total_events;
+						if(width_norm) h.Scale(1,"width");
+						h.GetYaxis()->SetTitle("Events/GeV");
+                                                h.SetMarkerStyle(20);
+                                                h.SetMarkerColor(mycol[n]);
+                                                h.SetFillColor(mycol[n]);
+                                                if(gLEE_plot & (test.find("BNBext")!=std::string::npos)) h.SetFillStyle(3333);
+                                                h.SetLineColor(kBlack);
+                                                h.SetTitle(h.GetName());
+						if(!this_run){
+                                                        hsum = (TH1D*)h.Clone(("sum_"+canvas_name).c_str());
+                                                        hsum->Reset();
+                                                }
+						std::ostringstream out;
+                                                out <<std::fixed<< std::setprecision(2) << total_events;
+                                                std::string hmm = " | ";
+						std::string tmp_name = h.GetName();
+                                                std::string tmp = map_subchannel_plotnames[tmp_name] +hmm+ out.str();
+						hsum->Add(&h);
+						n++;
+
+                                                this_run=true;
+
+                                                to_sort.push_back(&h);
+                                                l_to_sort.push_back(tmp);
+                                                integral_sorter.push_back(total_events);
+
+                                                if(gLEE_plot){
+                                                        hs->Add(&h, "HIST");
+                                                        legStack.AddEntry(&h, tmp.c_str(),"f");
+                                                }
+
+                                        }
+                                }
+
+                                if(!gLEE_plot){
+					for (int i: SortIndexes(integral_sorter)) {
+                                        hs->Add(to_sort.at(i), "HIST");
+                                        legStack.AddEntry(to_sort.at(i), l_to_sort.at(i).c_str(),"f");
+                                }
+                                }
+
+				// ************* start dealing with error bars************************
+				int step = num_bins[ic];   //num of bins perchannel
+				TMatrixT<double> sub_syst_matrix = collapsed_syst_matrix.GetSub(matrix_index, matrix_index+step-1, matrix_index, matrix_index+step-1);
+				TMatrixT<double> sub_all_err_matrix = sub_syst_matrix;
+				double mc_intrinsic_err_square=0;  //overall stats error of the MC histogram integral
+				double sig_bin_err, data_bin_err;
+				double bin_width;
+				for(int ib=0; ib< step; ib++){
+					if(width_norm) bin_width = hsum->GetBinWidth(id+1);
+					else bin_width = 1.0;
+
+					mc_intrinsic_err_square += pow(bin_width*hsum->GetBinError(ib+1), 2.0);				
+					sig_bin_err = sqrt(pow(hsum->GetBinError(ib+1), 2.0) + sub_syst_matrix(ib,ib)/pow(bin_width, 2.0));
+					data_bin_err = sqrt(hcomp->GetBinContent(ib+1)/bin_width);
+
+					hsum->SetBinError(ib+1, sig_bin_err);
+					hcomp->SetBinError(ib+1, data_bin_err);
+
+					// ******to add stats error to the matrix**********
+					//Pearson chi2
+					//sub_all_err_matrix(ib,ib) +=pow(bin_width*hsum->GetBinError(ib+1), 2.0);
+					//Neyman chi2
+					//sub_all_err_matrix(ib,ib) +=hcomp->GetBinContent(ib+1);
+					//CNP chi2
+					sub_all_err_matrix(ib,ib) +=  bin_width*( hcomp->GetBinContent(ib+1) >0.001 ? 3.0/(1.0/hcomp->GetBinContent(ib+1) +  2.0/hsum->GetBinContent(ib+1))  : hsum->GetBinContent(ib+1)/2.0 );
+
+				}	
+				// overall stats+syst error of the MC histogram integral
+				double overall_syst_error = sqrt(mc_intrinsic_err_square + sub_syst_matrix.Sum());
+				
+
+
+				// *********** start calculate chi2 and Pvalue **************
+				TMatrixT<double> sub_inverted_matrix = this->InvertMatrix(sub_all_err_matrix);
+				double chi=0;
+				for(int ir=0; ir < step ; ir++){
+				   for(int ik=0; ik< step; ik++){
+					chi += sub_inverted_matrix(ir, ik)*(sig_collapse[matrix_index+ir] - data_collapse[matrix_index+ir])*(sig_collapse[matrix_index+ik] - data_collapse[matrix_index+ik]);
+				   }
+				}
+				double pvalue = TMath::Prob(chi, step);
+
+				otag= "SBNchi::DrawComparisonIndividual\t||";
+				std::cout<< otag<<canvas_name<<" has stats error "<< sqrt(hsum_sum)<<", overall instrinsic error: "<< sqrt(mc_intrinsic_err_square) << ", and det/flux/XS systematic error: " << sqrt(sub_syst_matrix.Sum()) << ", that yields a total systematic error: "<< overall_syst_error  <<", overall total error: " << sqrt(hsum_sum + mc_intrinsic_err_square + sub_syst_matrix.Sum())<< std::endl;
+				std::cout<<otag<<canvas_name<< " has chi2 of " << chi << ", ndf: " << step << ", and Pvalue: "<< pvalue<< std::endl;
+				matrix_index += step; //update where to start for the next iteration
+				
+
+
+				// ************* start the drawing process *****************
+				legStack.AddEntry(hsum, Form("MC Stack | %.2f", hsum_sum), "fl");
+                                legStack.AddEntry(hcomp, Form("Data | %.2f", hcomp_sum), "flp");
+				if(this_run && this_run_comp){
+                                        double plot_pot=5e19;
+
+                                        double title_size_ratio=0.11;
+                                        double label_size_ratio=0.11;
+                                        double title_offSet_ratioY = 0.45;
+                                        double title_offSet_ratioX = 1.1;
+
+                                        double title_size_upper=0.048;
+                                        double label_size_upper=0.05;
+                                        double title_offSet_upper = 0.85;
+
+                                        Cstack->cd();
+					TPad *pad0top = new TPad(("pad0top_"+canvas_name).c_str(), ("pad0top_"+canvas_name).c_str(), 0, 0.40, 1, 1.0);
+                                        pad0top->SetBottomMargin(0); // Upper and lower plot are joined
+					pad0top->Draw();             // Draw the upper pad: pad2top
+					pad0top->cd();               // pad2top becomes the current pad
+					hs->Draw();
+					//draw error bar for 'sig' SBNspec
+					hsum->SetFillColor(kBlack);
+                                        hsum->SetFillStyle(3354);
+                                        hsum->SetMarkerSize(0);
+                                        hsum->SetLineWidth(3);
+                                        hsum->Draw("E2 same");
+					if(width_norm) hs->GetYaxis()->SetTitle(("Events/"+channel_units.at(ic)).c_str());
+					else hs->GetYaxis()->SetTitle("Events");
+                                        hs->GetYaxis()->SetTitleSize(title_size_upper);
+                                        hs->GetYaxis()->SetLabelSize(label_size_upper);
+                                        hs->GetYaxis()->SetTitleOffset(title_offSet_upper*1.2);
+
+					gStyle->SetEndErrorSize(5);
+                                        hcomp->SetMarkerStyle(20);
+                                        hcomp->SetMarkerColor(kBlack);
+                                        hcomp->SetMarkerSize(1.5);
+                                        hcomp->SetLineWidth(3);
+                                        hcomp->SetLineColor(kBlack);
+                                        hcomp->Draw("E1P same");
+					hs->SetMaximum(std::max(hs->GetMaximum(), hcomp->GetMaximum())*2.2);
+                                        //hs->SetMaximum(std::max(hs->GetMaximum(), hcomp->GetMaximum())*1.1);
+                                        hs->SetMinimum(0.001);
+
+                                        Cstack->Update();
+                                        legStack.Draw();
+                                        TText t_text(0.7*(hs->GetXaxis()->GetXmax()), 1.25*hs->GetMaximum(), (channel_names.at(ic)).c_str());
+                                        t_text.SetTextSize(0.08);
+                                        t_text.Draw();
+
+                                        Cstack->cd();
+					TPad *pad0bot = new TPad(("padbot_"+canvas_name).c_str(),("padbot_"+canvas_name).c_str(), 0, 0.1, 1, 0.40);
+                                        pad0bot->SetTopMargin(0);
+                                        pad0bot->SetBottomMargin(0.38);
+                                        pad0bot->SetGridx(); // vertical grid
+					pad0bot->Draw();
+                                        pad0bot->cd();       // pad0bot becomes the current pad
+					
+			
+					TH1* ratpre = (TH1*)hcomp->Clone(("ratio_"+canvas_name).c_str());
+                                        ratpre->Divide(hsum);
+                                        ratpre->SetStats(false);
+                                        //to draw the 1 sigma error band on the ratio plot
+                                        TH1* h_err = (TH1*)hsum->Clone("error_band");
+                                        h_err->Divide(hsum);
+                                        for(int i=0; i<h_err->GetNbinsX(); i++){
+                                                h_err->SetBinError(i+1, hsum->GetBinError(i+1)/hsum->GetBinContent(i+1));
+                                                ratpre->SetBinError(i+1, hcomp->GetBinError(i+1)/hsum->GetBinContent(i+1));
+                                        }
+
+
+                                        ratpre->Draw("E1");
+					ratpre->SetFillColor(kWhite);
+					ratpre->SetLineWidth(2);
+                                        h_err->Draw("E2same");
+                                        Cstack->Update();
+                                        gStyle->SetOptStat(0);
+                                        TLine *line = new TLine(ratpre->GetXaxis()->GetXmin(),1.0,ratpre->GetXaxis()->GetXmax(),1.0 );
+                                        line->Draw("same");
+                                        ratpre->SetLineColor(kBlack);
+                                        ratpre->SetTitle("");
+                                        ratpre->GetYaxis()->SetTitle("Data/Prediction");
+                                        ratpre->GetXaxis()->SetTitleOffset(title_offSet_ratioX);
+                                        ratpre->GetYaxis()->SetTitleOffset(title_offSet_ratioY);
+                                        ratpre->SetMinimum(std::min(0.5, ratpre->GetMinimum())*0.8);
+                                        //ratpre->SetMinimum(ratpre->GetMinimum()*0.97);
+                                        ratpre->SetMaximum(std::max(1.5, ratpre->GetMaximum())*1.2);
+                                        //ratpre->SetMaximum(ratpre->GetMaximum()*1.03);
+                                        ratpre->GetYaxis()->SetNdivisions(505, kTRUE);   //change the label division in y axis
+					ratpre->GetYaxis()->SetTitleSize(title_size_ratio);
+                                        ratpre->GetXaxis()->SetTitleSize(title_size_ratio);
+                                        ratpre->GetYaxis()->SetLabelSize(label_size_ratio);
+                                        ratpre->GetXaxis()->SetLabelSize(label_size_ratio);
+					ratpre->GetXaxis()->SetTitle(channel_units.at(ic).c_str());
+                                        Cstack->Update();
+					
+					Cstack->cd();
+					TLatex* lat = new TLatex();
+					lat->SetTextColor(kRed-9);
+					lat->SetTextSize(0.03);
+					lat->DrawLatex(0.1, 0.1, Form("Data/MC: %.2f", hcomp_sum/hsum_sum));
+					lat->DrawLatex(0.4, 0.1, Form("(#chi^{2}/nDOF: %.2f/%d)", chi, step));
+					lat->DrawLatex(0.7, 0.1, Form("(#chi^{2} P^{val}: %.3f)", pvalue));
+					Cstack->Update();
+                                        Cstack->SaveAs((tag+"_chi_"+canvas_name+".pdf").c_str(),"pdf");
+                                        Cstack->Write(canvas_name.c_str() );
+				}
+
+			}
+                }
+        }
+
+        fcompare->Close();
+
+
+	return 0;
+}
