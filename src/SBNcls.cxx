@@ -56,10 +56,18 @@ int SBNcls::CalcCLS(int numMC, std::string tag){
     std::cout<<"SBNcls::CalcCLS\t|| Central Value Chi is : "<<central_value_chi<<" and "<<central_value_chi_h1<<" should be 0"<<std::endl;
 	TH1D h1_pdf;
 
+
+    //mode =0: absolute chi2 value
     if(which_mode==0){
 	//distribution of chi2 values (from fake experiments), given a cv spectra
+
+	//core spec is h0, random possion sampling from h1, and calculate the chi2 value of random h1 sample and h0.
         if(which_sample == 0) h1_pdf = chi_h0.SamplePoissonVaryInput(h1, numMC, central_value_chi*50);
+
+	//core spec is h0, sampling from h1 using cholosky decomposition, and calculate the chi2 value of random h1 and h0
         else if(which_sample==1) h1_pdf = chi_h0.SampleCovarianceVaryInput(h1, numMC, central_value_chi*50);
+
+    //mode =1: delta chi2 value
     }else if (which_mode ==1){
         h1_pdf = chi_h1.SamplePoisson_NP(h1,chi_h0,chi_h1, numMC, central_value_chi*50,which_sample);
     }

@@ -173,8 +173,8 @@ int main(int argc, char* argv[])
     vec_spec[0].Scale("NCDeltaRadOverlayLEE", 0.0);
     //vec_spec[0].Scale("NCDeltaRadOverlaySM", 0.0);
     //get the BF values
-    vec_spec[1].Scale("NCDeltaRadOverlayLEE", 1.23);
-    //vec_spec[1].Scale("NCDeltaRadOverlaySM", 3.74);
+    vec_spec[1].Scale("NCDeltaRadOverlayLEE", 1.02);
+    //vec_spec[1].Scale("NCDeltaRadOverlaySM", 1.92);
     
     std::cout<<"Loading fractional covariance matrix from "<<covar_file<<std::endl;
 
@@ -268,8 +268,9 @@ int main(int argc, char* argv[])
     }
 
     //starts
-    int start_pt = 9;
-    int start_pt_1g0p=3;//1g1p only has 3 bins
+    int start_pt = 16;
+    int start_pt_1g0p=6;//1g1p only has 6 bins
+    
 
     TFile *fout = new TFile(("Constraint_"+tag+"_output.root").c_str(),"recreate");
 
@@ -277,6 +278,7 @@ int main(int argc, char* argv[])
     int which_spec_index=0;
     //loop over the spectra vector, and calculating the constrained chi2
     for(SBNspec& fspec:vec_spec){
+	    fspec.CalcErrorVector();
 	    //if(which_spec_index==0) continue;
 	    std::cout << "i = " << which_spec_index<< std::endl;;
 	    SBNchi SigChi(fspec, *cov);
@@ -294,11 +296,26 @@ int main(int argc, char* argv[])
 
 	    //Add on stats for the constraining bit ONLY
 	    for(int i=0; i< cv.num_bins_total_compressed;i++){
-	         collapsed_covar(i,i) -= fspec.collapsed_vector.at(i);
+		 //add MC intrinsic error
+	         collapsed_covar(i,i) += pow(fspec.collapsed_err_vector.at(i), 2.0)- fspec.collapsed_vector.at(i);
 	         //if(i >= start_pt) collapsed_covar(i,i) += data.collapsed_vector.at(i);  //use the data stats for constrained matrix
 	         if(i >= start_pt) collapsed_covar(i,i) += fspec.collapsed_vector.at(i);  //use the MC stats for constrained matrix
 	    }
-    
+   
+	   double intri_1g1p = 0;
+		double overall_1g1p_uncons = 0;
+		double intri_1g0p = 0;
+		double overall_1g0p_uncons =0;
+	   for(int i=0; i<cv.num_bins_total_compressed; i++){
+		if(i<start_pt_1g0p) intri_1g1p += pow(fspec.collapsed_err_vector.at(i), 2.0);
+		else if(i < start_pt) intri_1g0p+= pow(fspec.collapsed_err_vector.at(i), 2.0);
+
+		for(int j=0 ;j <cv.num_bins_total_compressed; j++){
+		  if(i <start_pt_1g0p && j<start_pt_1g0p) overall_1g1p_uncons+=collapsed_covar(i,j);
+		  else if( (i>= start_pt_1g0p && i<start_pt) && (j >=start_pt_1g0p && j<start_pt)) overall_1g0p_uncons+=collapsed_covar(i,j);
+		}
+	  } 
+	  
 
 
 	    // ****************************calculate chi constrain***************************************
@@ -319,13 +336,23 @@ int main(int argc, char* argv[])
 			chi_constrain += constrained_invert(i,j)*(data.collapsed_vector.at(i)-constrained_pred[i])*(data.collapsed_vector.at(j)-constrained_pred[j]);
 		}
 	    }
-	    
+	   
+	    double overall_syst_1g1p=0;
+	    double overall_syst_1g0p=0;
+	    for(int i=0; i< start_pt; i++){
+		for(int j=0; j< start_pt; j++){
+			if( (i< start_pt_1g0p) && (j<start_pt_1g0p)) overall_syst_1g1p +=constrained_mat(i,j);
+			if((i>= start_pt_1g0p) && (j>= start_pt_1g0p)) overall_syst_1g0p +=constrained_mat(i,j);
+		}
+	    }
+ 
 	    // *************************calculate chi nue original **************************************
 	    TMatrixT<double> original_mat = v_mat[0];
+	    TMatrixT<double> original_full_mat = original_mat;
 	    for(int i=0; i<start_pt; i++){
-                original_mat(i,i) +=  ( data.collapsed_vector.at(i) >0.001 ? 3.0/(1.0/data.collapsed_vector.at(i) +  2.0/fspec.collapsed_vector.at(i))  : fspec.collapsed_vector.at(i)/2.0 );
+                original_full_mat(i,i) +=  ( data.collapsed_vector.at(i) >0.001 ? 3.0/(1.0/data.collapsed_vector.at(i) +  2.0/fspec.collapsed_vector.at(i))  : fspec.collapsed_vector.at(i)/2.0 );
             }
-	    TMatrixT<double> original_invert = SigChi.InvertMatrix(original_mat);
+	    TMatrixT<double> original_invert = SigChi.InvertMatrix(original_full_mat);
 	   for(int i=0; i< start_pt; i++){
                 for(int j=0; j< start_pt; j++){
                         chi_nueoriginal += original_invert(i,j)*(data.collapsed_vector.at(i)-fspec.collapsed_vector.at(i))*(data.collapsed_vector.at(j)-fspec.collapsed_vector.at(j));
@@ -345,6 +372,15 @@ int main(int argc, char* argv[])
 	    std::cout << "Numu-nue side-by-side chi2 value is " << chi_total << std::endl;
 	    std::cout << "Nue only original  chi2 value is " << chi_nueoriginal << std::endl;
 	    std::cout << "Nue constrained  chi2 value is " << chi_constrain << std::endl;
+	    std::cout << "Nue constrained, overall systematic uncertainty is:" << std::endl;
+	    std::cout << "\t\t\t\t\t 1g1p: " << sqrt(overall_syst_1g1p) << std::endl;
+	    std::cout << "\t\t\t\t\t 1g1p MC intrinsic error " << sqrt(intri_1g1p) << std::endl;
+	    std::cout << "\t\t\t\t\t 1g1p overall unconstrained error " << sqrt(overall_1g1p_uncons) << std::endl;
+	    std::cout << "\t\t\t\t\t 1g0p MC intrinsic error " << sqrt(intri_1g0p) << std::endl;
+	    std::cout << "\t\t\t\t\t 1g0p overall unconstrained error " << sqrt(overall_1g0p_uncons) << std::endl;
+	    std::cout << "\t\t\t\t\t 1g0p: " << sqrt(overall_syst_1g0p) << std::endl;
+	    std::cout << "constrained 1g1p events: " << std::accumulate(constrained_pred.begin(), constrained_pred.begin()+start_pt_1g0p, 0.0);
+	    std::cout << "   constrained 1g1p events: " << std::accumulate(constrained_pred.begin()+start_pt_1g0p, constrained_pred.end(), 0.0)<< std::endl;
 
 	    for(int i=0; i<start_pt; i++){
 		std::cout<<i<<" N: "<<fspec.collapsed_vector.at(i)<<" Original: "<<sqrt(collapsed_covar(i,i))/fspec.collapsed_vector.at(i)<<" New: "<<sqrt(constrained_mat(i,i))/fspec.collapsed_vector.at(i)<<" Ratio: "<<sqrt(constrained_mat(i,i))/sqrt(collapsed_covar(i,i))<<std::endl;
@@ -364,7 +400,7 @@ int main(int argc, char* argv[])
 
 		//reset error bars
 		h_1g1p_original->SetBinError(i+1, sqrt(original_mat(i,i)));
-		h_1g1p_constrain->SetBinError(i+1, sqrt(full_constrained_mat(i,i)));
+		h_1g1p_constrain->SetBinError(i+1, sqrt(constrained_mat(i,i)));
 		h_1g1p_data->SetBinError(i+1, sqrt(h_1g1p_data->GetBinContent(i+1)));
 	   }
 
@@ -380,7 +416,7 @@ int main(int argc, char* argv[])
 
 		//reset error bars
 		h_1g0p_original->SetBinError(i+1, sqrt(original_mat(local_index, local_index)));
-		h_1g0p_constrain->SetBinError(i+1, sqrt(full_constrained_mat(local_index, local_index)));
+		h_1g0p_constrain->SetBinError(i+1, sqrt(constrained_mat(local_index, local_index)));
 		h_1g0p_data->SetBinError(i+1, sqrt(h_1g0p_data->GetBinContent(i+1)));
 	        //std::cout << " " << sqrt(original_mat(local_index, local_index)) << " " << sqrt(full_constrained_mat(local_index, local_index)) << std::endl;
 	   }
@@ -397,11 +433,14 @@ int main(int argc, char* argv[])
 		  TLegend* leg=new TLegend(0.7,0.7,0.9,0.9);
 		  vec_hist_original[i]->SetLineColor(kMagenta+3);
 		  vec_hist_original[i]->SetLineWidth(2);
+		  vec_hist_original[i]->SetLineStyle(kDashed);
 		  TH1D* h_1g_original_copy= (TH1D*)vec_hist_original[i]->Clone();
 		  vec_hist_original[i]->SetFillColorAlpha(kMagenta -10, 0.8);
 		  //vec_hist_original[i]->SetFillColor(kMagenta -10);
 		  vec_hist_original[i]->SetTitle(Form("%s; Reco shower energy/GeV; Events", vec_string[i].c_str()));
 		  //h_1g1p_original->SetFillStyle(4050);  //only useful for TPad
+		  vec_hist_original[i]->SetMaximum(std::max(vec_hist_original[i]->GetMaximum(), vec_hist_data[i]->GetMaximum())*1.8);
+		  vec_hist_original[i]->SetMinimum(0);
 
 		  vec_hist_constrain[i]->SetLineColor(kGreen+3);
 		  vec_hist_constrain[i]->SetLineWidth(2);
@@ -410,7 +449,6 @@ int main(int argc, char* argv[])
 		  //vec_hist_constrain[i]->SetFillColor(kGreen -10);
 		  gStyle->SetHatchesLineWidth(3);
 		  vec_hist_constrain[i]->SetTitle(Form("%s; Reco shower energy/GeV; Events", vec_string[i].c_str()));
-		  vec_hist_constrain[i]->SetMinimum(0);
 		  vec_hist_constrain[i]->SetFillStyle(3345);
 		  leg->AddEntry(vec_hist_constrain[i], Form("%s Constrained",vec_string[i].c_str()), "LF");
 
