@@ -193,18 +193,13 @@ int main(int argc, char* argv[])
     //mygrid.AddConstrainedDimension("All", 0.5, 1.5, 0.01, 1.19);   //0.1 FULL
     //mygrid.AddConstrainedDimension("NCPi0NotCoh", 0.7, 1.55, 0.05, 1.0);   //0.1 FULL
     //mygrid.AddConstrainedDimension("NCPi0Coh", 0, 4, 0.2, 1.0); //0.1full
-    //mygrid.AddConstrainedDimension("NCPi0NotCoh", 0.5, 1.25, 0.2, 1.0);   //0.1 FULL
-    //mygrid.AddConstrainedDimension("NCPi0Coh", 0, 5, 0.2, 1.25); //0.1full
     //mygrid.AddFixedDimension("NCPi0NotCoh", 1.19);   //fixed
-    //mygrid.AddFixedDimension("NCPi0Coh", 1.5); //fixed
-    //mygrid.AddFixedDimension("NCDeltaRadOverlayLEE", 0.0);
     //mygrid.AddDimension("NCDeltaRadOverlayLEE", -0.5, 3.5, 0.005 );
     mygrid.AddDimension("NCDeltaRadOverlaySM", 0, 8, 0.005 );
     //mygrid.AddDimension("NCDeltaRadOverlayLEE", -0.5, 3.0, 0.3 );
 
 
     poly_grid.AddConstrainedDimension("NCPi0NotCoh", -3.0, 0.6, 0.6, 1);  //zoomed in first order
-    //poly_grid.AddConstrainedDimension("NCPi0NotCoh", -3.0, 0.6, 0.2, 1);  //zoomed in first order
     //poly_grid.AddConstrainedDimension("NCPi0NotCoh", -4.0, 2.0, 0.3, -1.1);  //first order
     //poly_grid.AddFixedDimension("NCPi0NotCoh", -1.05); // second order 
 
@@ -246,8 +241,8 @@ int main(int argc, char* argv[])
 		  sp.ModifyCV(delta_scaling);
 		  //sp.ModifyCV(delta_scaling, {1.0, 1.0});
 		}
-		//sp.LoadSpectraOnTheFly();
-		sp.LoadSpectraApplyFullScaling();
+		//sp.LoadSpectraOnTheFly();         //safe to use whenever!
+		sp.LoadSpectraApplyFullScaling();   //only safe to use when there is no poly grid involved
 		//sp.CalcChiGridScanShapeOnlyFit();
 		sp.CalcChiGridScan();
 	}else if(mode == "plot"){

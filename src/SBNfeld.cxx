@@ -51,17 +51,17 @@ int SBNfeld::GenerateScaledSpectra(){
     m_cv_spec_grid.clear();
     m_cv_spec_grid.resize(m_grid.f_num_total_points);
     m_core_spectrum->CalcFullVector();
+    m_core_spectrum->CalcErrorVector();
 
 
     for(size_t t =0; t < m_grid.f_num_total_points; t++){
 
         std::cout<<"SBNfeld::GenerateScaledSpectra()\t\t||\t\t On scaling point "<<t<<" which is "<<m_grid.f_dimensions[0].GetPoint(t)<<std::endl;
 
-        m_cv_spec_grid[t] = new SBNspec(m_core_spectrum->full_vector,  m_core_spectrum->xmlname, t, false);
+        m_cv_spec_grid[t] = new SBNspec(m_core_spectrum->full_vector, m_core_spectrum->full_err_vector, m_core_spectrum->xmlname, t, false);
         m_cv_spec_grid[t]->Scale(m_subchannel_to_scale, m_grid.f_dimensions[0].GetPoint(t));
 
-        m_cv_spec_grid[t]->CalcFullVector();
-        m_cv_spec_grid[t]->CollapseVector();
+        //m_cv_spec_grid[t]->CollapseVector();
     }
 }
 
@@ -79,8 +79,8 @@ int SBNfeld::GenerateBackgroundSpectrum(){
     //Is this a troublesome line?!? Shouldn't be right?!
     //m_core_spectrum->SetAppMode();
 
-    std::vector<double> ans = m_core_spectrum->Oscillate(this->tag, false);
-    SBNspec background(ans, m_core_spectrum->xmlname,false);
+    std::vector<std::vector<double>> ans = m_core_spectrum->Oscillate(this->tag, false);
+    SBNspec background(ans[0], ans[1], m_core_spectrum->xmlname,false);
     background.Scale("fullosc",0.0);
     background.Scale("ncdelta",0.0);
     background.WriteOut(this->tag+"_BKG_ONLY");
@@ -155,15 +155,15 @@ int SBNfeld::LoadPreOscillatedSpectrum(int which_pt){
 
     //And apply this oscillaion! Adding to it the bkgSpec that it was initilised with.
     //NOTE we want to return the FULL spectrum, not compressed so we can calculate the covariance matrix, hense the false in this Oscilate
-    std::vector<double> ans = m_core_spectrum->Oscillate(this->tag, false);
+    std::vector<std::vector<double>> ans = m_core_spectrum->Oscillate(this->tag, false);
     std::cout<<"Spectrum: ";
-    for(int p=0; p<ans.size();p++){
-        std::cout<<" "<<ans[p];
+    for(int p=0; p<ans[0].size();p++){
+        std::cout<<" "<<ans[0][p];
     }
-    SBNspec * thispoint = new SBNspec(ans, m_core_spectrum->xmlname,which_pt, false);
+    SBNspec * thispoint = new SBNspec(ans[0],ans[1],  m_core_spectrum->xmlname,which_pt, false);
 
     thispoint->ScaleAll(global_scale);
-    thispoint->CollapseVector();
+    //thispoint->CollapseVector();
 
     //make a print out of this exact spectrum as compared to the "core" spectrum
     std::string tlog  = std::to_string(m_vec_grid[which_pt][0])+"_"+std::to_string(m_vec_grid[which_pt][1])+"_"+std::to_string(m_vec_grid[which_pt][2]);
@@ -198,15 +198,15 @@ int SBNfeld::LoadPreOscillatedSpectra(){
 
         //And apply this oscillaion! Adding to it the bkgSpec that it was initilised with.
         //NOTE we want to return the FULL spectrum, not compressed so we can calculate the covariance matrix, hense the false in this Oscilate
-        std::vector<double> ans = m_core_spectrum->Oscillate(this->tag, false);
+        std::vector<std::vector<double>> ans = m_core_spectrum->Oscillate(this->tag, false);
         std::cout<<"Spectrum: ";
-        for(int p=0; p<ans.size();p++){
-            std::cout<<" "<<ans[p];
+        for(int p=0; p<ans[0].size();p++){
+            std::cout<<" "<<ans[0][p];
         }
         std::cout<<std::endl;
-        m_cv_spec_grid[t] = new SBNspec(ans, m_core_spectrum->xmlname,t, false);
+        m_cv_spec_grid[t] = new SBNspec(ans[0],ans[1], m_core_spectrum->xmlname,t, false);
         m_cv_spec_grid[t]->ScaleAll(global_scale);
-        m_cv_spec_grid[t]->CollapseVector();
+        //m_cv_spec_grid[t]->CollapseVector();
 
 
         if(m_bool_print_comparasons && t ==490){// t==1668 
@@ -225,17 +225,20 @@ int SBNfeld::LoadBackgroundSpectrum(){
     m_background_spectrum->ScaleAll(global_scale);
     m_bool_background_spectrum_set = true;
 
-    m_background_spectrum->CollapseVector();
+    //m_background_spectrum->CollapseVector();
+    m_background_spectrum->CalcErrorVector();
     m_tvec_background_spectrum = new TVectorT<double>(m_background_spectrum->full_vector.size(), &(m_background_spectrum->full_vector)[0]);
+    m_tvec_background_err = new TVectorT<double>(m_background_spectrum->full_err_vector.size(), &(m_background_spectrum->full_err_vector)[0]);
 
     if(m_background_spectrum->full_vector.size() !=  m_full_fractional_covariance_matrix->GetNcols()){
 
-        std::cout<<"SBNfeld::LoadBackgroundSpectrum || ERROR!! background spectrum is of length : "<<m_background_spectrum->full_vector.size()<<" and frac matrix is of size "<<m_full_fractional_covariance_matrix->GetNcols()<<std::endl;
+        std::cerr<<"SBNfeld::LoadBackgroundSpectrum || ERROR!! background spectrum is of length : "<<m_background_spectrum->full_vector.size()<<" and frac matrix is of size "<<m_full_fractional_covariance_matrix->GetNcols()<<std::endl;
         exit(EXIT_FAILURE);
     }
 
 
     m_background_chi = new SBNchi(*m_background_spectrum, *m_full_fractional_covariance_matrix, this->xmlname, false);
+    if(m_bool_stat_only) m_background_chi->is_stat_only = true;
     return 0;
 }
 
@@ -247,16 +250,18 @@ int SBNfeld::SetBackgroundSpectrum(std::string filein, std::string scale_nam, do
     m_bool_background_spectrum_set = true;
 
     m_background_spectrum->CollapseVector();
+    m_background_spectrum->CalcErrorVector();
     m_tvec_background_spectrum = new TVectorT<double>(m_background_spectrum->full_vector.size(), &(m_background_spectrum->full_vector)[0]);
+    m_tvec_background_err = new TVectorT<double>(m_background_spectrum->full_err_vector.size(), &(m_background_spectrum->full_err_vector)[0]);
 
     if(m_background_spectrum->full_vector.size() !=  m_full_fractional_covariance_matrix->GetNcols()){
 
-        std::cout<<"SBNfeld::LoadBackgroundSpectrum || ERROR!! background spectrum is of length : "<<m_background_spectrum->full_vector.size()<<" and frac matrix is of size "<<m_full_fractional_covariance_matrix->GetNcols()<<std::endl;
+        std::cerr<<"SBNfeld::LoadBackgroundSpectrum || ERROR!! background spectrum is of length : "<<m_background_spectrum->full_vector.size()<<" and frac matrix is of size "<<m_full_fractional_covariance_matrix->GetNcols()<<std::endl;
         exit(EXIT_FAILURE);
     }
 
     m_background_chi = new SBNchi(*m_background_spectrum, *m_full_fractional_covariance_matrix, this->xmlname, false);
-
+    if(m_bool_stat_only) m_background_chi->is_stat_only = true;
 
     return 0;
 }
@@ -267,8 +272,11 @@ int SBNfeld::LoadBackgroundSpectrum(std::string filein){
     m_bool_background_spectrum_set = true;
 
     m_background_spectrum->CollapseVector();
+    m_background_spectrum->CalcErrorVector();
     m_tvec_background_spectrum = new TVectorT<double>(m_background_spectrum->full_vector.size(), &(m_background_spectrum->full_vector)[0]);
+    m_tvec_background_err = new TVectorT<double>(m_background_spectrum->full_err_vector.size(), &(m_background_spectrum->full_err_vector)[0]);
     m_background_chi = new SBNchi(*m_background_spectrum, *m_full_fractional_covariance_matrix, this->xmlname, false);
+    if(m_bool_stat_only) m_background_chi->is_stat_only = true;
     return 0;
 }
 
@@ -301,7 +309,7 @@ int SBNfeld::FullFeldmanCousins(){
     int num_universes = m_num_universes;
 
     //Ok take the background only spectrum and form a background only covariance matrix. CalcCovarianceMatrix includes stats
-    TMatrixT<double> background_full_covariance_matrix = m_sbnchi_grid[0]->CalcCovarianceMatrix(m_full_fractional_covariance_matrix, *m_tvec_background_spectrum);
+    TMatrixT<double> background_full_covariance_matrix = m_sbnchi_grid[0]->CalcCovarianceMatrix(m_full_fractional_covariance_matrix, *m_tvec_background_spectrum, *m_tvec_background_err);
     TMatrixT<double> background_collapsed_covariance_matrix(m_background_spectrum->num_bins_total_compressed, m_background_spectrum->num_bins_total_compressed);
     m_sbnchi_grid[0]->CollapseModes(background_full_covariance_matrix, background_collapsed_covariance_matrix);    
     TMatrixT<double> inverse_background_collapsed_covariance_matrix = m_sbnchi_grid[0]->InvertMatrix(background_collapsed_covariance_matrix);   
@@ -456,14 +464,16 @@ int SBNfeld::FullFeldmanCousins(){
 
 
 int SBNfeld::UpdateInverseCovarianceMatrixCNP(size_t best_grid_point, const std::vector<float> &datavec, TMatrixT<double>& inverse_collapsed, SBNchi * helper){
-    inverse_collapsed = helper->CalcCovarianceMatrixCNP(m_full_fractional_covariance_matrix, m_cv_spec_grid[best_grid_point]->full_vector, m_cv_spec_grid[best_grid_point]->collapsed_vector, datavec);
+    m_cv_spec_grid[best_grid_point]->CalcErrorVector();
+    inverse_collapsed = helper->CalcCovarianceMatrixCNP(m_full_fractional_covariance_matrix, m_cv_spec_grid[best_grid_point]->full_vector, m_cv_spec_grid[best_grid_point]->full_err_vector, m_cv_spec_grid[best_grid_point]->collapsed_vector, datavec);
     inverse_collapsed = helper->InvertMatrix(inverse_collapsed);   
     return 0;
 }
 
 
 int SBNfeld::UpdateInverseCovarianceMatrix(size_t best_grid_point, TMatrixT<double>& inverse_collapsed, SBNchi * helper){
-    TMatrixT<double> full = helper->CalcCovarianceMatrix(m_full_fractional_covariance_matrix, m_cv_spec_grid[best_grid_point]->full_vector);
+    m_cv_spec_grid[best_grid_point]->CalcErrorVector();
+    TMatrixT<double> full = helper->CalcCovarianceMatrix(m_full_fractional_covariance_matrix, m_cv_spec_grid[best_grid_point]->full_vector, m_cv_spec_grid[best_grid_point]->full_err_vector);
     helper->CollapseModes(full, inverse_collapsed);    
     inverse_collapsed = helper->InvertMatrix(inverse_collapsed);   
     return 0;
@@ -532,7 +542,7 @@ int SBNfeld::PointFeldmanCousins(size_t grid_pt){
     int num_universes = m_num_universes;
 
     //Ok take the background only spectrum and form a background only covariance matrix. CalcCovarianceMatrix includes stats
-    TMatrixT<double> background_full_covariance_matrix = m_sbnchi_grid[0]->CalcCovarianceMatrix(m_full_fractional_covariance_matrix, *m_tvec_background_spectrum);
+    TMatrixT<double> background_full_covariance_matrix = m_sbnchi_grid[0]->CalcCovarianceMatrix(m_full_fractional_covariance_matrix, *m_tvec_background_spectrum, *m_tvec_background_err);
     TMatrixT<double> background_collapsed_covariance_matrix(m_background_spectrum->num_bins_total_compressed, m_background_spectrum->num_bins_total_compressed);
     m_sbnchi_grid[0]->CollapseModes(background_full_covariance_matrix, background_collapsed_covariance_matrix);    
     TMatrixT<double> inverse_background_collapsed_covariance_matrix = m_sbnchi_grid[0]->InvertMatrix(background_collapsed_covariance_matrix);   
@@ -564,8 +574,10 @@ int SBNfeld::PointFeldmanCousins(size_t grid_pt){
             //For first iteration, use the precalculated background only inverse covariance matrix.
             //For all subsequent iterations what is the full covariance matrix? Use the last best grid point.
             if(n_iter!=0){
+
+		m_cv_spec_grid[best_grid_point]->CalcErrorVector();
                 //Calculate current full covariance matrix, collase it, then Invert. 
-                TMatrixT<double> current_full_covariance_matrix = true_chi->CalcCovarianceMatrix(m_full_fractional_covariance_matrix,m_cv_spec_grid[best_grid_point]->full_vector);
+                TMatrixT<double> current_full_covariance_matrix = true_chi->CalcCovarianceMatrix(m_full_fractional_covariance_matrix,m_cv_spec_grid[best_grid_point]->full_vector, m_cv_spec_grid[best_grid_point]->full_err_vector);
                 TMatrixT<double> current_collapsed_covariance_matrix(num_bins_total_compressed, num_bins_total_compressed);
                 true_chi->CollapseModes(current_full_covariance_matrix, current_collapsed_covariance_matrix);    
                 inverse_current_collapsed_covariance_matrix = true_chi->InvertMatrix(current_collapsed_covariance_matrix);   
@@ -641,7 +653,7 @@ std::vector<double> SBNfeld::GlobalScan(int which_pt){
 
     std::vector<double> ans;
 
-    TMatrixT<double> background_full_covariance_matrix = m_sbnchi_grid[0]->CalcCovarianceMatrix(m_full_fractional_covariance_matrix, *m_tvec_background_spectrum);
+    TMatrixT<double> background_full_covariance_matrix = m_sbnchi_grid[0]->CalcCovarianceMatrix(m_full_fractional_covariance_matrix, *m_tvec_background_spectrum, *m_tvec_background_err);
     TMatrixT<double> background_collapsed_covariance_matrix(m_background_spectrum->num_bins_total_compressed, m_background_spectrum->num_bins_total_compressed);
     m_sbnchi_grid[0]->CollapseModes(background_full_covariance_matrix, background_collapsed_covariance_matrix);    
     TMatrixT<double> inverse_background_collapsed_covariance_matrix = m_sbnchi_grid[0]->InvertMatrix(background_collapsed_covariance_matrix);   
@@ -664,6 +676,8 @@ std::vector<double> SBNfeld::GlobalScan(int which_pt){
 
         double chiSq;
         if(which_pt<0){
+
+            //guanqun: need to be careful here
             chiSq = m_background_chi->CalcChi(reco_spec);  //exclusion
         }else{
             chiSq = m_sbnchi_grid[which_pt]->CalcChi(reco_spec);  //allowed
@@ -695,7 +709,7 @@ std::vector<double> SBNfeld::GlobalScan(SBNspec * observed_spectrum){
 
     //Ok take the background only spectrum and form a background only covariance matrix. CalcCovarianceMatrix includes stats
 
-    TMatrixT<double> background_full_covariance_matrix = m_sbnchi_grid[0]->CalcCovarianceMatrix(m_full_fractional_covariance_matrix, *m_tvec_background_spectrum);
+    TMatrixT<double> background_full_covariance_matrix = m_sbnchi_grid[0]->CalcCovarianceMatrix(m_full_fractional_covariance_matrix, *m_tvec_background_spectrum, *m_tvec_background_err);
     TMatrixT<double> background_collapsed_covariance_matrix(m_background_spectrum->num_bins_total_compressed, m_background_spectrum->num_bins_total_compressed);
     m_sbnchi_grid[0]->CollapseModes(background_full_covariance_matrix, background_collapsed_covariance_matrix);    
     TMatrixT<double> inverse_background_collapsed_covariance_matrix = m_sbnchi_grid[0]->InvertMatrix(background_collapsed_covariance_matrix);   
@@ -717,10 +731,12 @@ std::vector<double> SBNfeld::GlobalScan(SBNspec * observed_spectrum){
     SBNspec * bf_spec = m_cv_spec_grid[bf];
 
     bf_spec->CollapseVector();
+    bf_spec->CalcErrorVector();
     TVectorT<double>* m_tvec_bf_spectrum = new TVectorT<double>(bf_spec->full_vector.size(), &(bf_spec->full_vector)[0]);
+    TVectorT<double>* m_tvec_bf_err = new TVectorT<double>(bf_spec->full_err_vector.size(), &(bf_spec->full_err_vector)[0]);
 
 
-    TMatrixT<double> bf_full_covariance_matrix = m_sbnchi_grid[0]->CalcCovarianceMatrix(m_full_fractional_covariance_matrix, *m_tvec_bf_spectrum);
+    TMatrixT<double> bf_full_covariance_matrix = m_sbnchi_grid[0]->CalcCovarianceMatrix(m_full_fractional_covariance_matrix, *m_tvec_bf_spectrum, *m_tvec_bf_err);
     TMatrixT<double> bf_collapsed_covariance_matrix(bf_spec->num_bins_total_compressed, bf_spec->num_bins_total_compressed);
     m_sbnchi_grid[0]->CollapseModes(bf_full_covariance_matrix, bf_collapsed_covariance_matrix);    
     TMatrixT<double> inverse_bf_collapsed_covariance_matrix = m_sbnchi_grid[0]->InvertMatrix(bf_collapsed_covariance_matrix);   

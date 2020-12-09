@@ -57,7 +57,8 @@ SBNspec::SBNspec(std::string rootfile, std::string whichxml, bool isverbose) : S
 
 	f->Close();
 
-
+	this->CalcFullVector();
+	this->CalcErrorVector();
 }
 
 SBNspec::SBNspec(std::vector<double> input_full_vec, std::string whichxml) : SBNspec(input_full_vec, whichxml, false){ };
@@ -73,15 +74,43 @@ SBNspec::SBNspec(std::vector<double> input_full_vec, std::string whichxml, int u
 			exact_bin -= hist.at(b).GetNbinsX();
 		}
 		hist.at(which_hist).SetBinContent(exact_bin+1, input_full_vec.at(i));
+		hist.at(which_hist).SetBinError(exact_bin+1, sqrt(input_full_vec.at(i)));
 
 	}
 
 
 	this->CalcFullVector();
+	this->CalcErrorVector();
 }
 
 
 
+SBNspec::SBNspec(std::vector<double> input_full_vec, std::vector<double> input_full_err, std::string whichxml) : SBNspec(input_full_vec, input_full_err, whichxml, false){ };
+SBNspec::SBNspec(std::vector<double> input_full_vec, std::vector<double> input_full_err, std::string whichxml, bool isverbose) : SBNspec(input_full_vec, input_full_err, whichxml,-1,isverbose){};
+SBNspec::SBNspec(std::vector<double> input_full_vec, std::vector<double> input_full_err, std::string whichxml, int universe, bool isverbose) : SBNspec(whichxml,universe,isverbose){
+
+        if(input_full_vec.size() != input_full_err.size()){
+                std::cerr << "SBNspec::SBNspec||\t Input full vector has different size from input full error vector: "<< input_full_vec.size() << ", " << input_full_err.size() << std::endl;
+                exit(EXIT_FAILURE);
+        }
+
+        for(int i=0; i< input_full_vec.size(); i++){
+
+                int which_hist = GetHistNumber(i);
+
+                int exact_bin = i;
+                for(int b=0; b<which_hist; b++){
+                        exact_bin -= hist.at(b).GetNbinsX();
+                }
+                hist.at(which_hist).SetBinContent(exact_bin+1, input_full_vec.at(i));
+                hist.at(which_hist).SetBinError(exact_bin+1, input_full_err.at(i));
+
+        }
+
+
+        this->CalcFullVector();
+        this->CalcErrorVector();
+}
 
 
 int SBNspec::Add(std::string which_hist, TH1 * histin){
@@ -109,6 +138,7 @@ int SBNspec::Add(std::string which_hist, TH1 * histin){
 	hist.at(h).Add(histin);
 
 	this->CollapseVector();
+	this->CalcErrorVector();
 	return 0;
 }
 
@@ -126,6 +156,7 @@ int SBNspec::Add(SBNspec *in){
 	}
 
 	this->CollapseVector();
+	this->CalcErrorVector();
 	return 0;
 }
 
@@ -150,6 +181,7 @@ int SBNspec::SetAsFlat(double val){
 	for(auto &h: hist){
 		for(int i=0; i<h.GetSize(); i++){
 			h.SetBinContent(i, val );
+			h.SetBinError(i, sqrt(val) );
 		}
 	}
 }
@@ -162,6 +194,7 @@ int SBNspec::ScalePoisson(){
 	for(auto &h: hist){
 		for(int i=1; i<h.GetSize()-1; i++){
 			h.SetBinContent(i, rangen->Poisson( h.GetBinContent(i)    ));
+			h.SetBinError(i, sqrt( h.GetBinContent(i)));
 		}
 	}
 	return 0;
@@ -171,6 +204,7 @@ int SBNspec::ScalePoisson(TRandom3* rangen){
 	for(auto &h: hist){
 		for(int i=1; i<h.GetSize()-1; i++){
 			h.SetBinContent(i, rangen->Poisson( h.GetBinContent(i)    ));
+			h.SetBinError(i, sqrt( h.GetBinContent(i)));
 		}
 	}
 	return 0;
@@ -185,6 +219,7 @@ int SBNspec::ScaleRandom(){
 		h.Scale(rangen->Uniform(0,2));
 
 	}
+	this->CalcErrorVector();
 	return 0;
 }
 
@@ -194,12 +229,16 @@ int SBNspec::Scale(std::string name, TF1 * func){
 		std::string test = h.GetName();
 		if(test.find(name)!=std::string::npos ){
 			for(int b=0; b<=h.GetNbinsX(); b++){
+				double old_bin_error = h.GetBinError(b);
 				//std::cout<<h.GetBinContent(b)<<" "<<h.GetBinCenter(b)<<" "<<func->Eval(h.GetBinCenter(b) )<<std::endl;
 				h.SetBinContent(b, h.GetBinContent(b)*func->Eval(h.GetBinCenter(b) ) );
+				h.SetBinError(b, old_bin_error*func->Eval(h.GetBinCenter(b) ) );
 			}
 		}
 
 	}
+	this->CollapseVector();
+	this->CalcErrorVector();
 
 	return 0;
 }
@@ -210,7 +249,7 @@ int SBNspec::ScaleAll(double sc){
 		h.Scale(sc);
 	}
 	this->CollapseVector();
-
+	this->CalcErrorVector();
 	return 0;
 }
 
@@ -232,6 +271,7 @@ int SBNspec::Scale(std::string name, double val){
 	scale_hist_val = val;
 
 	this->CollapseVector();
+	this->CalcErrorVector();
 	return 0;
 }
 
@@ -240,6 +280,9 @@ int SBNspec::NormAll(double n){
 	for(auto& h: hist) {
 		h.Scale(n/h.GetSumOfWeights());
 	}
+
+ 	this->CollapseVector();
+        this->CalcErrorVector();
 	return 0;
 }
 
@@ -253,6 +296,9 @@ int SBNspec::Norm(std::string name, double val){
 		}
 
 	}
+
+	this->CollapseVector();
+        this->CalcErrorVector();
 	return 0;
 
 }
@@ -267,6 +313,7 @@ int SBNspec::Keep(std::string name, double val){
 		else h.Scale(0.0);
 	}
 	this->CollapseVector();
+	this->CalcErrorVector();
 	return 0;
 }
 
@@ -334,7 +381,7 @@ int SBNspec::CalcErrorVector(){
 	for(int im=0; im < num_modes ; im++){
 	    for(int id = 0; id< num_detectors; id++){
 		for(int ic= 0; ic< num_channels; ic++){
-		    TH1D* hsum= nullptr;
+		    TH1D* hsum= nullptr;   //holds the summed histogram for one CHANNEL
 
 		    for(int is=0; is< num_subchannels[ic]; is++){
 			TH1D& h = hist[index];
@@ -580,12 +627,20 @@ int SBNspec::WriteOut(std::string tag){
 int SBNspec::CompareSBNspecs(SBNspec * compsec, std::string tag){
 	TMatrixT<double> covar(this->num_bins_total_compressed, this->num_bins_total_compressed);
         covar.Zero();
+	this->CalcErrorVector();
+	// add MC intrinsic error
+	for(int i=0 ; i< this->num_bins_total_compressed; i++) covar(i,i) = pow(collapsed_err_vector[i], 2.0);
+
 	this->CompareSBNspecs(covar, compsec, true, tag);
 }
 
 int SBNspec::CompareSBNspecs(SBNspec * compsec, bool inbool, std::string tag){
 	TMatrixT<double> covar(this->num_bins_total_compressed, this->num_bins_total_compressed);
 	covar.Zero();
+	this->CalcErrorVector();
+	// add MC intrinsic error
+	for(int i=0 ; i< this->num_bins_total_compressed; i++) covar(i,i) = pow(collapsed_err_vector[i], 2.0);
+
 	return this->CompareSBNspecs(covar,compsec, inbool, tag);
 }
 
@@ -823,9 +878,9 @@ int SBNspec::CompareSBNspecs(TMatrixT<double> collapse_covar, SBNspec * compsec,
 				//set the error of 'this' spec according to the covariance matrix
 				for(int i=0; i<hsum->GetNbinsX(); i++){
 					double xbin_width = hsum->GetXaxis()->GetBinWidth(i+1);
-					double error = sqrt(pow(hsum->GetBinError(i+1), 2.0) + collapse_covar(error_bin+i, error_bin+i)/pow(xbin_width, 2.0));
+					double error = sqrt(collapse_covar(error_bin+i, error_bin+i))/xbin_width;
 					//std::cout << collapse_covar(error_bin+i, error_bin+i) << std::endl;
-					std::cout << "previous error: "<< hsum->GetBinError(i+1) << ", later one: " << error << std::endl;
+					std::cout << "MC intrinsic error: "<< hsum->GetBinError(i+1) << ", overall syst error: " << error << std::endl;
 					hsum->SetBinError(i+1, error);
 	
 					//treat compared spec as real data

@@ -100,8 +100,8 @@ class SBNchi : public SBNconfig{
 
 	void FakeFillMatrix(TMatrixT <double>&  M);
 	void FillStatsMatrix(TMatrixT <double>&  M, std::vector<double> diag);
-	TMatrixT<double> FillSystMatrix(TMatrixT<double>& M, std::vector<double>& spec);
-	TMatrixT<double> FillSystMatrix(TMatrixT<double>& M, std::vector<double>& spec, bool);
+	TMatrixT<double> FillSystMatrix(TMatrixT<double>& M, std::vector<double>& spec, std::vector<double>& spec_err);
+	TMatrixT<double> FillSystMatrix(TMatrixT<double>& M, std::vector<double>& spec, std::vector<double>& spec_err, bool);
 
 	// These are the powerhouse of of the SBNchi, the ability to collapse any number of modes,detectors,channels and subchannels down to a physically observable subSet
 	// layer 1 is the cheif bit, taking each detector and collapsing the subchannels
@@ -112,15 +112,15 @@ class SBNchi : public SBNconfig{
 	void CollapseModes(TMatrixT <double> & M, TMatrixT <double> & Mc);
 
     TMatrixT<double> InvertMatrix(TMatrixT<double> &M);
-    TMatrixT<double> CalcCovarianceMatrix(TMatrixT<double>*M, TVectorT<double>& spec);
-    TMatrixT<double> CalcCovarianceMatrix(TMatrixT<double>*M, std::vector<double>& spec);
-    TMatrixT<double> SplitCovarianceMatrix(TMatrixT<double>*M, std::vector<double>& spec, int m);
-    TMatrixT<double> CalcCovarianceMatrixCNP(TMatrixT<double> &M, std::vector<double>& spec, std::vector<double>& spec_collapse, const std::vector<double>& datavec );
-    TMatrixT<double> CalcCovarianceMatrixCNP(TMatrixT<double>* M, std::vector<double>& spec, std::vector<double>& spec_collapse, const std::vector<float>& datavec );
+    TMatrixT<double> CalcCovarianceMatrix(TMatrixT<double>*M, TVectorT<double>& spec, TVectorT<double>& spec_err);
+    TMatrixT<double> CalcCovarianceMatrix(TMatrixT<double>*M, std::vector<double>& spec, std::vector<double>& spec_err);
+    TMatrixT<double> SplitCovarianceMatrix(TMatrixT<double>*M, std::vector<double>& spec, std::vector<double>& spec_err, int m);
+    TMatrixT<double> CalcCovarianceMatrixCNP(TMatrixT<double> &M, std::vector<double>& spec, std::vector<double>& spec_err,  std::vector<double>& spec_collapse, const std::vector<double>& datavec );
+    TMatrixT<double> CalcCovarianceMatrixCNP(TMatrixT<double>* M, std::vector<double>& spec, std::vector<double>& spec_err, std::vector<double>& spec_collapse, const std::vector<float>& datavec );
     TMatrixT<double> CalcCovarianceMatrixCNP(TMatrixT<double>* M, std::vector<double>& spec, const std::vector<float>& datavec );
     TMatrixT<double> CalcShapeOnlyCovarianceMatrix(TMatrixT<double> &M, SBNspec *mc, SBNspec* bkg);    
     TMatrixT<double> CalcShapeMixedCovarianceMatrix(TMatrixT<double> &M, SBNspec *mc, SBNspec* bkg);    
-    TMatrixT<double> CalcNeymanCovarianceMatrix(TMatrixT<double>* M, std::vector<double>& spec, std::vector<double>& data_full_vec);
+    TMatrixT<double> CalcNeymanCovarianceMatrix(TMatrixT<double>* M, std::vector<double>& spec, std::vector<double>& spec_err, std::vector<double>& data_full_vec);
     TMatrixT<double> AddStatMatrixCNP(TMatrixT<double>* M, std::vector<double>& spec, const std::vector<double>& datavec );
     TMatrixT<double> AddStatMatrix(TMatrixT<double>* M, const std::vector<double>& datavec );
 
@@ -189,8 +189,12 @@ class SBNchi : public SBNconfig{
 	TH2D* GetChiogram();
 	int PrintMatricies(std::string);
         int DrawSampleCovariance(std::string);
-	int DrawComparisonIndividual(SBNspec&, SBNspec&, TMatrixT<double>&, std::string);
-	int DrawComparisonIndividual(SBNspec&, SBNspec&, TMatrixT<double>&, std::string, bool);
+	int DrawComparisonIndividualFracMatrix(SBNspec&, SBNspec&, TMatrixT<double>&, std::string);
+	int DrawComparisonIndividualFracMatrix(SBNspec&, SBNspec&, TMatrixT<double>&, std::string, bool);
+	int DrawComparisonIndividual(SBNspec& sig, SBNspec& data, std::string);
+	int DrawComparisonIndividual(SBNspec& sig, SBNspec& data, std::string, bool);
+	int DrawComparisonIndividual(SBNspec& sig, SBNspec& data, TMatrixT<double>&, std::string);
+	int DrawComparisonIndividual(SBNspec& sig, SBNspec& data, TMatrixT<double>&, std::string, bool);
 };
 
 

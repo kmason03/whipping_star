@@ -15,17 +15,17 @@ target_link_libraries (sbnfit_conditional_constraint SBNfitlib tinyxmllib EventW
 add_executable (sbnfit_singlephoton sbnfit_singlephoton.cxx)
 target_link_libraries (sbnfit_singlephoton SBNfitlib tinyxmllib EventWeight)
 
-add_executable (sbnfit_NCpi0_normalization_fit sbnfit_NCpi0_normalization_fit.cxx)
-target_link_libraries (sbnfit_NCpi0_normalization_fit SBNfitlib tinyxmllib EventWeight)
+#add_executable (sbnfit_NCpi0_normalization_fit sbnfit_NCpi0_normalization_fit.cxx)
+#target_link_libraries (sbnfit_NCpi0_normalization_fit SBNfitlib tinyxmllib EventWeight)
 
-add_executable (sbnfit_NCdelta_fit sbnfit_NCdelta_fit.cxx)
-target_link_libraries (sbnfit_NCdelta_fit SBNfitlib tinyxmllib EventWeight)
+#add_executable (sbnfit_NCdelta_fit sbnfit_NCdelta_fit.cxx)
+#target_link_libraries (sbnfit_NCdelta_fit SBNfitlib tinyxmllib EventWeight)
 
-add_executable (sbnfit_lee_simultaneous_fit sbnfit_lee_simultaneous_fit.cxx)
-target_link_libraries (sbnfit_lee_simultaneous_fit SBNfitlib tinyxmllib EventWeight)
+#add_executable (sbnfit_lee_simultaneous_fit sbnfit_lee_simultaneous_fit.cxx)
+#target_link_libraries (sbnfit_lee_simultaneous_fit SBNfitlib tinyxmllib EventWeight)
 
-add_executable (sbnfit_lee_simultaneous_1para sbnfit_lee_simultaneous_1para.cxx)
-target_link_libraries (sbnfit_lee_simultaneous_1para SBNfitlib tinyxmllib EventWeight)
+#add_executable (sbnfit_lee_simultaneous_1para sbnfit_lee_simultaneous_1para.cxx)
+#target_link_libraries (sbnfit_lee_simultaneous_1para SBNfitlib tinyxmllib EventWeight)
 
 add_executable (sbnfit_uboone_scaling_fc sbnfit_uboone_scaling_fc.cxx)
 target_link_libraries (sbnfit_uboone_scaling_fc SBNfitlib tinyxmllib EventWeight)

@@ -170,6 +170,13 @@ int SBNchi::ReloadCoreSpectrum(SBNspec *bkgin){
         }
     }
 
+    //add MC intrinsic error
+    if(is_verbose) std::cout<< otag << "Add MC intrinsic error to the full covariance matrix" << std::endl;
+    core_spectrum.CalcErrorVector();
+    for(int i=0; i<num_bins_total; i++){
+         matrix_systematics(i,i) += pow(core_spectrum.full_err_vector.at(i), 2.0); 
+    }
+
     if(is_verbose)std::cout<<otag<<"Filling stats into cov matrix"<<std::endl;
     // Fill stats from the back ground vector
     TMatrixT <double> Mstat(num_bins_total, num_bins_total);
@@ -668,7 +675,7 @@ void SBNchi::CollapseModes(TMatrixT <double> & M, TMatrixT <double> & Mc){
 }
 
 
-TMatrixT<double> SBNchi::CalcNeymanCovarianceMatrix(TMatrixT<double>* frac_covar, std::vector<double>& mc_full, std::vector<double>& data_full){
+TMatrixT<double> SBNchi::CalcNeymanCovarianceMatrix(TMatrixT<double>* frac_covar, std::vector<double>& mc_full, std::vector<double>& mc_full_err,  std::vector<double>& data_full){
 	TMatrixT<double> Mfull(frac_covar->GetNcols(), frac_covar->GetNcols());
 	TMatrixT<double> Mout(num_bins_total_compressed, num_bins_total_compressed);	
 
@@ -678,7 +685,10 @@ TMatrixT<double> SBNchi::CalcNeymanCovarianceMatrix(TMatrixT<double>* frac_covar
 				Mfull(i,j) = 0.0;
 			}
 			else Mfull(i,j) = (*frac_covar)(i,j) *mc_full[i]*mc_full[j];
-			if(i == j) Mfull(i,j) += data_full[i];
+			if(i == j){
+			      Mfull(i,j) += data_full[i];
+			      if(!is_stat_only) Mfull(i,j) += pow(mc_full_err[i], 2.0);
+			}
 		}
 	}
 
@@ -709,7 +719,7 @@ TMatrixT<double> SBNchi::AddStatMatrix(TMatrixT<double>*M,  const std::vector<do
 }
 
 //generate Pearson covariance matrix(uncollapsed matrix)
-TMatrixT<double> SBNchi::CalcCovarianceMatrix(TMatrixT<double>*M, TVectorT<double>& spec){
+TMatrixT<double> SBNchi::CalcCovarianceMatrix(TMatrixT<double>*M, TVectorT<double>& spec, TVectorT<double>& spec_err){
 
     TMatrixT<double> Mout( M->GetNcols(), M->GetNcols() );
     // systematics per scaled event
@@ -723,7 +733,11 @@ TMatrixT<double> SBNchi::CalcCovarianceMatrix(TMatrixT<double>*M, TVectorT<doubl
             }else{
                 Mout(i,j) = (*M)(i,j)*spec(i)*spec(j);
             }
-            if(i==j) Mout(i,i) +=spec(i);
+            if(i==j){
+		 Mout(i,i) +=spec(i);
+		 //add MC intrinsic error if it's not stat-only case
+		 if(!is_stat_only) Mout(i,i) += pow(spec_err(i), 2.0);
+	    }
         }
     }
     return Mout;
@@ -731,7 +745,7 @@ TMatrixT<double> SBNchi::CalcCovarianceMatrix(TMatrixT<double>*M, TVectorT<doubl
 
 
 
-TMatrixT<double> SBNchi::CalcCovarianceMatrix(TMatrixT<double>*M, std::vector<double>& spec){
+TMatrixT<double> SBNchi::CalcCovarianceMatrix(TMatrixT<double>*M, std::vector<double>& spec, std::vector<double>& spec_err){
 
     TMatrixT<double> Mout(M->GetNcols(), M->GetNcols() );
     
@@ -745,7 +759,10 @@ TMatrixT<double> SBNchi::CalcCovarianceMatrix(TMatrixT<double>*M, std::vector<do
 
                 Mout(i,j) = (*M)(i,j)*spec[i]*spec[j];
             }
-            if(i==j) Mout(i,i) += spec[i];   //stats part
+            if(i==j){
+		 Mout(i,i) += spec[i];   //stats part
+		 if(!is_stat_only) Mout(i,i) += pow(spec_err[i], 2.0); //MC intrinsic error part 
+	    }
         }
     }
     return Mout;
@@ -753,7 +770,7 @@ TMatrixT<double> SBNchi::CalcCovarianceMatrix(TMatrixT<double>*M, std::vector<do
 
 
 //split covariance matrix into shape-only, normalizatoin-only, mixed covariance matrix
-TMatrixT<double> SBNchi::SplitCovarianceMatrix(TMatrixT<double>* frac_covar, std::vector<double>& spec, int which_process){
+TMatrixT<double> SBNchi::SplitCovarianceMatrix(TMatrixT<double>* frac_covar, std::vector<double>& spec, std::vector<double>& spec_err, int which_process){
 	
 	int matrix_bins = frac_covar->GetNcols();
 	if(matrix_bins != spec.size()){
@@ -768,6 +785,7 @@ TMatrixT<double> SBNchi::SplitCovarianceMatrix(TMatrixT<double>* frac_covar, std
 		for(int j=0; j< matrix_bins; j++){
 			if( std::isnan( (*frac_covar)(i,j)  )) full_covar(i,j) =0;
 			else full_covar(i,j) = (*frac_covar)(i,j)*spec[i]*spec[j]; 
+			if((i == j) && (!is_stat_only)) full_covar(i,j) += pow(spec_err[i], 2.0);
 		}
 	}	
 
@@ -828,6 +846,8 @@ TMatrixT<double> SBNchi::CalcShapeOnlyCovarianceMatrix(TMatrixT<double> &M, SBNs
 
 	int mc_num_bins = mc->num_bins_total;
 	std::vector<double> mc_full = mc->full_vector;
+	mc->CalcErrorVector();
+	std::vector<double> mc_full_err = mc->full_err_vector;
 	std::vector<double> bkgd_full = bkg->full_vector;
 		
 	TMatrixT<double> full_systematic(mc_num_bins, mc_num_bins);
@@ -843,6 +863,8 @@ TMatrixT<double> SBNchi::CalcShapeOnlyCovarianceMatrix(TMatrixT<double> &M, SBNs
 		for(int j=0; j< mc_num_bins; j++){
 			if( std::isnan(  M(i,j)  )) full_systematic(i,j) = 0.0;
 			else full_systematic(i,j) = M(i,j)*mc_full[i]*mc_full[j];
+
+			if((i==j) && (!is_stat_only)) full_systematic(i,j) += pow(mc_full_err[i], 2.0);
 		}
 	}
 
@@ -880,6 +902,8 @@ TMatrixT<double> SBNchi::CalcShapeMixedCovarianceMatrix(TMatrixT<double> &M, SBN
 
 	int mc_num_bins = mc->num_bins_total;
 	std::vector<double> mc_full = mc->full_vector;
+	mc->CalcErrorVector();
+        std::vector<double> mc_full_err = mc->full_err_vector;
 	std::vector<double> bkgd_full = bkg->full_vector;
 		
 	TMatrixT<double> full_systematic(mc_num_bins, mc_num_bins);
@@ -896,6 +920,8 @@ TMatrixT<double> SBNchi::CalcShapeMixedCovarianceMatrix(TMatrixT<double> &M, SBN
 		for(int j=0; j< mc_num_bins; j++){
 			if( std::isnan(  M(i,j)  )) full_systematic(i,j) = 0.0;
 			else full_systematic(i,j) = M(i,j)*mc_full[i]*mc_full[j];
+
+			if((i==j) && (!is_stat_only)) full_systematic(i,j)+= pow(mc_full_err[i], 2.0);
 		}
 	}
 
@@ -942,7 +968,7 @@ double SBNchi::CalcChi_statonlyCNP(std::vector<double> &pred, std::vector<double
 
 
 //here spec is full vector of MC, spec_collapse is collapsed vector of MC, datavec is collapsed vector of data
-TMatrixT<double> SBNchi::CalcCovarianceMatrixCNP(TMatrixT<double> &M, std::vector<double>& spec, std::vector<double>& spec_collapse, const std::vector<double>& datavec ){
+TMatrixT<double> SBNchi::CalcCovarianceMatrixCNP(TMatrixT<double> &M, std::vector<double>& spec, std::vector<double>& spec_err, std::vector<double>& spec_collapse, const std::vector<double>& datavec ){
 
     if(M.GetNcols() != spec.size()){
 	 std::cout << "ERROR: your input vector does not have the right dimenstion  " << std::endl; 
@@ -964,6 +990,8 @@ TMatrixT<double> SBNchi::CalcCovarianceMatrixCNP(TMatrixT<double> &M, std::vecto
 
                 M_temp(i,j) = M(i,j)*spec[i]*spec[j];
             }
+
+	    if( (i==j) && (!is_stat_only)) M_temp(i,j)+= pow(spec_err[i], 2.0);
         }
     }
   
@@ -977,7 +1005,7 @@ TMatrixT<double> SBNchi::CalcCovarianceMatrixCNP(TMatrixT<double> &M, std::vecto
 
 
 //return collapsed syst+stat matrix (in CNP method)
-TMatrixT<double> SBNchi::CalcCovarianceMatrixCNP(TMatrixT<double>* M, std::vector<double>& spec, std::vector<double>& spec_collapse, const std::vector<float>& datavec ){
+TMatrixT<double> SBNchi::CalcCovarianceMatrixCNP(TMatrixT<double>* M, std::vector<double>& spec, std::vector<double>& spec_err, std::vector<double>& spec_collapse, const std::vector<float>& datavec ){
 
     if(M->GetNcols() != spec.size()){
 	 std::cout << "ERROR: your input vector does not have the right dimenstion  " << std::endl; 
@@ -999,6 +1027,8 @@ TMatrixT<double> SBNchi::CalcCovarianceMatrixCNP(TMatrixT<double>* M, std::vecto
 
                 M_temp(i,j) = (*M)(i,j)*spec[i]*spec[j];
             }
+
+	    if((i==j) && (!is_stat_only)) M_temp(i,j)+= pow(spec_err[i], 2.0);
         }
     }
   
@@ -1252,8 +1282,8 @@ std::vector<std::vector<double >> SBNchi::TMatrixDToVector(TMatrixT <double > Mi
 void SBNchi::FillStatsMatrix(TMatrixT <double> &M, std::vector<double> diag){
     int matrix_size = M.GetNrows();
 
-    if(matrix_size != diag.size()){std::cout<<"#ERROR: FillStatsMatrix, matrix not equal to diagonal"<<std::endl;}
-    if(M.GetNrows()!=M.GetNcols()){std::cout<<"#ERROR: not a square matrix!"<<std::endl;}
+    if(matrix_size != diag.size()){std::cerr<<"#ERROR: FillStatsMatrix, matrix not equal to diagonal"<<std::endl;}
+    if(M.GetNrows()!=M.GetNcols()){std::cerr<<"#ERROR: not a square matrix!"<<std::endl;}
 
     M.Zero();
 
@@ -1272,13 +1302,13 @@ void SBNchi::FillStatsMatrix(TMatrixT <double> &M, std::vector<double> diag){
 }
 
 
-TMatrixT<double> SBNchi::FillSystMatrix(TMatrixT<double>& frac_covar, std::vector<double>& full){
-	return FillSystMatrix(frac_covar, full, false);
+TMatrixT<double> SBNchi::FillSystMatrix(TMatrixT<double>& frac_covar, std::vector<double>& full, std::vector<double>& full_err){
+	return FillSystMatrix(frac_covar, full, full_err, false);
 }
 
 
 //return a full or collapsed systematic covariance matrix
-TMatrixT<double> SBNchi::FillSystMatrix(TMatrixT<double>& frac_covar, std::vector<double>& full, bool do_collapse){
+TMatrixT<double> SBNchi::FillSystMatrix(TMatrixT<double>& frac_covar, std::vector<double>& full, std::vector<double>& full_err, bool do_collapse){
 
 	int matrix_size = frac_covar.GetNcols();
 	if(matrix_size != full.size()){
@@ -1292,6 +1322,7 @@ TMatrixT<double> SBNchi::FillSystMatrix(TMatrixT<double>& frac_covar, std::vecto
 			if(std::isnan(frac_covar(i,j))) full_syst(i,j) = 0.0;
 			else full_syst(i,j) = frac_covar(i,j)*full[i]*full[j];
 
+			if((i==j) && (!is_stat_only)) full_syst(i,j) += pow(full_err[i], 2.0);
 		}
 	}
 	if(do_collapse == true){
@@ -1508,6 +1539,7 @@ int SBNchi::PrintMatricies(std::string tag){
 
 int SBNchi::PerformCholoskyDecomposition(SBNspec *specin){
     specin->CalcFullVector();
+    specin->CalcErrorVector();
     is_verbose=false;
     double tol = 1e-7;
 
@@ -1521,6 +1553,8 @@ int SBNchi::PerformCholoskyDecomposition(SBNspec *specin){
                 U(i,j) = 0;
             else
                 U(i,j)=U(i,j)*specin->full_vector.at(i)*specin->full_vector.at(j);
+
+	    if( (i==j) && (!is_stat_only)) U(i,j) += pow(specin->full_err_vector.at(i), 2.0);
         }
     }
 
@@ -2314,19 +2348,52 @@ TH1D SBNchi::SamplePoissonVaryCore(SBNspec *specin, int num_MC){
     return ans;
 }
 
-int SBNchi::DrawComparisonIndividual(SBNspec& sig, SBNspec& data, TMatrixT<double>& frac_matrix, std::string tag){
-	return this->DrawComparisonIndividual(sig, data, frac_matrix, tag, false);
+
+int SBNchi::DrawComparisonIndividualFracMatrix(SBNspec& sig, SBNspec& data, TMatrixT<double>& frac_matrix, std::string tag){
+	return this->DrawComparisonIndividualFracMatrix(sig, data, frac_matrix, tag, false);
+}
+
+
+int SBNchi::DrawComparisonIndividualFracMatrix(SBNspec& sig, SBNspec& data, TMatrixT<double>& frac_matrix, std::string tag, bool width_norm){
+	sig.CalcFullVector();
+	sig.CalcErrorVector(); 
+
+	TMatrixT<double> collapsed_syst_matrix = this->FillSystMatrix(frac_matrix, sig.full_vector, sig.full_err_vector, true);
+	return this->DrawComparisonIndividual(sig, data, collapsed_syst_matrix, tag, width_norm);
+}
+
+
+int SBNchi::DrawComparisonIndividual(SBNspec& sig, SBNspec& data, std::string tag){
+	return this->DrawComparisonIndividual(sig, data, tag, false);
+}
+
+int SBNchi::DrawComparisonIndividual(SBNspec& sig, SBNspec& data, std::string tag,bool width_norm){
+
+	//calculate the MC intrinsic systematic matrix for sig.
+	sig.CalcErrorVector();
+	TMatrixT<double> collapsed_MCIntrinsic_matrix(sig.num_bins_total_compressed, sig.num_bins_total_compressed);
+	collapsed_MCIntrinsic_matrix.Zero();
+	for(int i=0; i<sig.num_bins_total_compressed; i++){
+		collapsed_MCIntrinsic_matrix(i,i) = pow(sig.collapsed_err_vector.at(i), 2.0);
+	}
+
+	return this->DrawComparisonIndividual(sig, data, collapsed_MCIntrinsic_matrix, tag, width_norm);
+}
+
+int SBNchi::DrawComparisonIndividual(SBNspec& sig, SBNspec& data, TMatrixT<double>& inmatrix, std::string tag){
+	return this->DrawComparisonIndividual(sig, data, inmatrix, tag, false);
 }
 
 
 //This one compares two SBNspec, and print the chi2, pvalue for each individual distribution
-//basically very similar to SBNspec::CompareSBNspecs()
-int SBNchi::DrawComparisonIndividual(SBNspec& sig, SBNspec& data, TMatrixT<double>& frac_matrix, std::string tag, bool width_norm){
+//basically almost the same as SBNspec::CompareSBNspecs()
+// given collapsed systematic covariance matrix, generate the comparison plots
+int SBNchi::DrawComparisonIndividual(SBNspec& sig, SBNspec& data, TMatrixT<double>& collapsed_syst_matrix, std::string tag, bool width_norm){
 	// default color scheme
 	std::vector<int> mycol = {kAzure -9, kRed-7, kGreen-3, kBlue-6, kMagenta-3, kYellow-7,  kOrange-3, kBlue, kBlue+2,  kGreen+1,kBlue-7, kPink, kViolet, kCyan,kMagenta,kAzure};
 		
-	if((frac_matrix.GetNcols()!= frac_matrix.GetNrows()) ||  (frac_matrix.GetNcols() != this->num_bins_total)){
-		std::cout<< "ERROR: dimension of the matrix doesn't match the total bin number, or it's not a symetric matrix"<< std::endl;
+	if((collapsed_syst_matrix.GetNcols()!= collapsed_syst_matrix.GetNrows()) ||  (collapsed_syst_matrix.GetNcols() != this->num_bins_total_compressed)){
+		std::cerr<< "ERROR: dimension of the matrix doesn't match the total compressed bin number, or it's not a symetric matrix"<< std::endl;
 		exit(EXIT_FAILURE);
 	}
 	
@@ -2374,21 +2441,20 @@ int SBNchi::DrawComparisonIndividual(SBNspec& sig, SBNspec& data, TMatrixT<doubl
          
         }
 
-	sig.CalcFullVector(); 
-	data.CalcFullVector();
+	sig.CollapseVector();
+	sig.CalcErrorVector(); 
+	data.CollapseVector();
 
 	std::vector<TH1D> temp = sig.hist;
         std::vector<TH1D> temp_comp = data.hist;
 	std::vector<double> sig_collapse = sig.collapsed_vector;
 	std::vector<double> data_collapse = data.collapsed_vector;
 
-	TMatrixT<double> collapsed_syst_matrix = this->FillSystMatrix(frac_matrix, sig.full_vector, true);
-
 	TFile* fcompare = new TFile(("SBNfit_compare_individual_plots_"+tag+".root").c_str(), "recreate");
 	fcompare->cd();
 	collapsed_syst_matrix.Write("collapsed_syst_matrix");
 
-	int matrix_index= 0;
+	int matrix_index= 0;  //to keep track of what part of collapsed matrix we should extract, for a certain channel
 
 	for(int im = 0; im <mode_names.size(); im++){
                 for(int id = 0; id <detector_names.size(); id++){
@@ -2497,11 +2563,11 @@ int SBNchi::DrawComparisonIndividual(SBNspec& sig, SBNspec& data, TMatrixT<doubl
 				double sig_bin_err, data_bin_err;
 				double bin_width;
 				for(int ib=0; ib< step; ib++){
-					if(width_norm) bin_width = hsum->GetBinWidth(id+1);
+					if(width_norm) bin_width = hsum->GetBinWidth(ib+1);
 					else bin_width = 1.0;
 
 					mc_intrinsic_err_square += pow(bin_width*hsum->GetBinError(ib+1), 2.0);				
-					sig_bin_err = sqrt(pow(hsum->GetBinError(ib+1), 2.0) + sub_syst_matrix(ib,ib)/pow(bin_width, 2.0));
+					sig_bin_err = sqrt(sub_syst_matrix(ib,ib))/bin_width;
 					data_bin_err = sqrt(hcomp->GetBinContent(ib+1)/bin_width);
 
 					hsum->SetBinError(ib+1, sig_bin_err);
@@ -2509,15 +2575,13 @@ int SBNchi::DrawComparisonIndividual(SBNspec& sig, SBNspec& data, TMatrixT<doubl
 
 					// ******to add stats error to the matrix**********
 					//Pearson chi2
-					//sub_all_err_matrix(ib,ib) +=pow(bin_width*hsum->GetBinError(ib+1), 2.0);
+					//sub_all_err_matrix(ib,ib) += bin_width*hsum->GetBinContent(ib+1);
 					//Neyman chi2
-					//sub_all_err_matrix(ib,ib) +=hcomp->GetBinContent(ib+1);
+					//sub_all_err_matrix(ib,ib) += bin_width*hcomp->GetBinContent(ib+1);
 					//CNP chi2
 					sub_all_err_matrix(ib,ib) +=  bin_width*( hcomp->GetBinContent(ib+1) >0.001 ? 3.0/(1.0/hcomp->GetBinContent(ib+1) +  2.0/hsum->GetBinContent(ib+1))  : hsum->GetBinContent(ib+1)/2.0 );
 
 				}	
-				// overall stats+syst error of the MC histogram integral
-				double overall_syst_error = sqrt(mc_intrinsic_err_square + sub_syst_matrix.Sum());
 				
 
 
@@ -2532,7 +2596,7 @@ int SBNchi::DrawComparisonIndividual(SBNspec& sig, SBNspec& data, TMatrixT<doubl
 				double pvalue = TMath::Prob(chi, step);
 
 				otag= "SBNchi::DrawComparisonIndividual\t||";
-				std::cout<< otag<<canvas_name<<" has stats error "<< sqrt(hsum_sum)<<", overall instrinsic error: "<< sqrt(mc_intrinsic_err_square) << ", and det/flux/XS systematic error: " << sqrt(sub_syst_matrix.Sum()) << ", that yields a total systematic error: "<< overall_syst_error  <<", overall total error: " << sqrt(hsum_sum + mc_intrinsic_err_square + sub_syst_matrix.Sum())<< std::endl;
+				std::cout<< otag<<canvas_name<<" has stats error "<< sqrt(hsum_sum)<<", overall instrinsic error: "<< sqrt(mc_intrinsic_err_square) << ", and a total systematic error: "<< sqrt(sub_syst_matrix.Sum())  <<", overall total error: " << sqrt(hsum_sum + sub_syst_matrix.Sum())<< std::endl;
 				std::cout<<otag<<canvas_name<< " has chi2 of " << chi << ", ndf: " << step << ", and Pvalue: "<< pvalue<< std::endl;
 				matrix_index += step; //update where to start for the next iteration
 				

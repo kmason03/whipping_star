@@ -37,6 +37,10 @@ SBNsinglephoton::SBNsinglephoton(std::string xmlname, std::string intag, NGrid i
     m_genie_fractional_covariance_matrix = NULL;
 
     m_file_open=false;
+
+    //initialize m_chi
+    m_chi = new SBNchi(this->xmlname);
+    m_chi->is_stat_only = false;
 }
 
 int SBNsinglephoton::SetPolyGrid(NGrid in_polygrid){
@@ -164,7 +168,6 @@ int SBNsinglephoton::ScaleSpectrum(SBNspec* inspec, double flat_factor, std::vec
 
     //if(is_verbose) std::cout<<"SBNsinglephoton::ScaleSpectrum\t|| -----------------------------------------------\n";
 
-    //std::cout << num_files <<" " <<  __LINE__ << std::endl;
     for(int j=0;j<num_files;j++){
 
 
@@ -202,7 +205,7 @@ int SBNsinglephoton::ScaleSpectrum(SBNspec* inspec, double flat_factor, std::vec
   			double true_var = *(static_cast<double*>(branch_variables[j][t]->GetTrueValue()));
 
                         double prescale_factor = this->ScaleFactor(true_var, flat_factor, param);
-			if(prescale_factor < 0) prescale_factor=0.0;
+			if(prescale_factor < 0) prescale_factor=0.0;   // do not allow negative weight
                         inspec->hist[ih].Fill(reco_var, global_weight*prescale_factor);
  		    }
             }
@@ -279,7 +282,6 @@ int SBNsinglephoton::PreScaleSpectrum(std::string xmlname, double flat_factor, s
         prescale_tag << "_" << std::fixed<< std::setprecision(3) << param[i]; 
     }   
     if(param.size() != 0) spec_prescale.WriteOut(tag+"_"+prescale_tag.str());
-    //if(param.size() != 0) spec_prescale.WriteOut(tag+"_PreScaled"+prescale_tag.str());
 
     if(!m_bool_cv_spectrum_generated){
         m_bool_cv_spectrum_generated = true;
@@ -318,6 +320,8 @@ int SBNsinglephoton::GeneratePreScaledSpectra(){
 }
 
 
+// this function is safe to use anytime! (MC intrinsic, poly grid)
+// takes longer tho because everything is calculated on the fly
 int SBNsinglephoton::LoadSpectraOnTheFly(){
 	if(is_verbose) std::cout << "SBNsinglephoton::LoadSpectraOnTheFly\t||\tCalculate and Load scaled spectra on the fly" << std::endl;
 
@@ -375,6 +379,12 @@ int SBNsinglephoton::LoadSpectraOnTheFly(){
 	return 0;
 }
 
+
+
+/* if you need to use MC intrinsic error, and have poly grid at the same time
+ * do not use this function (it screws up the intrisic error for m_scaled_spec_grid)
+ * if you use MC intrinsic error, but only has flat grid, you can use this function safely
+ */
 int SBNsinglephoton::LoadSpectraApplyFullScaling(){
 
     //SBNspec temp_cv = *m_cv_spectrum;
@@ -459,7 +469,6 @@ int SBNsinglephoton::CalcChiGridScanShapeOnlyFit(){
 	//m_data_spectrum->Scale("NCPi0NotCoh", 0.8);
 	//SBNspec temp_data = *m_cv_spectrum;
 	//temp_data.Scale("NCDeltaRadOverlayLEE", 0.0);
-	//temp_data.CompareSBNspecs(m_data_spectrum, tag+"CVvsScaledCV");
 	//temp_data=*m_data_spectrum;
 	//this->PoissonFluctuation(m_data_spectrum);
 	if(m_bool_modify_cv){
@@ -473,13 +482,12 @@ int SBNsinglephoton::CalcChiGridScanShapeOnlyFit(){
 	    }
 	}
 	m_data_spectrum->WriteOut("ToyData_1g_2g_xDelta_"+std::to_string(m_cv_delta_scaling));
-	//temp_data.CompareSBNspecs(m_data_spectrum, tag+"Before_AfterPoisson");
 
 	//temp_data = *m_cv_spectrum;
         //temp_data.Scale("NCDeltaRadOverlayLEE", 0.0);
         //temp_data.CompareSBNspecs(m_data_spectrum, tag+"CV_vs_FakeData");
     }else{
-        m_cv_spectrum->CompareSBNspecs(m_data_spectrum, tag+"_CVvsData_NoErrorBar");
+	m_chi->DrawComparisonIndividual(*m_cv_spectrum, *m_data_spectrum, tag+"_CVvsData_NoErrorBar");
     }    
 
 
@@ -488,7 +496,6 @@ int SBNsinglephoton::CalcChiGridScanShapeOnlyFit(){
         exit(EXIT_FAILURE);
     }
 
-    //std::cout << "SBNsinglephoton::CalcChiGridScanShapeOnlyFit\t" << __LINE__ << std::endl;
 
     SBNspec background_spectrum;
     SBNspec last_best_spectrum;
@@ -500,7 +507,6 @@ int SBNsinglephoton::CalcChiGridScanShapeOnlyFit(){
     m_full_but_genie_fractional_covariance_matrix->Write("frac_but_genie");
     m_genie_fractional_covariance_matrix->Write("frac_genie"); 
 
-    m_chi = new SBNchi(this->xmlname);
     TMatrixT<double> full_systematic_covariance(num_bins_total, num_bins_total);
     TMatrixT<double> genie_systematic_matrix(num_bins_total, num_bins_total);
     TMatrixT<double> collapsed_full_systematic_matrix(num_bins_total_compressed, num_bins_total_compressed);
@@ -522,12 +528,13 @@ int SBNsinglephoton::CalcChiGridScanShapeOnlyFit(){
             last_best_spectrum = m_scaled_spec_grid[last_best_point];		
         }
 
+	last_best_spectrum.CalcErrorVector();
         background_spectrum = last_best_spectrum;
 
         //============================Calculate covariance matrix and its invert====================================/
 
        //The Full except for genie. We will be adding select bins on later
-        full_systematic_covariance = m_chi->FillSystMatrix(*m_full_but_genie_fractional_covariance_matrix, last_best_spectrum.full_vector);
+        full_systematic_covariance = m_chi->FillSystMatrix(*m_full_but_genie_fractional_covariance_matrix, last_best_spectrum.full_vector, last_best_spectrum.full_err_vector);
 
 	TMatrixT<double> full_shapeonly_matrix = m_chi->CalcShapeOnlyCovarianceMatrix(*m_genie_fractional_covariance_matrix,&last_best_spectrum,  &last_best_spectrum);
 	TMatrixT<double> full_shapemix_matrix = m_chi->CalcShapeMixedCovarianceMatrix(*m_genie_fractional_covariance_matrix, &last_best_spectrum, &last_best_spectrum);
@@ -549,7 +556,7 @@ int SBNsinglephoton::CalcChiGridScanShapeOnlyFit(){
             temp_comp.Keep(m_grid.f_dimensions[i].f_name, 1.0);
 
             //only genie for the 3 scaled channels
-            genie_systematic_matrix = m_chi->FillSystMatrix(*m_genie_fractional_covariance_matrix, temp_comp.full_vector);
+            genie_systematic_matrix = m_chi->FillSystMatrix(*m_genie_fractional_covariance_matrix, temp_comp.full_vector, temp_comp.full_err_vector);
             fout->cd();
             genie_systematic_matrix.Write(Form("full_genie_%s_%d", m_grid.f_dimensions[i].f_name.c_str(), n_iter));	
             
@@ -561,7 +568,7 @@ int SBNsinglephoton::CalcChiGridScanShapeOnlyFit(){
             background_spectrum.Scale(m_grid.f_dimensions[i].f_name, 0.0);   
         }
         //add genie uncertainties for other subchannels to total covariance matrix. Its being Re-Used here. 
-        genie_systematic_matrix = m_chi->FillSystMatrix(*m_genie_fractional_covariance_matrix, background_spectrum.full_vector);
+        genie_systematic_matrix = m_chi->FillSystMatrix(*m_genie_fractional_covariance_matrix, background_spectrum.full_vector, background_spectrum.full_err_vector);
         full_systematic_covariance += genie_systematic_matrix;//This is all everything EXCEPT 3 param norm
 
         m_chi->CollapseModes(full_systematic_covariance, collapsed_full_systematic_matrix);
@@ -578,7 +585,7 @@ int SBNsinglephoton::CalcChiGridScanShapeOnlyFit(){
         inversed_total_covariance_matrix= m_chi->InvertMatrix(total_covariance_matrix);
 
 
-        if(is_verbose && m_bool_data_spectrum_loaded) last_best_spectrum.CompareSBNspecs(collapsed_full_systematic_matrix, m_data_spectrum, tag+"_Iter_"+std::to_string(n_iter));	
+        if(is_verbose && m_bool_data_spectrum_loaded) m_chi->DrawComparisonIndividual(last_best_spectrum, *m_data_spectrum, collapsed_full_systematic_matrix, tag+"_Iter_"+std::to_string(n_iter));	
         //============================Done calculating covariance matrix ============================================/
 
 
@@ -614,11 +621,9 @@ int SBNsinglephoton::CalcChiGridScanShapeOnlyFit(){
 
     fout->Close();
     if(is_verbose ){
-       // collapsed_full_systematic_matrix = m_chi->FillSystMatrix(*m_full_fractional_covariance_matrix, m_scaled_spec_grid[best_point].full_vector, true);
         SBNspec temp_best_spec = this->GeneratePointSpectra(best_point);
-        //SBNspec temp_best_spec = m_scaled_spec_grid[best_point];
 	if(tag == "NCpi0") temp_best_spec.Scale("NCDeltaRadOverlayLEE", 0.0);
-        temp_best_spec.CompareSBNspecs(collapsed_full_systematic_matrix, m_data_spectrum, tag+"_BFvsData");
+	m_chi->DrawComparisonIndividual(temp_best_spec, *m_data_spectrum, collapsed_full_systematic_matrix, tag+"_BFvsData");
     }
 	
     //std::cout << "SBNsinglephoton::CalcChiGridScanShapeOnlyFit\t||check " << __LINE__ << std::endl;
@@ -654,7 +659,7 @@ int SBNsinglephoton::CalcChiGridScan(){
 	//temp_data.CompareSBNspecs(m_data_spectrum, tag+"_CorrectedCV_vs_Data");
 
     }else{
-        m_cv_spectrum->CompareSBNspecs(m_data_spectrum, tag+"_CVvsData_NoErrorBar");
+	m_chi->DrawComparisonIndividual(*m_cv_spectrum, *m_data_spectrum, tag+"_CVvsData_IntrinsicErrorOnly");
     }    
 
 
@@ -671,9 +676,7 @@ int SBNsinglephoton::CalcChiGridScan(){
     TFile* fout = new TFile(Form("%s_fit_output.root", tag.c_str()), "recreate");  //save matrix plot etc.
 
     m_full_fractional_covariance_matrix->Write("full_fractional_matrix");
-    //std::cout << "SBNsinglephoton::CalcChiGridScan\t||check " << __LINE__ << std::endl;
 
-    m_chi = new SBNchi(this->xmlname);
     TMatrixT<double> collapsed_full_systematic_matrix(num_bins_total_compressed, num_bins_total_compressed);
     TMatrixT<double> total_covariance_matrix(num_bins_total_compressed, num_bins_total_compressed);
     TMatrixT<double> inversed_total_covariance_matrix(num_bins_total_compressed, num_bins_total_compressed);
@@ -694,6 +697,7 @@ int SBNsinglephoton::CalcChiGridScan(){
             last_best_spectrum = m_scaled_spec_grid[last_best_point];		
         }
 
+	last_best_spectrum.CalcErrorVector();
 
         //============================Calculate covariance matrix and its invert====================================/
         //full systematic covariance matrix, except genie uncertainty
@@ -706,7 +710,9 @@ int SBNsinglephoton::CalcChiGridScan(){
         //SBNspec temp_other = last_best_spectrum; temp_other.Scale("NCDeltaRadOverlaySM", 0.0);
         //collapsed_full_systematic_matrix = m_chi->FillSystMatrix(*m_full_fractional_covariance_matrix, temp_signal.full_vector, true) + m_chi->FillSystMatrix(*m_full_fractional_covariance_matrix, temp_other.full_vector, true);
 	//TMatrixT<double> uncollapsed_full_systematic_matrix = m_chi->FillSystMatrix(*m_full_fractional_covariance_matrix, last_best_spectrum.full_vector,false);
-        collapsed_full_systematic_matrix = m_chi->FillSystMatrix(*m_full_fractional_covariance_matrix, last_best_spectrum.full_vector, true);
+
+	// since we are using intrinsic error here, need to make sure m_scaled_spec_grid is setup correctly
+        collapsed_full_systematic_matrix = m_chi->FillSystMatrix(*m_full_fractional_covariance_matrix, last_best_spectrum.full_vector, last_best_spectrum.full_err_vector, true);
         collapse_frac = (TMatrixT<double>*)collapsed_full_systematic_matrix.Clone();
         for(int i=0; i<num_bins_total_compressed ;i ++){
             for(int j=0 ; j< num_bins_total_compressed; j++)
@@ -725,10 +731,9 @@ int SBNsinglephoton::CalcChiGridScan(){
         collapse_frac->Write(Form("collapsed_fractional_matrix_%d", n_iter));
         inversed_total_covariance_matrix.Write(Form("inversed_matrix_%d", n_iter));
 
+	//print out comparison
         if(is_verbose && m_bool_data_spectrum_loaded && (n_iter==0)){
-	    //last_best_spectrum.CompareSBNspecs(collapsed_full_systematic_matrix, m_data_spectrum, tag+"_Iter_"+std::to_string(n_iter));	
-	    //m_chi->DrawComparisonIndividual(last_best_spectrum, *m_data_spectrum, *m_full_fractional_covariance_matrix, tag+"_Iter_0");
-	    m_chi->DrawComparisonIndividual(last_best_spectrum, *m_data_spectrum, *m_full_fractional_covariance_matrix, tag+"_Iter_0");
+	    m_chi->DrawComparisonIndividual(last_best_spectrum, *m_data_spectrum, collapsed_full_systematic_matrix, tag+"_Iter_0");
 	}
         //============================Done calculating covariance matrix ============================================/
 
@@ -774,11 +779,9 @@ int SBNsinglephoton::CalcChiGridScan(){
     //best-fit vs data comparison	
     //if(is_verbose && m_bool_data_spectrum_loaded){
     if(is_verbose ){
-        //collapsed_full_systematic_matrix = m_chi->FillSystMatrix(*m_full_fractional_covariance_matrix, m_scaled_spec_grid[best_point].full_vector, true);
         SBNspec temp_best_spec = this->GeneratePointSpectra(best_point);
         if(tag == "NCpi0") temp_best_spec.Scale("NCDeltaRadOverlayLEE", 0.0);
-	m_chi->DrawComparisonIndividual(temp_best_spec, *m_data_spectrum, *m_full_fractional_covariance_matrix, tag+"_BFvsData");
-        //temp_best_spec.CompareSBNspecs(collapsed_full_systematic_matrix, m_data_spectrum, tag+"_BFvsData");
+	m_chi->DrawComparisonIndividualFracMatrix(temp_best_spec, *m_data_spectrum, *m_full_fractional_covariance_matrix, tag+"_BFvsData");
     }
 
     std::cout << " BEST-FIT \t\t\t Data \t\t\t CV " << std::endl;
@@ -797,6 +800,7 @@ int SBNsinglephoton::LoadCV(){
     if(is_verbose) std::cout << "SBNsinglephoton::LoadCV\t|| Setup CV spectrum" << std::endl;
     m_cv_spectrum = new SBNspec(tag+"_CV.SBNspec.root", xmlname, false);
     m_cv_spectrum->CollapseVector();
+    m_cv_spectrum->CalcErrorVector();
     //    m_cv_spectrum->Scale("NCPi0Coh", 1.25);
     //    m_cv_spectrum->Scale("NCPi0NotCoh", 0.9);
     //    m_cv_spectrum->CollapseVector();
@@ -826,17 +830,11 @@ int SBNsinglephoton::SetFullFractionalCovarianceMatrix(std::string filename, std
 		exit(EXIT_FAILURE);		
 	}
 
-	this->RemoveNan(m_full_fractional_covariance_matrix);
 
-
-/*	//get a subset of matrix
+/*	//get submatrices from a big covariance matrix
 	TMatrixT<double> temp_matrix = *m_full_fractional_covariance_matrix;
 	m_full_fractional_covariance_matrix->ResizeTo(num_bins_total, num_bins_total);
-	// *m_full_fractional_covariance_matrix  = temp_matrix.GetSub(90, 329, 90, 329, "S");
-	// *m_full_fractional_covariance_matrix  = temp_matrix.GetSub(0, 89, 0, 89, "S");
-	*m_full_fractional_covariance_matrix  = temp_matrix.GetSub(0, 29, 0, 29, "S");
 	
-	//get submatrices from a big covariance matrix
 	//for 1g1p+2g1p
 	m_full_fractional_covariance_matrix->SetSub(0, 0, temp_matrix.GetSub(0, 29, 0, 29, "S"));
 	m_full_fractional_covariance_matrix->SetSub(0, 30, temp_matrix.GetSub(0, 29, 90, 209, "S"));
@@ -847,10 +845,10 @@ int SBNsinglephoton::SetFullFractionalCovarianceMatrix(std::string filename, std
 	m_full_fractional_covariance_matrix->SetSub(0, 60, temp_matrix.GetSub(30, 89, 210, 329, "S"));
 	m_full_fractional_covariance_matrix->SetSub(60, 0, temp_matrix.GetSub(210, 329, 30, 89, "S"));
 	m_full_fractional_covariance_matrix->SetSub(60, 60, temp_matrix.GetSub(210, 329, 210, 329, "S"));
-*/	std::cout << "total bins " << num_bins_total << ", matrix size " << m_full_fractional_covariance_matrix->GetNrows() << std::endl;
+*/	
 	this->RemoveNan(m_full_fractional_covariance_matrix);
 
-	if(is_verbose)std::cout << "SBNsinglephoton::SetFullFractionalCovarianceMatrix\t|| matrix size: " << m_full_fractional_covariance_matrix->GetNcols()<< std::endl;;
+	if(is_verbose) std::cout << "SBNsinglephoton::SetFullFractionalCovarianceMatrix\t|| matrix size: " << m_full_fractional_covariance_matrix->GetNcols()<< std::endl;;
 
 /*
 	TMatrixT<double>* temp_genie_XS = (TMatrixT<double>*)f_syst->Get("individualDir/All_UBGenie_frac_covariance");
@@ -992,7 +990,7 @@ int SBNsinglephoton::SetGenieFractionalCovarianceMatrix(std::string filename){
         m_genie_fractional_covariance_matrix->ResizeTo(num_bins_total, num_bins_total);
      *m_genie_fractional_covariance_matrix  = temp_matrix.GetSub(90, 329, 90, 329, "S");
      */
-    std::cout << "total bins " << num_bins_total << ", matrix size " << m_genie_fractional_covariance_matrix->GetNrows() << std::endl;
+    if(is_verbose) std::cout << "total bins " << num_bins_total << ", matrix size " << m_genie_fractional_covariance_matrix->GetNrows() << std::endl;
 
 
 /*
@@ -1687,6 +1685,7 @@ int SBNsinglephoton::SetFlatFullFracCovarianceMatrix(double flat){
 
 int SBNsinglephoton::SetStatOnly(){
     if(is_verbose) std::cout<<"SBNsinglephoton::SetStatOnly\t||\t Setting covariance matrices to be ZERO!" << std::endl;
+    m_chi->is_stat_only = true;
     m_full_fractional_covariance_matrix = new TMatrixT<double>(num_bins_total, num_bins_total);
     m_full_but_genie_fractional_covariance_matrix = new TMatrixT<double>(num_bins_total, num_bins_total);
     m_genie_fractional_covariance_matrix = new TMatrixT<double>(num_bins_total, num_bins_total);
@@ -1701,17 +1700,17 @@ int SBNsinglephoton::SetStatOnly(){
 int SBNsinglephoton::ModifyCV(double infactor){
 
     std::vector<double> temp_constrain_param;
-    for(int i=0 ; i<m_grid.f_num_dimensions; i++){
-        if(m_grid.f_dimensions[i].f_has_constrain){
-            temp_constrain_param.push_back(m_grid.f_dimensions[i].f_constrain_value);
+    for(auto const &dim:m_grid.f_dimensions){
+        if(dim.f_has_constrain){
+            temp_constrain_param.push_back(dim.f_constrain_value);
         }
     }
 
     if(m_bool_poly_grid){
 
-        for(int i=0; i< m_poly_grid.f_num_dimensions; i++){
-            if(m_poly_grid.f_dimensions[i].f_has_constrain){
-                temp_constrain_param.push_back(m_poly_grid.f_dimensions[i].f_constrain_value);
+        for(auto const &dim:m_poly_grid.f_dimensions){
+            if(dim.f_has_constrain){
+                temp_constrain_param.push_back(dim.f_constrain_value);
             }
         }
     }
@@ -1729,10 +1728,13 @@ int SBNsinglephoton::ModifyCV(double infactor, std::vector<double> param){
 
     std::cout<< "SBNsinglephoton::ModifyCV\t|| Start modifying CV spectrum" <<std::endl;
     int index = 0;
-    //apply flat normalization
-    for(int i=0 ; i<m_grid.f_num_dimensions; i++){
-        if(m_grid.f_dimensions[i].f_has_constrain  && (index < param.size()) ){
-            m_cv_spectrum->Scale(m_grid.f_dimensions[i].f_name, param[index]);
+    double non_coh_factor=0;
+
+    //apply flat scaling
+    for(auto const &dim:m_grid.f_dimensions){
+        if(dim.f_has_constrain  && (index < param.size()) ){
+	    if(dim.f_name == "NCPi0NotCoh") non_coh_factor = param[index];  //remember the scaling for NCpi0NotCoh, for the poly grid.
+            m_cv_spectrum->Scale(dim.f_name, param[index]);
             index++;
         }
     }
@@ -1740,28 +1742,28 @@ int SBNsinglephoton::ModifyCV(double infactor, std::vector<double> param){
     //energy/momentum dependent scaling
     //now that we reset negative weight to 1, this needs to be modified, tho it's probably never gonna be used
     if(m_bool_poly_grid){
+
    	std::ostringstream prescale_tag;
    	std::vector<double> temp_scale_parameter;
-   	for(int i=0; i< m_poly_grid.f_num_dimensions; i++){
-      	     if(m_poly_grid.f_dimensions[i].f_has_constrain && (index < param.size())  ){   
+   	for(auto const &dim:m_poly_grid.f_dimensions){
+      	     if(dim.f_has_constrain && (index < param.size())  ){   
 	      	prescale_tag << "_" << std::fixed<< std::setprecision(3) << param[index];
 	     	temp_scale_parameter.push_back(param[index]);
 	     	index++;
              }
         }
 
-   	if(temp_scale_parameter.size() != 0){
-       	     std::string temp_filename = tag+"_PreScaled"+prescale_tag.str()+".SBNspec.root";
-             //check if a file exits
-             if(gSystem->AccessPathName(temp_filename.c_str())){
-	   	std::cout << "SBNsinglephoton::ModifyCV\t|| Prescaled file doesn't exist, start generating it..." << std::endl;
-	   	if(!m_file_open) this->OpenFiles();
-	   	this->PreScaleSpectrum(xmlname, temp_scale_parameter);
-             }
 
-       	     std::cout <<"SBNsinglephoton::ModifyCV\t|| Adding pre-scaled spectrum to the CV." << std::endl;
-             SBNspec temp_prescale(temp_filename.c_str(), xmlname, false);
-             m_cv_spectrum->Add(&temp_prescale); 
+   	if(temp_scale_parameter.size() != 0){
+             m_cv_spectrum->Scale("NCPi0NotCoh", 0.0);
+
+	     if(!m_file_open) this->OpenFiles();
+	     if(!m_bool_cv_spectrum_generated) m_bool_cv_spectrum_generated=true;
+             SBNspec spec_polygrid_part(xmlname, -1, false);
+             this->ScaleSpectrum(&spec_polygrid_part, non_coh_factor, temp_scale_parameter);
+             m_cv_spectrum->Add(&spec_polygrid_part); 
+             //check if a file exits
+             //if(gSystem->AccessPathName(temp_filename.c_str()))
    	}
     }
 
@@ -1769,7 +1771,7 @@ int SBNsinglephoton::ModifyCV(double infactor, std::vector<double> param){
 
     if(m_bool_data_spectrum_loaded){
         m_cv_spectrum->Scale("NCDeltaRadOverlayLEE", (infactor-1)*0.5);
-        m_cv_spectrum->CompareSBNspecs(m_data_spectrum, "ModifiedCV_Data");
+        m_chi->DrawComparisonIndividual(*m_cv_spectrum, *m_data_spectrum, "ModifiedCV_Data");
     }
 
     m_bool_modify_cv = true;
@@ -1828,6 +1830,7 @@ int SBNsinglephoton::PoissonFluctuation(SBNspec *inspec){
 
     inspec->ScalePoisson();
     inspec->CollapseVector();
+    inspec->CalcErrorVector();
 
     return 0;
 }
@@ -1835,17 +1838,21 @@ int SBNsinglephoton::PoissonFluctuation(SBNspec *inspec){
 
 double SBNsinglephoton::CalcChi(bool use_cnp){
 
-    m_chi = new SBNchi(*m_cv_spectrum, m_full_fractional_covariance_matrix);
-    if(!use_cnp){
-        return m_chi->CalcChi(m_data_spectrum);
-    }else{
-        m_cv_spectrum->CollapseVector();
-        m_data_spectrum->CollapseVector();
+    m_cv_spectrum->CollapseVector();
+    m_cv_spectrum->CalcErrorVector();
+    m_data_spectrum->CollapseVector();
+    //get the collapsed systematic covariance matrix
+    TMatrixT<double> Mtemp = m_chi->FillSystMatrix(*m_full_fractional_covariance_matrix, m_cv_spectrum->full_vector, m_cv_spectrum->full_err_vector, true);
 
-        TMatrixT<double> Mtemp = m_chi->CalcCovarianceMatrixCNP(*m_full_fractional_covariance_matrix, m_cv_spectrum->full_vector, m_cv_spectrum->collapsed_vector, m_data_spectrum->collapsed_vector);
-        TMatrixT<double> Invert_temp = m_chi->InvertMatrix(Mtemp);
-        return m_chi->CalcChi(Invert_temp, m_cv_spectrum->collapsed_vector, m_data_spectrum->collapsed_vector, true);
+    TMatrixT<double> Mtotal, InvertM;
+    if(!use_cnp){
+	Mtotal = m_chi->AddStatMatrixCNP(&Mtemp, m_cv_spectrum->collapsed_vector, m_data_spectrum->collapsed_vector);
+    }else{
+	Mtotal = m_chi->AddStatMatrix(&Mtemp, m_cv_spectrum->collapsed_vector);
     }
+
+    InvertM = m_chi->InvertMatrix(Mtotal);
+    return m_chi->CalcChi(InvertM, m_cv_spectrum->collapsed_vector, m_data_spectrum->collapsed_vector, true);
 
 }
 

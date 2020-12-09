@@ -150,6 +150,7 @@ int main(int argc, char* argv[])
 	//ref_spec.Scale("NCPi0NotCoh", 1.1);
 	//ref_spec.Scale("NCPi0Coh", 2.8);
 	ref_spec.CalcFullVector();
+	ref_spec.CalcErrorVector();
 
         	//std::cout << "check 1" << std::endl;
 
@@ -159,8 +160,9 @@ int main(int argc, char* argv[])
 		//TMatrixT<double> full_covar(ref_spec.num_bins_total, ref_spec.num_bins_total);
 		TMatrixT<double> collapse_covar(ref_spec.num_bins_total_compressed, ref_spec.num_bins_total_compressed);
 		SBNchi chi_temp(xml);
+		chi_temp.is_stat_only = false;
 		
-                collapse_covar = chi_temp.FillSystMatrix(*p_covar, ref_spec.full_vector, true);  //systematic covar matrix only
+                collapse_covar = chi_temp.FillSystMatrix(*p_covar, ref_spec.full_vector, ref_spec.full_err_vector, true);  //systematic covar matrix only
 		//full_covar = chi_temp.CalcCovarianceMatrix(p_covar, ref_spec.full_vector);
 		//chi_temp.CollapseModes(full_covar, collapse_covar);
 		ref_spec.CompareSBNspecs(collapse_covar, &data_spec, tag);
