@@ -270,7 +270,10 @@ int main(int argc, char* argv[])
         }
 
     }else{
+	bkg.RemoveMCError();
+	sig.RemoveMCError();
         SBNcls cls_factory(&bkg, &sig);
+		
         cls_factory.SetTolerance(epsilon);
         if(sample_from_collapsed)  cls_factory.SetSampleFromCollapsed();
         if(sample_with_gaussian) cls_factory.SetGaussianSampling();
