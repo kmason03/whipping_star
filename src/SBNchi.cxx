@@ -1043,9 +1043,7 @@ TMatrixT<double> SBNchi::CalcCovarianceMatrixCNP(TMatrixT<double>* M, std::vecto
 
 // add stat part to the collapsed systematic covariance matrix: CNP chi
 TMatrixT<double> SBNchi::AddStatMatrixCNP(TMatrixT<double>*M, std::vector<double>& spec, const std::vector<double>& datavec ){
-
     TMatrixT<double> Mout(M->GetNcols(), M->GetNcols() );
-    
     for(int i =0; i<M->GetNcols(); i++)
     {
         for(int j =0; j<M->GetNrows(); j++)
@@ -2406,15 +2404,16 @@ int SBNchi::DrawComparisonIndividual(SBNspec& sig, SBNspec& data, TMatrixT<doubl
                 
                 std::map<std::string, int> color_channel_map;
                 std::map<std::string, std::vector<double>> rgb_channel_map={
-                        {"NCDeltaRadOverlaySM", {255./255.,255./255.,153./255.}},
-                        {"NCDeltaRadOverlayLEE", {0.97,0.75,0}},
+                        {"NCDelta", {255./255.,255./255.,153./255.}},
+                        {"NCDeltaLEE", {0.97,0.75,0}},
                         {"NCPi0Coh", {255./255,189./255.,189./255.}},
                         {"NCPi0NotCoh", {1,0.4,0.4}},
                         {"NCMultiPi0", {0.9,0.9,1.0}},
                         {"CC1Pi0", {0.4,0.4,1.0}},
                         {"BNBOther", {0.6,0.8,1.0}},
-                        {"NueOverlays",{0.9,0.5,0.9}},
+                        {"Nue",{0.9,0.5,0.9}},
                         {"Dirt", {0.6,0.4,0.2}},
+                        {"OTPCExtra", {0.2,0.5,0.2}},
                         {"BNBext", {0.2,0.8,0.2}}
                 };
                 
@@ -2623,11 +2622,13 @@ int SBNchi::DrawComparisonIndividual(SBNspec& sig, SBNspec& data, TMatrixT<doubl
 					pad0top->Draw();             // Draw the upper pad: pad2top
 					pad0top->cd();               // pad2top becomes the current pad
 					hs->Draw();
+  					gStyle->SetHatchesLineWidth(1);
+
 					//draw error bar for 'sig' SBNspec
 					hsum->SetFillColor(kBlack);
                                         hsum->SetFillStyle(3354);
                                         hsum->SetMarkerSize(0);
-                                        hsum->SetLineWidth(3);
+                                        hsum->SetLineWidth(1);
                                         hsum->Draw("E2 same");
 					if(width_norm) hs->GetYaxis()->SetTitle(("Events/"+channel_units.at(ic)).c_str());
 					else hs->GetYaxis()->SetTitle("Events");
@@ -2639,7 +2640,7 @@ int SBNchi::DrawComparisonIndividual(SBNspec& sig, SBNspec& data, TMatrixT<doubl
                                         hcomp->SetMarkerStyle(20);
                                         hcomp->SetMarkerColor(kBlack);
                                         hcomp->SetMarkerSize(1.5);
-                                        hcomp->SetLineWidth(3);
+                                        hcomp->SetLineWidth(2);
                                         hcomp->SetLineColor(kBlack);
                                         hcomp->Draw("E1P same");
 					hs->SetMaximum(std::max(hs->GetMaximum(), hcomp->GetMaximum())*2.2);
@@ -2648,7 +2649,7 @@ int SBNchi::DrawComparisonIndividual(SBNspec& sig, SBNspec& data, TMatrixT<doubl
 
                                         Cstack->Update();
                                         legStack.Draw();
-                                        TText t_text(0.7*(hs->GetXaxis()->GetXmax()), 1.25*hs->GetMaximum(), (channel_names.at(ic)).c_str());
+                                        TText t_text(0.7*(hs->GetXaxis()->GetXmax()), 1.4*std::max(hs->GetMaximum(), hcomp->GetMaximum()), (channel_names.at(ic)).c_str());
                                         t_text.SetTextSize(0.08);
                                         t_text.Draw();
 

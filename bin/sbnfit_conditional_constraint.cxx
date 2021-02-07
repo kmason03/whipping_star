@@ -168,15 +168,20 @@ int main(int argc, char* argv[])
     cv.CalcErrorVector();
     data.CollapseVector();
 
+    //configuration
+    int start_pt = 11;
+    int start_pt_1g0p=1;//1g1p only has 6 bins
+    int Nsubchannel = 10; 
+
     std::vector<SBNspec> vec_spec(2.0, cv);
-    std::string constrain_str="NCDeltaRadOverlayLEE";
-    //std::string constrain_str="NCDeltaRadOverlaySM";
+    std::string constrain_str="NCDeltaLEE";
+    //std::string constrain_str="NCDelta";
     //get the NULL spectrum
-    vec_spec[0].Scale("NCDeltaRadOverlayLEE", 0.0);
-    //vec_spec[0].Scale("NCDeltaRadOverlaySM", 0.0);
+    vec_spec[0].Scale("NCDeltaLEE", 0.0);
+    //vec_spec[0].Scale("NCDelta", 0.0);
     //get the BF values
-    vec_spec[1].Scale("NCDeltaRadOverlayLEE", 1.02);
-    //vec_spec[1].Scale("NCDeltaRadOverlaySM", 1.92);
+    vec_spec[1].Scale("NCDeltaLEE", -0.14);
+    //vec_spec[1].Scale("NCDelta", 2.17);
     
     std::cout<<"Loading fractional covariance matrix from "<<covar_file<<std::endl;
 
@@ -186,7 +191,7 @@ int main(int argc, char* argv[])
     
     if(!stats_only){
         fsys = new TFile(covar_file.c_str(),"read");
-        cov = (TMatrixT<double>*)fsys->Get("total_frac_covariance");
+        cov = (TMatrixT<double>*)fsys->Get("frac_covariance");
 	fsys->Close();
    
         TMatrixT<double> frac_flat_matrix(cv.num_bins_total, cv.num_bins_total);
@@ -269,10 +274,6 @@ int main(int argc, char* argv[])
 	*cov += *genie_cov;
     }
 
-    //configuration
-    int start_pt = 16;
-    int start_pt_1g0p=6;//1g1p only has 6 bins
-    int Nsubchannel = 10; 
 
     TFile *fout = new TFile(("Constraint_"+tag+"_output.root").c_str(),"recreate");
 
@@ -282,7 +283,7 @@ int main(int argc, char* argv[])
     for(SBNspec& fspec:vec_spec){
 	    fspec.CollapseVector();
 	    fspec.CalcErrorVector();
-	    std::cout << "On spec:  " << which_spec_index<< std::endl;;
+	    std::cout << "\n\n\nOn spec:  " << which_spec_index<< std::endl;;
 	    SBNchi SigChi(fspec, *cov);
 	    if(stats_only) SigChi.is_stat_only=true;
 	//    SigChi.SetFracPlotBounds(cmin,cmax);
@@ -367,20 +368,22 @@ int main(int argc, char* argv[])
 		  }
 		}
 	    } 
- 
+
+	    std::cout << "\n=============== Overall Summary ======================" << std::endl;
 	    std::cout << "Numu-nue side-by-side chi2 value is " << chi_total << std::endl;
 	    std::cout << "Nue only original  chi2 value is " << chi_nueoriginal << std::endl;
 	    std::cout << "Nue constrained  chi2 value is " << chi_constrain << std::endl;
 	    std::cout << "Nue constrained, overall systematic uncertainty is:" << std::endl;
-	    std::cout << "\t\t\t\t\t 1g1p MC intrinsic error " << sqrt(intri_1g1p) << std::endl;
-	    std::cout << "\t\t\t\t\t 1g1p overall unconstrained error: " << sqrt(overall_1g1p_uncons) << std::endl;
-	    std::cout << "\t\t\t\t\t 1g1p overall constrained error: " << sqrt(overall_syst_1g1p) << std::endl;
-	    std::cout << "\t\t\t\t\t 1g0p MC intrinsic error " << sqrt(intri_1g0p) << std::endl;
-	    std::cout << "\t\t\t\t\t 1g0p overall unconstrained error " << sqrt(overall_1g0p_uncons) << std::endl;
-	    std::cout << "\t\t\t\t\t 1g0p overall constrained error: " << sqrt(overall_syst_1g0p) << std::endl;
+	    std::cout << "\t\t\t1g1p MC intrinsic error " << sqrt(intri_1g1p) << std::endl;
+	    std::cout << "\t\t\t1g1p overall unconstrained error: " << sqrt(overall_1g1p_uncons) << std::endl;
+	    std::cout << "\t\t\t1g1p overall constrained error: " << sqrt(overall_syst_1g1p) << std::endl;
+	    std::cout << "\t\t\t1g0p MC intrinsic error " << sqrt(intri_1g0p) << std::endl;
+	    std::cout << "\t\t\t1g0p overall unconstrained error " << sqrt(overall_1g0p_uncons) << std::endl;
+	    std::cout << "\t\t\t1g0p overall constrained error: " << sqrt(overall_syst_1g0p) << std::endl;
 	    std::cout << "constrained 1g1p events: " << std::accumulate(constrained_pred.begin(), constrained_pred.begin()+start_pt_1g0p, 0.0);
-	    std::cout << "constrained 1g0p events: " << std::accumulate(constrained_pred.begin()+start_pt_1g0p, constrained_pred.end(), 0.0)<< std::endl;
+	    std::cout << ", constrained 1g0p events: " << std::accumulate(constrained_pred.begin()+start_pt_1g0p, constrained_pred.end(), 0.0)<< std::endl;
 
+	    std::cout << "=============== Overall Summary ======================\n" << std::endl;
 	    for(int i=0; i<start_pt; i++){
 		std::cout<<i<<" N: "<<fspec.collapsed_vector.at(i)<<" Original: "<<sqrt(collapsed_covar(i,i))/fspec.collapsed_vector.at(i)<<" New: "<<sqrt(constrained_mat(i,i))/fspec.collapsed_vector.at(i)<<" Ratio: "<<sqrt(constrained_mat(i,i))/sqrt(collapsed_covar(i,i))<<std::endl;
 	    }
@@ -469,6 +472,7 @@ int main(int argc, char* argv[])
 		  vec_hist_data[i]->SetLineColor(kBlack);
 		  vec_hist_data[i]->Draw("E1same");
 		  c->Update();
+		  fout->cd();
 		  if(which_spec_index ==0){
 			 //c->SaveAs("CV_1g1p_constrain_comparison.png", "png");
 			 c->SaveAs(("CV_"+vec_string[i]+"_constrain_comparison.pdf").c_str(), "pdf");

@@ -194,9 +194,8 @@ int main(int argc, char* argv[])
     //mygrid.AddConstrainedDimension("NCPi0NotCoh", 0.7, 1.55, 0.05, 1.0);   //0.1 FULL
     //mygrid.AddConstrainedDimension("NCPi0Coh", 0, 4, 0.2, 1.0); //0.1full
     //mygrid.AddFixedDimension("NCPi0NotCoh", 1.19);   //fixed
-    //mygrid.AddDimension("NCDeltaRadOverlayLEE", -0.5, 3.5, 0.005 );
-    mygrid.AddDimension("NCDeltaRadOverlaySM", 0, 8, 0.005 );
-    //mygrid.AddDimension("NCDeltaRadOverlayLEE", -0.5, 3.0, 0.3 );
+    //mygrid.AddDimension("NCDelta", 0, 6, 0.01 );
+    mygrid.AddDimension("NCDeltaLEE", -0.5, 2.5, 0.01 );
 
 
     poly_grid.AddConstrainedDimension("NCPi0NotCoh", -3.0, 0.6, 0.6, 1);  //zoomed in first order
@@ -227,13 +226,13 @@ int main(int argc, char* argv[])
 		if(bool_stat_only) sp.SetStatOnly();
 		else if(bool_flat_sys) sp.SetFlatFullFracCovarianceMatrix(flat_sys_percent);
 		//else  sp.SetFullFractionalCovarianceMatrix(covmatrix_file, "updated_frac_covariance");
-		else  sp.SetFullFractionalCovarianceMatrix(covmatrix_file, "total_frac_covariance");
+		else  sp.SetFullFractionalCovarianceMatrix(covmatrix_file, "frac_covariance");
 
 		//fit with normalization error removed  needs extra flux+XS syst covar matrix
 		if(!bool_stat_only && bool_shape_fit){
 		    sp.SetGenieFractionalCovarianceMatrix(genie_matrix_file);
 		    //sp.CalcFullButGenieFractionalCovarMatrix();
-		    sp.ZeroOutGenieCorrelation("NCDeltaRadOverlaySM");
+		    sp.ZeroOutGenieCorrelation("NCDeltaLEE");
 		}
 
 		//if we want to modify NCpi0 to match the result from NCpi0 normalization fit before performing a combined fit

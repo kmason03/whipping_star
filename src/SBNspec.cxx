@@ -451,15 +451,16 @@ int SBNspec::WriteOut(std::string tag){
 
 		std::map<std::string, int> color_channel_map;
 		std::map<std::string, std::vector<double>> rgb_channel_map={
-			{"NCDeltaRadOverlaySM", {255./255.,255./255.,153./255.}},
-			{"NCDeltaRadOverlayLEE", {0.97,0.75,0}},
+			{"NCDelta", {255./255.,255./255.,153./255.}},
+			{"NCDeltaLEE", {0.97,0.75,0}},
 			{"NCPi0Coh", {255./255,189./255.,189./255.}},
 			{"NCPi0NotCoh", {1,0.4,0.4}},
 			{"NCMultiPi0", {0.9,0.9,1.0}},
 			{"CC1Pi0", {0.4,0.4,1.0}},
 			{"BNBOther", {0.6,0.8,1.0}},
-			{"NueOverlays",{0.9,0.5,0.9}},
+			{"Nue",{0.9,0.5,0.9}},
 			{"Dirt", {0.6,0.4,0.2}},
+			{"OTPCExtra", {0.2,0.5,0.2}},
 			{"BNBext", {0.2,0.8,0.2}}
 		};
 
@@ -672,15 +673,16 @@ int SBNspec::CompareSBNspecs(TMatrixT<double> collapse_covar, SBNspec * compsec,
 
 		std::map<std::string, int> color_channel_map;
 		std::map<std::string, std::vector<double>> rgb_channel_map={
-			{"NCDeltaRadOverlaySM", {255./255.,255./255.,153./255.}},
-			{"NCDeltaRadOverlayLEE", {0.97,0.75,0}},
+			{"NCDelta", {255./255.,255./255.,153./255.}},
+			{"NCDeltaLEE", {0.97,0.75,0}},
 			{"NCPi0Coh", {255./255,189./255.,189./255.}},
 			{"NCPi0NotCoh", {1,0.4,0.4}},
 			{"NCMultiPi0", {0.9,0.9,1.0}},
 			{"CC1Pi0", {0.4,0.4,1.0}},
 			{"BNBOther", {0.6,0.8,1.0}},
-			{"NueOverlays",{0.9,0.5,0.9}},
+			{"Nue",{0.9,0.5,0.9}},
 			{"Dirt", {0.6,0.4,0.2}},
+			{"OTPCExtra", {0.2,0.5,0.2}},
 			{"BNBext", {0.2,0.8,0.2}}
 		};
 
@@ -1048,14 +1050,14 @@ int SBNspec::CompareSBNspecs(SBNspec * compsec, std::string tag){
 
 		std::map<std::string, int> color_channel_map;
 		std::map<std::string, std::vector<double>> rgb_channel_map={
-			{"NCDeltaRadOverlaySM", {255./255.,255./255.,153./255.}},
-			{"NCDeltaRadOverlayLEE", {0.97,0.75,0}},
+			{"NCDelta", {255./255.,255./255.,153./255.}},
+			{"NCDeltaLEE", {0.97,0.75,0}},
 			{"NCPi0Coh", {255./255,189./255.,189./255.}},
 			{"NCPi0NotCoh", {1,0.4,0.4}},
 			{"NCMultiPi0", {0.9,0.9,1.0}},
 			{"CC1Pi0", {0.4,0.4,1.0}},
 			{"BNBOther", {0.6,0.8,1.0}},
-			{"NueOverlays",{0.9,0.5,0.9}},
+			{"Nue",{0.9,0.5,0.9}},
 			{"Dirt", {0.6,0.4,0.2}},
 			{"BNBext", {0.2,0.8,0.2}}
 		};

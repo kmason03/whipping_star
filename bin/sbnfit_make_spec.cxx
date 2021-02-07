@@ -153,21 +153,21 @@ int main(int argc, char* argv[])
 	ref_spec.CalcErrorVector();
 
         	//std::cout << "check 1" << std::endl;
+	SBNchi chi_temp(xml);
+	chi_temp.is_stat_only = false;
 
 	    if(covar_matrix){
 		TFile* f_cov = new TFile(covar_file.c_str(), "read");
 		TMatrixT<double>* p_covar = (TMatrixT<double>*)f_cov->Get("frac_covariance");
 		//TMatrixT<double> full_covar(ref_spec.num_bins_total, ref_spec.num_bins_total);
 		TMatrixT<double> collapse_covar(ref_spec.num_bins_total_compressed, ref_spec.num_bins_total_compressed);
-		SBNchi chi_temp(xml);
-		chi_temp.is_stat_only = false;
 		
                 collapse_covar = chi_temp.FillSystMatrix(*p_covar, ref_spec.full_vector, ref_spec.full_err_vector, true);  //systematic covar matrix only
 		//full_covar = chi_temp.CalcCovarianceMatrix(p_covar, ref_spec.full_vector);
 		//chi_temp.CollapseModes(full_covar, collapse_covar);
-		ref_spec.CompareSBNspecs(collapse_covar, &data_spec, tag);
+		chi_temp.DrawComparisonIndividual(ref_spec, data_spec, collapse_covar, tag);
 	    }
-	    else ref_spec.CompareSBNspecs(&data_spec, tag);
+	    else chi_temp.DrawComparisonIndividual(ref_spec, data_spec, tag);
    }
     
 
