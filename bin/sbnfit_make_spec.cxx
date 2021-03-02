@@ -165,7 +165,7 @@ int main(int argc, char* argv[])
                 collapse_covar = chi_temp.FillSystMatrix(*p_covar, ref_spec.full_vector, ref_spec.full_err_vector, true);  //systematic covar matrix only
 		//full_covar = chi_temp.CalcCovarianceMatrix(p_covar, ref_spec.full_vector);
 		//chi_temp.CollapseModes(full_covar, collapse_covar);
-		chi_temp.DrawComparisonIndividual(ref_spec, data_spec, collapse_covar, tag);
+		chi_temp.DrawComparisonIndividual(ref_spec, data_spec, collapse_covar, tag, true);
 	    }
 	    else chi_temp.DrawComparisonIndividual(ref_spec, data_spec, tag);
    }

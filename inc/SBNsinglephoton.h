@@ -103,6 +103,9 @@ namespace sbn{
         std::vector<TFile *> files;
         std::vector<TTree *> trees;
 
+	void ZeroOutCorrelation(TMatrixT<double>*, const std::string& );
+	int RemoveNan(TMatrixT<double>*); //remove the nan's from matrix
+
         public:
 
 	SBNsinglephoton(std::string xmlname, std::string intag, NGrid ingrid);
@@ -132,15 +135,18 @@ namespace sbn{
 	int SetFlatFullFracCovarianceMatrix(double );
 	int SetFullFractionalCovarianceMatrix(std::string filename, std::string matrix_name);
 	int SetGenieFractionalCovarianceMatrix(std::string filename);
+	int AddCovarianceMatrix(const std::string &filename, const std::string &covarname);
 	int CalcFullButGenieFractionalCovarMatrix();
-	void ZeroOutGenieCorrelation(std::string );
-	int PrintOutFitInfo(std::map<int, std::vector<double>>& , std::string tag, bool);
-	int WriteOutInfo(std::map<int, std::vector<double>>& );
+	void ZeroOutGenieCorrelation(const std::string& );
+	void ZeroOutFullCorrelation(const std::string& );
+	void ZeroOutOffDiagonal();
 
 	int LoadCV();
 	int LoadData(std::string filename);
 	int SetPolyGrid(NGrid ingrid);
 	
+	int PrintOutFitInfo(std::map<int, std::vector<double>>& , std::string tag, bool);
+	int WriteOutInfo(std::map<int, std::vector<double>>& );
 	//not finished yet, what information do we wnat to print out
 	int GrabFitMap();
 	void SetInterpolationNumber(int );
@@ -150,7 +156,6 @@ namespace sbn{
 	std::vector<TGraph> FindContour(TH2D&, int n, std::string);
 	void DrawContour(TH2D*, std::vector<TGraph>&, std::vector<double>);
 	void DrawContour(TH2D*, std::vector<TGraph>&, std::string, std::vector<double>);
-	int RemoveNan(TMatrixT<double>*); //remove the nan's from matrix
 	
 	int ModifyCV(double factor);
 	int ModifyCV(double, std::vector<double> param);

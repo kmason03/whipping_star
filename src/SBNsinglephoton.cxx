@@ -262,6 +262,7 @@ int SBNsinglephoton::PreScaleSpectrum(std::string xmlname, double flat_factor, s
                     double true_var = *(static_cast<double*>(branch_variables[j][t]->GetTrueValue()));
 
                     double prescale_factor = this->ScaleFactor(true_var, flat_factor, param);
+		    if(prescale_factor < 0) prescale_factor=0.0; 
 
                     spec_prescale.hist[ih].Fill(reco_var, global_weight*prescale_factor);
                     if(!m_bool_cv_spectrum_generated)  temp_cv_spectrum.hist[ih].Fill(reco_var,global_weight);
@@ -319,9 +320,8 @@ int SBNsinglephoton::GeneratePreScaledSpectra(){
     return 0;
 }
 
-
-// this function is safe to use anytime! (MC intrinsic, poly grid)
-// takes longer tho because everything is calculated on the fly
+// this function is safe to use when we have poly grid
+// it handles MC intrinsic error correctly
 int SBNsinglephoton::LoadSpectraOnTheFly(){
 	if(is_verbose) std::cout << "SBNsinglephoton::LoadSpectraOnTheFly\t||\tCalculate and Load scaled spectra on the fly" << std::endl;
 
@@ -380,69 +380,31 @@ int SBNsinglephoton::LoadSpectraOnTheFly(){
 
 
 
-/* if you need to use MC intrinsic error, and have poly grid at the same time
- * do not use this function (it screws up the intrisic error for m_scaled_spec_grid)
- * if you use MC intrinsic error, but only has flat grid, you can use this function safely
- */
 int SBNsinglephoton::LoadSpectraApplyFullScaling(){
 
-    //SBNspec temp_cv = *m_cv_spectrum;
-    SBNspec temp_cv(tag+"_CV.SBNspec.root", this->xmlname, false);
+    if(!m_bool_poly_grid){
+        //SBNspec temp_cv = *m_cv_spectrum;
+        SBNspec temp_cv(tag+"_CV.SBNspec.root", this->xmlname, false);
 
+        m_scaled_spec_grid.resize(m_total_gridpoints); 
 
-    //m_scaled_spec_grid.clear();
-    m_scaled_spec_grid.resize(m_total_gridpoints); 
-
-
-    int ip_processd = 0; 
-    if(m_bool_poly_grid){
-        std::cout<<"SBNsinglephoton::LoadSpectraApplyFullScaling\t|| Grab pre-scaled spectra and build the final spectra!" << std::endl; 
-        //loop over polynomial grid
-        for(int i=0;i< m_poly_total_gridpoints; i++){
-            std::vector<double> ipoint = m_vec_poly_grid[i];
-
-            //first initilize SBNspec with pre-scaled root file
-            std::ostringstream prescale_tag;
-            for(int ip=0; ip< ipoint.size(); ip++){
-                prescale_tag << "_" << std::fixed<< std::setprecision(3) << ipoint[ip];
-            }	
-            std::string full_filename = this->tag+"_PreScaled"+prescale_tag.str() + ".SBNspec.root";
-            SBNspec temp_prescaled(full_filename, this->xmlname, false);	
-
-            //loop over regular grid
-            for(int j=0; j< m_num_total_gridpoints;j++){
-                if(is_verbose && ip_processd%1000==0 ) std::cout << "On Point " << ip_processd <<"/"<<m_total_gridpoints << std::endl;
-
-                std::vector<double> jpoint = m_vec_grid[j];
-
-                m_scaled_spec_grid[ip_processd] = temp_cv; //start with genie CV
-                for(int jp=0; jp< jpoint.size(); jp++){
-                    m_scaled_spec_grid[ip_processd].Scale(m_grid.f_dimensions[jp].f_name, jpoint[jp]); // scale corresponding subchannel
-                }
-
-                m_scaled_spec_grid[ip_processd].Add(&temp_prescaled); //here we get the scaled spectra at final stage!!!
-
-                ip_processd++;
-
-            }//end loop over regular grid
-	}
-    }
-    else{
+    
         std::cout<<"SBNsinglephoton::LoadSpectraApplyFullScaling\t|| Scale the spectra for the whole grid " << std::endl;
-        for(int j=0; j< m_num_total_gridpoints;j++){
+        for(int j=0; j< m_num_total_gridpoints;++j){
             if(is_verbose && (j%1000 ==0)) std::cout << "On Point " << j <<"/"<<m_total_gridpoints << std::endl;
 
             std::vector<double> jpoint = m_vec_grid[j];
 
-            m_scaled_spec_grid[ip_processd] = temp_cv; //start with genie CV
+            m_scaled_spec_grid[j] = temp_cv; //start with genie CV
             for(int jp=0; jp< jpoint.size(); jp++){
-                m_scaled_spec_grid[ip_processd].Scale(m_grid.f_dimensions[jp].f_name, jpoint[jp]); // scale corresponding subchannel
-                //m_scaled_spec_grid[ip_processd].ScaleAll(jpoint[jp]); // scale corresponding subchannel
+                m_scaled_spec_grid[j].Scale(m_grid.f_dimensions[jp].f_name, jpoint[jp]); // scale corresponding subchannel
+                //m_scaled_spec_grid[j].ScaleAll(jpoint[jp]);  
             }
 
-
-            ip_processd++;
         }
+    }else{
+	std::cout << "SBNsinglephoton::LoadSpectraApplyFullScaling\t|| Involves poly grid, should load spectra on the fly" << std::endl;
+        LoadSpectraOnTheFly(); 
     }
 
     return 0;
@@ -478,9 +440,6 @@ int SBNsinglephoton::CalcChiGridScanShapeOnlyFit(){
 	}
 	m_data_spectrum->WriteOut("ToyData_1g_2g_xDelta_"+std::to_string(m_cv_delta_scaling));
 
-	//temp_data = *m_cv_spectrum;
-        //temp_data.Scale("NCDeltaLEE", 0.0);
-        //temp_data.CompareSBNspecs(m_data_spectrum, tag+"CV_vs_FakeData");
     }else{
 	m_chi->DrawComparisonIndividual(*m_cv_spectrum, *m_data_spectrum, tag+"_CVvsData_NoErrorBar");
     }    
@@ -640,13 +599,14 @@ int SBNsinglephoton::CalcChiGridScan(){
 	std::cout << "SBNsinglephoton::CalcChiGridScan\t|| WARNING!! Data spec hasn't been loaded, will do a sensitivity study instead!" << std::endl;
 	m_data_spectrum = new SBNspec(tag+"_CV.SBNspec.root", xmlname, false);
 	//*m_data_spectrum = *m_cv_spectrum;
-	//m_data_spectrum->Scale("NCPi0Coh", 3.0);
-        //m_data_spectrum->Scale("NCPi0NotCoh", 0.8);
+	m_data_spectrum->Scale("NCPi0Coh", 3.0);
+        m_data_spectrum->Scale("NCPi0NotCoh", 0.8);
 	//m_data_spectrum->Scale("NCDeltaLEE", 1.0);
-	if(m_bool_modify_cv) m_data_spectrum->Scale("NCDelta", m_cv_delta_scaling);
 	//this->PoissonFluctuation(m_data_spectrum);
+	//if(m_bool_modify_cv) m_data_spectrum->Scale("NCDeltaLEE", m_cv_delta_scaling);
+	if(m_bool_modify_cv) m_data_spectrum->Scale("NCDelta", m_cv_delta_scaling);
 	m_data_spectrum->CollapseVector();
-	//m_data_spectrum->WriteOut("ToyData_1g2g_xDelta_"+std::to_string(m_cv_delta_scaling));
+	m_data_spectrum->WriteOut("ToyData_xDelta_"+std::to_string(m_cv_delta_scaling));
 	//SBNspec temp_data = *m_cv_spectrum;
 	//temp_data.Scale("NCDeltaLEE", 0.0);
 	//temp_data.WriteOut(tag+"_CorrectedCV");
@@ -726,7 +686,7 @@ int SBNsinglephoton::CalcChiGridScan(){
 
 	//print out comparison
         if(is_verbose && m_bool_data_spectrum_loaded && (n_iter==0)){
-	    m_chi->DrawComparisonIndividual(last_best_spectrum, *m_data_spectrum, collapsed_full_systematic_matrix, tag+"_CVvsData");
+	    m_chi->DrawComparisonIndividual(last_best_spectrum, *m_data_spectrum, collapsed_full_systematic_matrix, tag+"_CVvsData", true);
 	}
         //============================Done calculating covariance matrix ============================================/
 
@@ -773,7 +733,7 @@ int SBNsinglephoton::CalcChiGridScan(){
     //if(is_verbose && m_bool_data_spectrum_loaded){
     if(is_verbose ){
         SBNspec temp_best_spec = this->GeneratePointSpectra(best_point);
-	m_chi->DrawComparisonIndividualFracMatrix(temp_best_spec, *m_data_spectrum, *m_full_fractional_covariance_matrix, tag+"_BFvsData");
+	m_chi->DrawComparisonIndividualFracMatrix(temp_best_spec, *m_data_spectrum, *m_full_fractional_covariance_matrix, tag+"_BFvsData", true);
     }
 
     std::cout << " BEST-FIT \t\t\t Data \t\t\t CV " << std::endl;
@@ -793,11 +753,7 @@ int SBNsinglephoton::LoadCV(){
     m_cv_spectrum = new SBNspec(tag+"_CV.SBNspec.root", xmlname, false);
     m_cv_spectrum->CollapseVector();
     m_cv_spectrum->CalcErrorVector();
-    //    m_cv_spectrum->Scale("NCPi0Coh", 1.25);
-    //    m_cv_spectrum->Scale("NCPi0NotCoh", 0.9);
-    //    m_cv_spectrum->CollapseVector();
     m_bool_cv_spectrum_loaded = true;
-
 
     return 0;
 }
@@ -1074,6 +1030,13 @@ void SBNsinglephoton::ZeroOutCorrelation(TMatrixT<double> *pmatrix, const std::s
   
 }
 
+void SBNsinglephoton::ZeroOutOffDiagonal(){
+   int num_rows = m_full_fractional_covariance_matrix->GetNrows();
+   for(int i = 0; i < num_rows; ++i)
+       for( int j = 0; j < num_rows; ++j)
+	   if(i != j ) (*m_full_fractional_covariance_matrix)(i,j) = 0.0;
+}
+
 void SBNsinglephoton::ZeroOutGenieCorrelation(const std::string &fname){
 
     if(m_full_fractional_covariance_matrix==nullptr || m_genie_fractional_covariance_matrix==nullptr){
@@ -1323,7 +1286,8 @@ int SBNsinglephoton::SaveHistogram(std::map<int, std::vector<double>>& inmap){
 	   TH1D* h_dchi=nullptr;
 	   NGridDimension xgrid = m_grid.f_dimensions.at(0);
 	   if(xgrid.f_name == "NCDelta") h_dchi = new TH1D("h_delta_chi", Form("#Delta#chi^{2} distribution;%s; #Delta#chi^{2} ",title_map[xgrid.f_name].c_str()), m_grid.f_num_total_points, xgrid.f_min, xgrid.f_max);
-	   else if(xgrid.f_name == "NCDeltaLEE" ) h_dchi = new TH1D("h_delta_chi", Form("#Delta#chi^{2} distribution;%s; #Delta#chi^{2} ",title_map[xgrid.f_name].c_str()), m_grid.f_num_total_points, (xgrid.f_min)*2, (xgrid.f_max)*2);
+	   else if(xgrid.f_name == "NCDeltaLEE" ) h_dchi = new TH1D("h_delta_chi", Form("#Delta#chi^{2} distribution;%s; #Delta#chi^{2} ",title_map[xgrid.f_name].c_str()), m_grid.f_num_total_points, xgrid.f_min, xgrid.f_max);
+	   //else if(xgrid.f_name == "NCDeltaLEE" ) h_dchi = new TH1D("h_delta_chi", Form("#Delta#chi^{2} distribution;%s; #Delta#chi^{2} ",title_map[xgrid.f_name].c_str()), m_grid.f_num_total_points, (xgrid.f_min)*2, (xgrid.f_max)*2);
 	   for(int i=0 ;i< vec_chi.size(); i++){
 		std::vector<double> ipoint = m_vec_grid[i];
 		//h_dchi->Fill(ipoint[0], vec_chi[i]);

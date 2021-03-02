@@ -2674,6 +2674,7 @@ int SBNchi::DrawComparisonIndividual(SBNspec& sig, SBNspec& data, TMatrixT<doubl
                                         }
 
 
+					//ratpre->Draw("hist");
                                         ratpre->Draw("E1");
 					ratpre->SetFillColor(kWhite);
 					ratpre->SetLineWidth(2);

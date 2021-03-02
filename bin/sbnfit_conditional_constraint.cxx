@@ -171,17 +171,17 @@ int main(int argc, char* argv[])
     //configuration
     int start_pt = 11;
     int start_pt_1g0p=1;//1g1p only has 6 bins
-    int Nsubchannel = 10; 
+    int Nsubchannel = 9; 
 
-    std::vector<SBNspec> vec_spec(2.0, cv);
+    std::vector<SBNspec> vec_spec(1, cv);
     std::string constrain_str="NCDeltaLEE";
     //std::string constrain_str="NCDelta";
     //get the NULL spectrum
     vec_spec[0].Scale("NCDeltaLEE", 0.0);
     //vec_spec[0].Scale("NCDelta", 0.0);
     //get the BF values
-    vec_spec[1].Scale("NCDeltaLEE", -0.14);
-    //vec_spec[1].Scale("NCDelta", 2.17);
+    //vec_spec[1].Scale("NCDeltaLEE", 0.0);
+    //vec_spec[1].Scale("NCDelta", 3.35);
     
     std::cout<<"Loading fractional covariance matrix from "<<covar_file<<std::endl;
 
@@ -462,7 +462,7 @@ int main(int argc, char* argv[])
 		  leg->AddEntry(vec_hist_original[i], Form("%s Orignal", vec_string[i].c_str()), "LF");
 		  leg->AddEntry(vec_hist_constrain[i], Form("%s Constrained",vec_string[i].c_str()), "LF");
 
-		  leg->AddEntry(vec_hist_data[i], Form("%s Toy Data",vec_string[i].c_str()), "ep");
+		  //leg->AddEntry(vec_hist_data[i], Form("%s Toy Data",vec_string[i].c_str()), "ep");
 
 		  leg->Draw();
 		  vec_hist_data[i]->SetMarkerStyle(20);
