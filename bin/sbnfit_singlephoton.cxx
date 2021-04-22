@@ -197,18 +197,25 @@ int main(int argc, char* argv[])
 
     NGrid mygrid, poly_grid;
 
-    //now only available for 2 subchannels only
+    // flat fit to all subchannels
     //mygrid.AddConstrainedDimension("All", 0.5, 1.5, 0.01, 1.19);   //0.1 FULL
-    mygrid.AddConstrainedDimension("NCPi0NotCoh", 0.2, 1.55, 0.01, 1.0);   //0.1 FULL
+   // NCpi0 cos(theta_pi0) flat fit
+   // TECHNOTE V6 version
+    mygrid.AddConstrainedDimension("NCPi0NotCoh", 0.5, 1.25, 0.01, 1.0);   //0.1 FULL
     mygrid.AddConstrainedDimension("NCPi0Coh", 0, 5, 0.05, 1.0); //0.1full
+    //mygrid.AddConstrainedDimension("NCPi0NotCoh", 0.2, 1.55, 0.01, 1.0);   //0.1 FULL
+    //mygrid.AddConstrainedDimension("NCPi0Coh", 0, 7, 0.05, 1.0); //0.1full
+    // NCpi0 momentum, momentum-dependent fit
+    //mygrid.AddConstrainedDimension("NCPi0NotCoh", 0.5, 1.25, 0.02, 1.0);   //0.1 FULL
+    //mygrid.AddConstrainedDimension("NCPi0Coh", 0, 8, 0.2, 1.0); 
     //mygrid.AddFixedDimension("NCPi0NotCoh", 1.19);   //fixed
     //mygrid.AddDimension("NCDelta", 0, 6, 0.01 );
     //mygrid.AddDimension("NCDeltaLEE", 0, 5, 0.01 );
     //mygrid.AddDimension("NCDeltaLEE", 0, 2.5, 0.005 );
 
 
-    poly_grid.AddConstrainedDimension("NCPi0NotCoh", -3.0, 0.6, 0.6, 1);  //zoomed in first order
-    //poly_grid.AddConstrainedDimension("NCPi0NotCoh", -4.0, 2.0, 0.3, -1.1);  //first order
+    poly_grid.AddConstrainedDimension("NCPi0NotCoh", -2.6, 1.0, 0.2, 1);  //zoomed in first order
+    //poly_grid.AddConstrainedDimension("NCPi0NotCoh", -4.0, 2.0, 0.4, -1.1);  //first order
     //poly_grid.AddFixedDimension("NCPi0NotCoh", -1.05); // second order 
 
     if(mode == "gen"){
@@ -237,6 +244,7 @@ int main(int argc, char* argv[])
 		//else  sp.SetFullFractionalCovarianceMatrix(covmatrix_file, "updated_frac_covariance");
 		else  sp.SetFullFractionalCovarianceMatrix(covmatrix_file, "frac_covariance");
 
+                /*
 		//add another covariance matrix
 		if( !bool_stat_only && bool_shape_fit){
 		    sp.AddCovarianceMatrix(genie_matrix_file, "frac_covariance");
@@ -244,14 +252,15 @@ int main(int argc, char* argv[])
 
 		//zero out correlation if necessary
 	   	if(bool_zero_correlation) sp.ZeroOutOffDiagonal();;
- 
-	        /*//Obsolete
+ 		*/
+
+	        //Obsolete
 		//fit with normalization error removed  needs extra flux+XS syst covar matrix
 		if(!bool_stat_only && bool_shape_fit){
 		    sp.SetGenieFractionalCovarianceMatrix(genie_matrix_file);
-		    //sp.CalcFullButGenieFractionalCovarMatrix();
-		    sp.ZeroOutGenieCorrelation("NCDeltaLEE");
-		}*/
+		    sp.CalcFullButGenieFractionalCovarMatrix();
+		    //sp.ZeroOutGenieCorrelation("NCDeltaLEE");
+		}
 
 		//if we want to modify NCpi0 to match the result from NCpi0 normalization fit before performing a combined fit
 		if(bool_modify_genie_cv){
@@ -259,7 +268,8 @@ int main(int argc, char* argv[])
 		  //sp.ModifyCV(delta_scaling, {1.0, 1.0});
 		}
 		sp.LoadSpectraApplyFullScaling(); 
-		sp.CalcChiGridScan();
+		sp.CalcChiGridScanShapeOnlyFit();
+		//sp.CalcChiGridScan();
 	}else if(mode == "plot"){
 		sp.GrabFitMap();
 		if(interpolation_number != -99) sp.SetInterpolationNumber(interpolation_number);

@@ -155,6 +155,9 @@ struct NGrid{
 
 
 
+
+    // get a vector of Ndim grid points
+    // NGrid added later will be varied first.
     std::vector<std::vector<double>> GetGrid(){
         std::vector<std::vector<double>> grid;            
 

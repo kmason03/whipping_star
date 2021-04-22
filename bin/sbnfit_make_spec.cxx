@@ -149,8 +149,9 @@ int main(int argc, char* argv[])
 	//ref_spec.Scale("NCDeltaRadOverlayLEE", 2.3);
 	//ref_spec.Scale("NCPi0NotCoh", 1.1);
 	//ref_spec.Scale("NCPi0Coh", 2.8);
-	ref_spec.CalcFullVector();
+	ref_spec.CollapseVector();
 	ref_spec.CalcErrorVector();
+	data_spec.CollapseVector();
 
         	//std::cout << "check 1" << std::endl;
 	SBNchi chi_temp(xml);
@@ -165,6 +166,11 @@ int main(int argc, char* argv[])
                 collapse_covar = chi_temp.FillSystMatrix(*p_covar, ref_spec.full_vector, ref_spec.full_err_vector, true);  //systematic covar matrix only
 		//full_covar = chi_temp.CalcCovarianceMatrix(p_covar, ref_spec.full_vector);
 		//chi_temp.CollapseModes(full_covar, collapse_covar);
+		//calculate chi2 between data and MC
+		TMatrixT<double> full_covar = chi_temp.AddStatMatrixCNP(&collapse_covar, ref_spec.collapsed_vector, data_spec.collapsed_vector);
+	    	TMatrixT<double> inverted_covar = chi_temp.InvertMatrix(full_covar);
+		double chi = chi_temp.CalcChi(inverted_covar, ref_spec.collapsed_vector, data_spec.collapsed_vector);
+		std::cout << "Chi2 between data and MC is " << chi << std::endl;
 		chi_temp.DrawComparisonIndividual(ref_spec, data_spec, collapse_covar, tag, true);
 	    }
 	    else chi_temp.DrawComparisonIndividual(ref_spec, data_spec, tag);
