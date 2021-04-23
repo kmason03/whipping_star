@@ -134,8 +134,8 @@ namespace sbn{
 
 			double GetTotalEvents();
 
-			int GetGlobalBinNumber(double invar, int which_hist);
-			int GetGlobalBinNumber(int local_bin, std::string histname);
+			int GetGlobalBinNumber(double invar, int which_hist) const;
+			int GetGlobalBinNumber(int local_bin, std::string histname) const;
 			int GetLocalBinNumber(double invar, int which_hist);
 
 			int GetHistNumber(int f);

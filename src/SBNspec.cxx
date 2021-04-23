@@ -1421,7 +1421,7 @@ int SBNspec::GetLocalBinNumber(double invar, int which_hist)
 }
 
 
-int SBNspec::GetGlobalBinNumber(double invar, int which_hist)
+int SBNspec::GetGlobalBinNumber(double invar, int which_hist) const
 {
 	int localbin = hist.at(which_hist).GetXaxis()->FindBin(invar);
 	double bin = localbin-1;
@@ -1434,9 +1434,9 @@ int SBNspec::GetGlobalBinNumber(double invar, int which_hist)
 	return bin;
 }
 
-int SBNspec::GetGlobalBinNumber(int local_bin, std::string histname){
+int SBNspec::GetGlobalBinNumber(int local_bin, std::string histname) const{
 	
-	int which_hist = map_hist[histname];
+	int which_hist = map_hist.at(histname);
 	int bin = local_bin -1;
 
 	for(int i=0; i<which_hist; i++){

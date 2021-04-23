@@ -2,6 +2,8 @@
 #include <stdexcept>
 #include <sstream>
 #include <cassert>
+#include <algorithm>
+#include <functional>
 
 using namespace sbn;
 
@@ -796,6 +798,12 @@ SBNcovariance::SBNcovariance(std::string xmlname) : SBNconfig(xmlname) {
 
     int SBNcovariance::FormCovarianceMatrix(std::string tag){
 
+	if(!form_covariance){
+	    std::cout << "SBNcovariance::FormCovariancematrix\t|| Form covariance matrix mode is turned off" << std::endl;
+	    std::cout << "SBNcovariance::FormCovariancematrix\t|| Check if you intend to do so please" << std::endl;
+	    return 0;
+	}
+
 	// ********************* beginning of histograms normalization **********************
 
 	//std::map<bool, std::string> map_shape_only{{true, "NCDeltaRadOverlaySM"}};
@@ -1091,6 +1099,10 @@ SBNcovariance::SBNcovariance(std::string xmlname) : SBNconfig(xmlname) {
 
     int SBNcovariance::qualityTesting() {
 
+	if(!form_covariance){
+            std::cout << "SBNcovariance::qualityTesting\t|| Form covariance matrix mode is turned off, no covariance matrix to test!! " << std::endl;
+            return 0;
+        }
         /************************************************************
          *		Quality Testing Suite			    *
          * *********************************************************/
@@ -1512,6 +1524,11 @@ SBNcovariance::SBNcovariance(std::string xmlname) : SBNconfig(xmlname) {
 
 
     int SBNcovariance::PrintMatricies(std::string tag) {
+	if(!form_covariance){
+            std::cout << "SBNcovariance::PrintMatricies\t|| Form covariance matrix mode is turned off, no covariance matrix to print!! " << std::endl;
+            return 0;
+        }
+
         std::cout << "SBNcovariance::PrintMatricies\t||\tStart" << std::endl;
 
         TFile* fout = new TFile(("SBNfit_covariance_plots_"+tag+".root").c_str(),"recreate");
@@ -1753,6 +1770,10 @@ SBNcovariance::SBNcovariance(std::string xmlname) : SBNconfig(xmlname) {
     }
 
     int SBNcovariance::DoConstraint(int which_signal, int which_constraint){
+	if(!form_covariance){
+            std::cout << "SBNcovariance::DoConstraint\t|| Form covariance matrix mode is turned off, no covariance matrix exists to do constraint!! " << std::endl;
+            return 0;
+        }	
         std::cout<<"----------------Starting covariance Constraint --------------------"<<std::endl;
 
         SBNchi collapse_chi(xmlname);
@@ -1869,6 +1890,11 @@ SBNcovariance::SBNcovariance(std::string xmlname) : SBNconfig(xmlname) {
     }
 
     std::vector<double> SBNcovariance::DoConstraint(int which_signal, int which_constraint, std::string tag, int which_var){
+	if(!form_covariance){
+            std::cout << "SBNcovariance::DoConstraint\t|| Form covariance matrix mode is turned off, no covariance matrix exists to do constraint!! " << std::endl;
+            return std::vector<double>{-999,-999,-999,-999};
+        }
+
         std::cout<<"----------------Starting covariance Constraint --------------------"<<std::endl;
 
         SBNchi collapse_chi(xmlname);
@@ -2054,3 +2080,133 @@ SBNcovariance::SBNcovariance(std::string xmlname) : SBNconfig(xmlname) {
     }
 
 
+    void SBNcovariance::WriteOutVariation(std::string signal_tag) const {
+
+	if(!write_out_variation){
+	    std::cout << "SBNcovariance::WriteOutVariation\t|| Write Out variation is turned off, please check if you intend to do so" << std::endl;
+	    return;
+  	}
+
+	//create directory to hold root output
+    	int status = mkdir("variation_spectra", 0777);
+	if(status == 0 || errno == EEXIST){
+	    std::cout << "SBNcovariance::WriteOutVariation\t|| variation_spectra directory successfully created/already exists" << std::endl;
+  	}else{
+	    std::cerr << "SBNcovariance::WriteOutVariation\t|| ERROR ERROR# fail to create variation_spectra!! " << std::endl;
+	    exit(EXIT_FAILURE);
+	}
+
+	//now, create root output
+	TFile* fout = new TFile(("variation_spectra/SBNfit_variation_spectra_"+write_out_tag+".root").c_str(), "RECREATE");
+
+	// directory for CV spectra
+	if(is_verbose) std::cout << "SBNcovariance::WriteOutVariation\t|| Write Out CV spectra" << std::endl;
+ 	TDirectory *cvDir = fout->GetDirectory((write_out_tag+"_CV_Dir").c_str());
+        if (!cvDir) { 
+                cvDir = fout->mkdir((write_out_tag+"_CV_Dir").c_str());
+        }	
+	cvDir->cd();
+
+	// calculate CV spectrum for signal and background	
+	size_t hist_index = 0;
+	for(size_t i = 0; i != num_modes; ++i){
+	    for(size_t j =0; j!= num_detectors; ++j){
+		for(size_t k = 0; k != num_channels; ++k){
+
+		    std::string base_name = mode_names[i]+"_"+detector_names[j]+"_"+channel_names[k];
+		    std::string title = base_name +";"+channel_units[k]+"; Events";
+
+		    TH1D hSignal = TH1D((base_name+"_Signal").c_str(), (signal_tag+" @ "+title).c_str(), num_bins[k], &bin_edges[k][0] );	
+		    TH1D hBkgd = TH1D((base_name+"_Bkgd").c_str(), ("Background @ "+title).c_str(), num_bins[k], &bin_edges[k][0] );	
+
+		    for(const auto &subchannel_name : subchannel_names[k]){
+			if(subchannel_name.find(signal_tag) != std::string::npos){
+			    hSignal.Add(&spec_central_value.hist[hist_index]);
+			    //std::cout << "Signal adding: " << subchannel_name << std::endl;
+			}
+		        else
+			    hBkgd.Add(&spec_central_value.hist[hist_index]);
+
+			++hist_index;
+		    }
+
+		    //write the signal and background histogram into output
+		    hSignal.Write(); hBkgd.Write();	
+		}
+	    }
+	} 
+
+	// now loop over variations, and save spectra at every universe for them!
+	if(is_verbose) std::cout << "SBNcovariance::WriteOutVariation\t|| Write Out universe spectra, will take a while..." << std::endl;
+	size_t global_universe_offset = 0;
+	for(size_t vid = 0; vid != variations.size(); ++vid){
+
+	    std::string v = variations[vid];
+	    bool minmax_mode = (m_variation_modes[vid] == 1);
+	    int num_universe = map_var_to_num_universe.at(v);
+	    if(is_verbose) std::cout << "SBNcovariance::WriteOutVariation\t|| On variation: " << v << ", uni: " << num_universe << ", " << (minmax_mode ? "minmax mode" : "multisim mode") << std::endl;
+
+	    //create a TDir for this variation
+	    TDirectory *vDir = fout->GetDirectory((write_out_tag+"_"+v+"_Dir").c_str());
+            if (!vDir) {
+                vDir = fout->mkdir((write_out_tag+"_"+v+"_Dir").c_str());
+            }
+            vDir->cd();
+
+	    //now, look at each universe, and save corresponding spectra
+	    for(size_t i_uni = global_universe_offset; i_uni != global_universe_offset + num_universe; ++i_uni){
+		const auto &spectrum = multi_vecspec[i_uni];
+
+		//now, let's tear the spectrum in parts!!!
+	        for(size_t i = 0; i != num_modes; ++i){
+           	    for(size_t j =0; j!= num_detectors; ++j){
+                	for(size_t k = 0; k != num_channels; ++k){
+
+			    std::string base_name = mode_names[i]+"_"+detector_names[j]+"_"+channel_names[k];
+
+			    //for each channel, divide the spectrum into signal and background parts.			   
+			    size_t local_num_bins = num_bins[k];
+			    std::vector<double> signal_content(local_num_bins, 0), bkgd_content(local_num_bins, 0);
+			    for(const auto &subchannel_name : subchannel_names[k]){
+
+				size_t starting_bin = spec_central_value.GetGlobalBinNumber(1, base_name+"_"+subchannel_name);
+				// if this is signal subchannnel
+				// add distribution of this subchannel to signal content
+				if(subchannel_name.find(signal_tag) != std::string::npos)
+				    std::transform(signal_content.begin(), signal_content.end(), spectrum.begin()+starting_bin, signal_content.begin(), std::plus<double>());
+
+				//else, add to bkgd content
+				else std::transform(bkgd_content.begin(), bkgd_content.end(), spectrum.begin()+starting_bin, bkgd_content.begin(), std::plus<double>());
+			    }
+
+
+			    //now, we write signal/bkgd content into histograms!!
+			    if(minmax_mode) base_name += "_minmax_"+std::to_string(i_uni - global_universe_offset +1);
+			    else base_name += "_universe_"+std::to_string(i_uni - global_universe_offset +1);
+	                    std::string title = base_name +";"+channel_units[k]+"; Events";
+                    
+                    	    TH1D hSignal = TH1D((base_name+"_Signal").c_str(), (signal_tag+" @ "+title).c_str(), num_bins[k], &bin_edges[k][0] );                        
+                    	    TH1D hBkgd = TH1D((base_name+"_Bkgd").c_str(), ("Background @ "+title).c_str(), num_bins[k], &bin_edges[k][0] );
+
+			
+			    // since TH1.SetContent() methods also set the over/under flow bins, I need to add two extra elements
+			    // though inserting elemnt on vector is not efficient.
+			    signal_content.push_back(0); signal_content.insert(signal_content.begin(), 0);
+			    bkgd_content.push_back(0); bkgd_content.insert(bkgd_content.begin(),0);
+			    hSignal.SetContent(&signal_content[0]);
+			    hBkgd.SetContent(&bkgd_content[0]);
+
+			    hSignal.Write(); hBkgd.Write();
+
+			} //channel loop
+		    } //detector loop
+		} //mode loop
+
+	    } //universe loop
+
+	    //update the offset
+	    global_universe_offset += num_universe;
+	} //variation loop	
+	
+	fout->Close();
+    }

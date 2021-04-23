@@ -59,7 +59,7 @@ namespace sbn{
 
 
     int FormCovarianceMatrix(std::string tag);
-    int WriteOut();
+    void WriteOutVariation(std::string signal_tag) const; //write out variation spectrum in two histograms: signal/background
     int PrintMatricies(std::string tag);
 
     int plot_one(TMatrixD matrix, std::string tag, TFile *fin,bool,bool);

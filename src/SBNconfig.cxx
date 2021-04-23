@@ -34,7 +34,7 @@ SBNconfig::SBNconfig(std::string whichxml, bool isverbose, bool useuniverse): xm
 
 
     // we have Modes, Detectors, Channels
-    TiXmlElement *pMode, *pDet, *pChan, *pCov, *pMC, *pData,*pPOT, *pWeiMaps, *pList;
+    TiXmlElement *pMode, *pDet, *pChan, *pCov, *pMC, *pData,*pPOT, *pWeiMaps, *pList, *pSpec;
 
 
     //Grab the first element. Note very little error checking here! make sure they exist.
@@ -47,6 +47,7 @@ SBNconfig::SBNconfig(std::string whichxml, bool isverbose, bool useuniverse): xm
     pPOT    = doc.FirstChildElement("plotpot");
     pWeiMaps = doc.FirstChildElement("WeightMaps");
     pList = doc.FirstChildElement("variation_list");
+    pSpec = doc.FirstChildElement("varied_spectrum");
 
     if(!pMode){
         std::cout<<otag<<"ERROR: Need at least 1 mode defined in xml./n";
@@ -552,6 +553,24 @@ SBNconfig::SBNconfig(std::string whichxml, bool isverbose, bool useuniverse): xm
         }
     }
 
+    while(pSpec){
+	const char* swrite_out = pSpec->Attribute("writeout");
+	const char* swrite_out_tag = pSpec->Attribute("writeout_tag");
+	const char* sform_matrix = pSpec->Attribute("form_matrix");	
+	
+	if( std::string(swrite_out) == "true") write_out_variation = true;
+	if(write_out_variation){
+	    if(swrite_out_tag == NULL) write_out_tag="UNSET";
+	    else write_out_tag = std::string(swrite_out_tag);
+	}
+
+	if( std::string(sform_matrix) == "false") form_covariance = false;
+
+	pSpec = pSpec->NextSiblingElement("varied_spectrum");
+    }
+    if(is_verbose)  std::cout << otag << " Mode for varied spectra (if needed):   write out: " << (write_out_variation ? "true" : "false") << ", tag: " << write_out_tag << " | form covariance matrix: " << (form_covariance ? "true" : "false") << std::endl;
+
+
     //Where is the "data" folder that keeps pre-computed spectra and rootfiles
     //Will eventuall just configure this in CMake
     while(pData){
@@ -666,8 +685,8 @@ SBNconfig::SBNconfig(std::string whichxml, bool isverbose, bool useuniverse): xm
     if(is_verbose){
         std::cout<<otag<<"Checking number of XX"<<std::endl;
         std::cout<<otag<<"--> num_modes: "<<num_modes<<" out of "<<num_modes_xml<<std::endl;
-        std::cout<<otag<<"--> num_detectors: "<<num_detectors<<" out of "<<num_detectors<<std::endl;
-        std::cout<<otag<<"--> num_channels: "<<num_channels<<" out of "<<num_channels<<std::endl;
+        std::cout<<otag<<"--> num_detectors: "<<num_detectors<<" out of "<<num_detectors_xml<<std::endl;
+        std::cout<<otag<<"--> num_channels: "<<num_channels<<" out of "<<num_channels_xml<<std::endl;
         for(auto i: channel_used){
             std::cout<<otag<<"----> num_subchannels: "<<num_subchannels.at(i)<<" out of "<<num_subchannels_xml.at(i)<<std::endl;
             std::cout<<otag<<"----> num_bins: "<<num_bins.at(i)<<std::endl;
@@ -704,12 +723,9 @@ SBNconfig::SBNconfig(std::string whichxml, bool isverbose, bool useuniverse): xm
     auto temp_subchannel_bool = subchannel_bool;
     auto temp_subchannel_osc_patterns = subchannel_osc_patterns;
     auto temp_subchannel_plotnames = subchannel_plotnames;
-    subchannel_plotnames.clear();
-    subchannel_plotnames.resize(num_channels);
 
     num_subchannels.clear();
     num_bins.clear();
-    subchannel_names.clear();
     channel_names.clear();
     channel_units.clear();
     bin_edges.clear();
@@ -719,28 +735,33 @@ SBNconfig::SBNconfig(std::string whichxml, bool isverbose, bool useuniverse): xm
 
     mode_bool.clear();
     channel_bool.clear();
-    subchannel_bool.clear();
     detector_bool.clear();
 
+    subchannel_names.clear();
+    subchannel_names.resize(num_channels);
+    subchannel_bool.clear();
+    subchannel_bool.resize(num_channels);
+    subchannel_plotnames.clear();
+    subchannel_plotnames.resize(num_channels);
     subchannel_osc_patterns.clear();
-
+    subchannel_osc_patterns.resize(num_channels);
 
     int ic=0;
     for(int c: channel_used){
         //if(is_verbose){std::cout<<otag<<"Adding channel: "<<c<<std::endl;}
         num_subchannels.push_back( temp_num_subchannels.at(c));
         num_bins.push_back( temp_num_bins.at(c));
-        subchannel_names.push_back( temp_subchannel_names.at(c));
         channel_names.push_back( temp_channel_names.at(c));
 	channel_units.push_back(temp_channel_units.at(c));
         bin_edges.push_back( temp_bin_edges.at(c));
         bin_widths.push_back( temp_bin_widths.at(c));
 
         channel_bool.push_back(temp_channel_bool.at(c));
-        subchannel_bool.push_back(temp_subchannel_bool.at(c));
-        subchannel_osc_patterns.push_back(temp_subchannel_osc_patterns.at(c));
 
 	for(int sc: subchannel_used[c]){
+		subchannel_bool[ic].push_back(temp_subchannel_bool.at(c).at(sc));
+		subchannel_names[ic].push_back(temp_subchannel_names.at(c).at(sc));
+		subchannel_osc_patterns[ic].push_back(temp_subchannel_osc_patterns.at(c).at(sc));
 		subchannel_plotnames[ic].push_back(temp_subchannel_plotnames[c][sc]);
 	}
 	ic++;
