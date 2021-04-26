@@ -100,7 +100,7 @@ SBNchi::SBNchi(SBNspec in, std::string newxmlname) : SBNconfig(newxmlname), core
             }
         }
     }
-m_cmin = -999;
+    m_cmin = -999;
     m_cmax = -999;
 
 
@@ -184,11 +184,11 @@ int SBNchi::ReloadCoreSpectrum(SBNspec *bkgin){
     bool is_fractional = true;
     cholosky_performed = false;
 
-    if(is_verbose)std::cout<<otag<<"Begininning to reload core spec! First Set new core spec"<<std::endl;
+    if(is_verbose) std::cout<<otag<<"Begininning to reload core spec! First Set new core spec"<<std::endl;
     core_spectrum = *bkgin;
     core_spectrum.CollapseVector();
 
-    if(is_verbose)std::cout<<otag<<" || Clear all previous chi^2 data"<<std::endl;
+    if(is_verbose) std::cout<<otag<<" || Clear all previous chi^2 data"<<std::endl;
     vec_last_calculated_chi.clear();
     vec_last_calculated_chi.resize(num_bins_total_compressed, std::vector<double>( num_bins_total_compressed,0) );
 
@@ -196,7 +196,7 @@ int SBNchi::ReloadCoreSpectrum(SBNspec *bkgin){
     if(is_verbose) std::cout<<otag<<" Reseting matrix_systematics to matrix_fractional_covariance"<<std::endl;
     matrix_systematics = matrix_fractional_covariance;
 
-    if(matrix_systematics.GetNcols()!=num_bins_total ){
+    if(matrix_systematics.GetNcols()!=num_bins_total){
         std::cout<<otag<<"ERROR: trying to pass a matrix to SBNchi that isnt the right size"<<std::endl;
         std::cout<<otag<<"ERROR: num_bins_total: "<<num_bins_total<<" and matrix is: "<<matrix_systematics.GetNcols()<<std::endl;
         exit(EXIT_FAILURE);
@@ -234,7 +234,7 @@ int SBNchi::ReloadCoreSpectrum(SBNspec *bkgin){
     }
 
     /*
-    TMatrixD Mcorr = matrix_systematics;
+       TMatrixD Mcorr = matrix_systematics;
     //TEMP
     TFile *f = new TFile("gloop.root","recreate");
     f->cd();
@@ -252,10 +252,10 @@ int SBNchi::ReloadCoreSpectrum(SBNspec *bkgin){
     f->Close();
     */
 
-    //And then define the total covariance matrix in all its glory
-    TMatrixT <double> Mtotal(num_bins_total,num_bins_total);
-    Mtotal.Zero();
 
+    //And then define the total covariance matrix in all its glory
+    TMatrixT <double> Mtotal(num_bins_total, num_bins_total);
+    Mtotal.Zero();
 
     if(is_stat_only){
         if(is_verbose)std::cout<<otag<<"Using stats only in covariance matrix"<<std::endl;
@@ -265,12 +265,10 @@ int SBNchi::ReloadCoreSpectrum(SBNspec *bkgin){
         Mtotal = Mstat + matrix_systematics;
     }
 
-
     //Also going to do matrix_systematics_collapsed;
 
     m_matrix_systematics_collapsed.ResizeTo(num_bins_total_compressed, num_bins_total_compressed);
     CollapseModes(matrix_systematics, m_matrix_systematics_collapsed);
-
 
     if(is_verbose) std::cout<<otag<<"Mstat: "<<Mstat.GetNrows()<<" x "<<Mstat.GetNcols()<<std::endl;
     if(is_verbose) std::cout<<otag<<"matrix_systematics: "<<matrix_systematics.GetNrows()<<" x "<<matrix_systematics.GetNcols()<<std::endl;
@@ -364,19 +362,48 @@ int SBNchi::ReloadCoreSpectrum(SBNspec *bkgin){
     double tolerence_positivesemi = m_tolerance;
 
 
+    if(Mctotal.IsSymmetric() ){
+        std::cout<<otag<<"Total Mctotal +matrix_systematics is symmetric"<<std::endl;
+    }else{
+        std::cout<<otag<<"Total Mctotal +matrix_systematics isNOT symmetric"<<std::endl;
+
+        for(int i=0; i< Mctotal.GetNrows(); i++){
+            for(int j=0; j< Mctotal.GetNcols(); j++){
+                if(i==i) continue;
+                if(i>j) continue;
+                Mctotal(i,j)=Mctotal(j,i);
+            }}
+    }
+
+    if(Mctotal.IsSymmetric() ){
+        std::cout<<otag<<"Total Mctotal +matrix_systematics is NOW symmetric"<<std::endl;
+    }
     //if a matrix is (a) real and (b) symmetric (checked above) then to prove positive semi-definite, we just need to check eigenvalues and >=0;
     TMatrixDEigen eigen (Mctotal);
     TVectorD eigen_values = eigen.GetEigenValuesRe();
-
+    TVectorD eigen_valuesIm = eigen.GetEigenValuesIm();
 
     for(int i=0; i< eigen_values.GetNoElements(); i++){
         if(eigen_values(i)<0){
             is_small_negative_eigenvalue = true;
             if(fabs(eigen_values(i))> tolerence_positivesemi ){
                 std::cout<<otag<<" collapsed covariance matrix contains (at least one)  negative eigenvalue: "<<eigen_values(i)<<std::endl;
-                Mctotal.Print();
+                // Mctotal.Print();
                 std::cout<<otag<<" full covariance "<<std::endl;
-                Mtotal.Print();
+                // Mtotal.Print();
+                int cc =core_spectrum.GetHistNumber(i); 
+                std::cout<<otag<<" collapsed covariance matrix contains (at least one)  negative eigenvalue: "<<eigen_values(i)<<std::endl;
+                std::cout<<otag<<" This occurs at element "<<i<<" in hist "<<core_spectrum.GetHistNumber(i)<<" "<<core_spectrum.fullnames[core_spectrum.GetHistNumber(i)]<<std::endl;
+                std::cout<<otag<<" Collllvec: "<<core_spectrum.collapsed_vector[cc]<<std::endl;
+                std::cout<<otag<<" Negative: "<<eigen_valuesIm(i)<<std::endl;
+
+                for(int r=0; r <core_spectrum.collapsed_vector.size(); r++) std::cout<<core_spectrum.collapsed_vector[r]<<" ";
+                std::cout<<std::endl;
+                for(int r=0; r <core_spectrum.collapsed_vector.size(); r++) std::cout<<eigen_values(r)<<" ";
+                std::cout<<std::endl;
+                for(int r=0; r <core_spectrum.collapsed_vector.size(); r++) std::cout<<eigen_valuesIm(r)<<" ";
+                std::cout<<std::endl;
+
                 exit(EXIT_FAILURE);
             }
         }
@@ -1316,7 +1343,7 @@ int SBNchi::PrintMatricies(std::string tag){
     h2_corr.SetTitle("Collapsed correlation matrix");
     h2_corr.GetXaxis()->SetTitle("Reco Bin i");
     h2_corr.GetYaxis()->SetTitle("Reco Bin j");
-    h2_corr.GetZaxis()->SetRangeUser(0.0,1);
+    h2_corr.GetZaxis()->SetRangeUser(-1,1);
     c_corr->SetRightMargin(0.150);
 
     int use_corr =0;
@@ -1577,7 +1604,6 @@ int SBNchi::PerformCholoskyDecomposition(SBNspec *specin){
         std::cout<<"SBNchi::CholeskyDecomposition\t||\t The modified determinant is now: "<<det<<std::endl;
     }
 
-
     TMatrixDEigen eigen(U_use);
     TVectorD eigen_values = eigen.GetEigenValuesRe();
     TVectorD eigen_values_IM = eigen.GetEigenValuesIm();
@@ -1632,7 +1658,6 @@ int SBNchi::PerformCholoskyDecomposition(SBNspec *specin){
         for(int i=0; i< eigen_values.GetNoElements(); i++){
             std::cout<<eigen_values(i)<<std::endl;
         }
-
         exit(EXIT_FAILURE);
     }
 
@@ -1988,7 +2013,7 @@ std::vector<float> SBNchi::GeneratePseudoExperiment(){
     }
 
     std::vector<float> collapsed(num_bins_total_compressed,0.0);
-   
+
     if(pseudo_from_collapsed){
         collapsed = sampled;
     }else{

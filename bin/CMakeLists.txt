@@ -6,6 +6,9 @@ target_link_libraries (sbnfit_make_covariance SBNfitlib tinyxmllib EventWeight)
 add_executable (sbnfit_plot_covariance sbnfit_plot_covariance.cxx)
 target_link_libraries (sbnfit_plot_covariance SBNfitlib tinyxmllib EventWeight)
 
+add_executable (sbnfit_analyze_covariance sbnfit_analyze_covariance.cxx)
+target_link_libraries (sbnfit_analyze_covariance SBNfitlib tinyxmllib EventWeight)
+
 #add_executable (sbnfit_conditional_constraint sbnfit_conditional_constraint.cxx)
 #target_link_libraries (sbnfit_conditional_constraint SBNfitlib tinyxmllib EventWeight)
 

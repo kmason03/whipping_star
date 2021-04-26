@@ -42,6 +42,34 @@
 
 using namespace sbn;
 
+        
+double getCritValue(TTree *t, std::string name, double pval){
+
+    double min = t->GetMinimum(name.c_str())*1.05;
+    double max = t->GetMaximum(name.c_str())*0.95;
+
+    double nentries = (double)t->GetEntries();
+
+    double ans_mid = 0; 
+    double temp_prob;
+
+    for(int i=0; i< 101; i++){
+            ans_mid = min+(max-min)/2.0;
+            
+            temp_prob = 1.0-t->GetEntries((name+">="+std::to_string(ans_mid)).c_str())/nentries;
+
+            //std::cout<<"getCritValue: "<<i<<" "<<pval<<" ("<<min<<", "<<ans_mid<<", "<<max<<")"<<temp_prob<<std::endl;
+            if(temp_prob > pval){
+                max = ans_mid;
+            }else{
+                min = ans_mid;
+            }
+
+    }
+
+    return ans_mid;
+}
+
 
 double Median(const TH1D * h1) { 
 
@@ -188,7 +216,7 @@ int main(int argc, char* argv[])
      ************************************************************
      ************************************************************/
     time_t start_time = time(0);
-
+    int bf_data_pt = -1;
     std::cout<<"Begining SBNfit uboone subchannel scaling Feldman Cousins confidence belt constructor for tag: "<<tag<<std::endl;
 
     if(input_scale_subchannel=="unset"){
@@ -199,7 +227,7 @@ int main(int argc, char* argv[])
     }
     
     NGrid mygrid;
-    mygrid.AddDimension("NCDeltaRadOverlaySM",grid_string);
+    mygrid.AddDimension(input_scale_subchannel,grid_string);
    
     mygrid.Print();
     SBNfeld myfeld(mygrid,tag,xml);
@@ -250,7 +278,16 @@ int main(int argc, char* argv[])
         std::cout <<"DONE calculating the necessary SBNchi objects at : " << difftime(time(0), start_time)/60.0 << " Minutes.\n";
 
         SBNspec * datain = new SBNspec(data_file_input.c_str(),xml);
-        myfeld.CompareToData(datain);
+        //myfeld.CompareToData(datain,{2.48,1.52,1.24},{5.68,6.64,7.36}); // 21.3
+        //myfeld.CompareToData(datain,{1.84,1.08,0.88},{4.84,5.92,6.52}); //22.4
+        //myfeld.CompareToData(datain,{0,0,0},{1.36,2.16,2.64}); //23.1
+        //myfeld.CompareToData(datain,{1.2,0.68,0.346668},{4.08,5.12,5.6}); //24.1
+        //myfeld.CompareToData(datain,{0.346668,0.0,0.0},{2.64,3.52,4.08}); //25.1
+
+//        myfeld.CompareToData(datain,{0.320001,0.0,0.0},{2.56,3.52,4.0}); //25.1 v5
+  
+        
+        myfeld.CompareToData(datain,{0.0,-2.0,-2.0},{2.8,3.6,4.2}); //25.1 v6
 
 
     }else if(mode_option == "belt"){
@@ -282,11 +319,10 @@ int main(int argc, char* argv[])
         TFile *fin = new TFile(("SBNfeld_output_"+tag+".root").c_str(),"read");
 
         //Some Manual Color Changing and such
-        int plotting_true_gridpoint = 5;
         //std::vector<double> plotting_pvals = {0.68, 0.90, 0.95, 0.99};
-        std::vector<double> plotting_pvals = {0.68, 0.90, 0.99};
+        std::vector<double> plotting_pvals = {0.68, 0.90, 0.95};
         //std::vector<std::string> plotting_strs = {"68%","90%","95%","99%"};
-        std::vector<std::string> plotting_strs = {"68%","90%","99%"};
+        std::vector<std::string> plotting_strs = {"68%","90%","95%"};
         //std::vector<int> gcols = {kGreen+3,kGreen+2,kGreen-3,kGreen-9};
         std::vector<int> gcols = {kRed-9,kBlue-9,kGreen-9};
 
@@ -318,13 +354,17 @@ int main(int argc, char* argv[])
                 //First lets find a critical chi^2 for this confidence level
                 double critical_delta_chi2 = 0;
                 double critical_delta_chi2_mid = 0;
-                for(int c = cumul->GetNbinsX()-1;  c>0 ; --c){
-                    if(cumul->GetBinContent(c+1) >= plotting_pval && cumul->GetBinContent(c)< plotting_pval){
-                        critical_delta_chi2_mid = cumul->GetBinCenter(c);
-                        critical_delta_chi2 = lin_interp(cumul->GetBinContent(c+1), cumul->GetBinContent(c), cumul->GetBinLowEdge(c+1), cumul->GetBinLowEdge(c)+cumul->GetBinWidth(c), plotting_pval);
-                        break;
-                    }
-                }
+               
+                critical_delta_chi2 = getCritValue(t,"delta_chi2",plotting_pval);
+
+                //This is the old method based on a cumulative disitribution of the delta chi, wasn't super accurate for very low dof chi^2 dists
+                //for(int c = cumul->GetNbinsX()-1;  c>0 ; --c){
+                //    if(cumul->GetBinContent(c+1) >= plotting_pval && cumul->GetBinContent(c)< plotting_pval){
+                //        critical_delta_chi2_mid = cumul->GetBinCenter(c);
+                //        critical_delta_chi2 = lin_interp(cumul->GetBinContent(c+1), cumul->GetBinContent(c), cumul->GetBinLowEdge(c+1), cumul->GetBinLowEdge(c)+cumul->GetBinWidth(c), plotting_pval);
+                //        break;
+                //    }
+                //}
 
                 std::cout<<"Grid point "<<i<<" has a critical delta chi of "<<critical_delta_chi2<<"("<<critical_delta_chi2_mid<<") for a pval of "<<plotting_pval<<std::endl; 
 
@@ -361,8 +401,8 @@ int main(int argc, char* argv[])
             h_bfval->GetQuantiles(pvalues.size(),&bf_val_quantiles[0], &pvalues[0]);
             double bfval = bf_val_quantiles[0];
             bfval_v[i] = bfval;
-            
             bfval_v[i] = quick_median(whatsmedian);
+            
             //bfval_v[i] = Median(h_bfval);
             //bfval_v[i] = whatsmean;
             
@@ -416,14 +456,16 @@ int main(int argc, char* argv[])
         
         mg->GetXaxis()->SetTitle("Measured #Delta Radiative Rate (#hat{x}_{#Delta})");
         mg->GetYaxis()->SetTitle("True #Delta Radiative Rate (x_{#Delta})");
-        mg->SetMinimum(v_true.front());
-        mg->SetMinimum(v_true.front());
+
 
         double mplot = 7.0;
+        double ymplot  = std::max(0.0, v_true.front());
+
+        mg->SetMinimum(ymplot);
 
         mg->GetXaxis()->SetLimits(v_true.front(),mplot);      
         mg->GetHistogram()->SetMaximum(mplot);//v_true.back());          
-        mg->GetHistogram()->SetMinimum(v_true.front());     
+        mg->GetHistogram()->SetMinimum(ymplot);     
  
         for(auto &g:gmins)g->Draw("l same");
         for(auto &g:gmaxs)g->Draw("l same");
@@ -435,14 +477,12 @@ int main(int argc, char* argv[])
 
         mg->GetXaxis()->SetLimits(v_true.front(),maxpt);
         mg->GetHistogram()->SetMaximum(maxpt);//v_true.back());          
-        mg->GetHistogram()->SetMinimum(v_true.front());
 
-        TLine lcross(v_true.front(),v_true.front(),mplot, mplot);
-        lcross.SetLineStyle(9);
-        lcross.SetLineWidth(1);
-        lcross.SetLineColor(kBlack);
-        lcross.Draw("same");
-
+        TLine lcross(ymplot,ymplot, mplot, mplot);
+            lcross.SetLineStyle(9);
+            lcross.SetLineWidth(1);
+            lcross.SetLineColor(kBlack);
+            lcross.Draw("same");
 
             TLine lv1(1.0,0.0,1.0,maxpt);
             lv1.SetLineStyle(2);

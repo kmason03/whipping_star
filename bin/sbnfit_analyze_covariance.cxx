@@ -259,8 +259,8 @@ int main(int argc, char* argv[])
     auto v_summed_hist = vhist;
     std::vector<std::vector<TH1D>> v_sys_hist(v_sys.size(),vhist);
 
-    std::vector<int> cols = {kRed-7,kBlue-7,kGreen-3};
-    std::vector<std::string> nams = {"Detector Systematics","Flux Systematics","GENIE Systematics"};
+    std::vector<int> cols = {kRed-7,kBlue-7,kGreen-3,kCyan};
+    std::vector<std::string> nams = {"Detector Systematics","Flux Systematics","GENIE Systematics","G4 Systematics"};
 
     gStyle->SetOptStat(0);
 

@@ -149,7 +149,9 @@ int main(int argc, char* argv[])
     std::cout<<"Begining Covariance Plotting for tag: "<<tag<<std::endl;
     std::cout<<"Loading SBNspec file : "<<signal_file<<" with xml "<<xml<<std::endl;
     SBNspec sig(signal_file,xml);
-    
+    sig.RemoveMCError();
+    sig.CalcFullVector();
+
     std::cout<<"Loading fractional covariance matrix from "<<covar_file<<std::endl;
 
     TFile * fsys;

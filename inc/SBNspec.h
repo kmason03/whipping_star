@@ -65,6 +65,9 @@ namespace sbn{
             SBNspec(std::vector<double> input_full_vec, std::string whichxml, int universe, bool isverbose);
 
 
+            std::map<int,std::vector<int>> GetCollapsedChannelIndicies();
+            std::vector<TH1D> GetBlankChannelHists();
+
 			// this vector of hists contains all spectra used.
 			// The order of filling is the same as the order defined in xml file!
 			std::vector<TH1D> hist;
@@ -119,6 +122,9 @@ namespace sbn{
 			//Recaculates the full_vector and collapsed_vector's
 			int CalcFullVector();
 			int CollapseVector();
+
+            int RemoveMCError();
+
 
 			double GetTotalEvents();
 

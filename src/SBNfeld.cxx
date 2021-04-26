@@ -414,7 +414,7 @@ int SBNfeld::FullFeldmanCousins(){
         std::cout<<"For this point, minimum  bf scale value is "<<bf_value_min<<" max is "<<bf_value_max<<std::endl;
         std::cout<<"For this point, minimum  bf grid pt is "<<bf_pt_min<<" max is "<<bf_pt_max<<std::endl;
 
-        int nbins_plot = num_universes/4;
+        int nbins_plot = num_universes*10;
         std::string identifier = "_"+std::to_string(t);
 
         TH1D h_delta_chi(("delta_chi2"+identifier).c_str(),("delta_chi2"+identifier).c_str(),nbins_plot,0.0,delta_chi_max*1.01);  // This will store all the delta_chi's from each universe for this g_true point
@@ -488,6 +488,12 @@ int SBNfeld::FullFeldmanCousins(){
 
 
 int SBNfeld::CompareToData(SBNspec *datain){
+    std::vector<double> nota;
+    return this->CompareToData(datain,nota,nota);
+}
+    
+
+int SBNfeld::CompareToData(SBNspec *datain, std::vector<double> minp, std::vector<double>maxp){
 
     //Ok take the background only spectrum and form a background only covariance matrix. CalcCovarianceMatrix includes stats
     TMatrixT<double> background_full_covariance_matrix = m_sbnchi_grid[0]->CalcCovarianceMatrix(m_full_fractional_covariance_matrix, *m_tvec_background_spectrum);
@@ -500,7 +506,6 @@ int SBNfeld::CompareToData(SBNspec *datain){
     std::vector<double> ans = this->PerformIterativeGridFit(fake_data,0,inverse_background_collapsed_covariance_matrix,true);
 
     TFile *fin = new TFile(("SBNfeld_output_"+tag+".root").c_str(),"read");
-
 
     std::cout<<"------ Print DeltaChi^2 ------ "<<std::endl;
     std::vector<double> rall;
@@ -601,6 +606,25 @@ int SBNfeld::CompareToData(SBNspec *datain){
     l95->SetLineStyle(3);
     l95->Draw();
 
+
+    std::vector<int> styles = {9,2,3};
+    for(int i=0; i< minp.size(); i++){
+
+        TLine *lop = new TLine(minp[i],0,minp[i],100);
+        lop->SetLineColor(kBlack);
+        lop->SetLineWidth(1);
+        lop->SetLineStyle(styles[i]);
+        lop->Draw();
+    }
+    for(int i=0; i< maxp.size(); i++){
+        TLine *lop = new TLine(maxp[i],0,maxp[i],100);
+        lop->SetLineColor(kBlack);
+        lop->SetLineWidth(1);
+        lop->SetLineStyle(styles[i]);
+        lop->Draw();
+    }
+
+
     c->SaveAs(("dataFC_"+tag+".pdf").c_str(),"pdf");
 
 
@@ -608,7 +632,7 @@ int SBNfeld::CompareToData(SBNspec *datain){
     //Some BF 
     m_cv_spec_grid[bf_pt]->CompareSBNspecs(background_collapsed_covariance_matrix,datain, "Data_Comparason_Feld_"+tag);
     std::cout<<"DATA_Comparason_Point : Delta Chi "<<delta_chi<<" Chi^Min "<<chi_min<<" BF_val "<<bf_val<<" BF_PT "<<bf_pt<<std::endl;
-    return 0;
+    return bf_pt;
 };
 
 

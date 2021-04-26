@@ -3,7 +3,6 @@
 using namespace sbn;
 
 SBNspec::SBNspec(std::string whichxml, int which_universe, bool isverbose, bool useuniverse) : SBNconfig(whichxml,isverbose, useuniverse){
-
 	//Initialise all the things
 	//for every multisim, create a vector of histograms, one for every subchannel we want
 	int ctr=0;
@@ -149,7 +148,6 @@ int SBNspec::SetAsFlat(double val){
 }
 
 
-
 //All scaling functions are quite self explanatory
 int SBNspec::ScalePoisson(){
 	TRandom3 *rangen = new TRandom3(0);
@@ -215,7 +213,6 @@ int SBNspec::Scale(std::string name, double val){
 		if(test.find(name)!=std::string::npos){
 			//	std::cout<<name<<". found in: "<<test<<" at "<<test.find(name)<<std::endl;
 			h.Scale(val);
-
             //std::cout<<"scaled "<<name<<" by "<<val<<std::endl;
 		}
 
@@ -252,7 +249,23 @@ int SBNspec::Norm(std::string name, double val){
 }
 
 
+int SBNspec::RemoveMCError(){
 
+  full_error.clear();
+  full_error.resize(num_bins_total);
+
+  int hoffset = 0;
+  for(size_t hid=0; hid<hist.size(); ++hid) {
+    auto& h =  hist[hid];
+    for(int i = 1; i < (h.GetSize()-1); ++i){
+      full_error[hoffset + i - 1] = 0;
+      h.SetBinError(i,0.0);
+    }
+    hoffset += (h.GetSize()-2);
+  }
+  assert (hoffset == num_bins_total);
+  return 0;
+}
 
 
 int SBNspec::CalcFullVector(){
@@ -267,7 +280,7 @@ int SBNspec::CalcFullVector(){
     const auto& h =  hist[hid];
     for(int i = 1; i < (h.GetSize()-1); ++i){
       full_vector[hoffset + i - 1] = h.GetBinContent(i);
-      full_error[hoffset + i - 1] = h.GetBinError(i);
+      full_error[hoffset + i - 1] =  h.GetBinError(i);
     }
     hoffset += (h.GetSize()-2);
   }
@@ -275,14 +288,20 @@ int SBNspec::CalcFullVector(){
   assert (hoffset == num_bins_total);
 
   if(m_bool_use_wire_bayes){
-    //Loop over all channels: for each bin in this channel, get 
+   
+    // Loop over all channels: for each bin in this channel, get 
     // means:     vector<double> of GetBinContent()
     // sigmas2s:  vector<double> of GetBinError() //maybe square of this
     // pots: vector<double> of overall POT scale factor for that sample (for use when 0 bins)?
 
+    // So this needs to be done for a collapsed bin. we only have assigned error for collapsed bins.. Hmm, but we sample from full. 
+    // Probably need to not have this here then. 
+
     std::vector<double> means;
     std::vector<double> sigma2s;
     std::vector<double> pots;
+    
+
     std::vector<double> ans = LEEana::wireWrapperBayes(means, sigma2s, pots);
 
     //the overall bin error covariance is then ans.back(), so errar is sqrt();
@@ -1174,3 +1193,53 @@ int SBNspec::GetGlobalBinNumber(int local_bin, std::string histname){
 
 	return bin;
 }
+
+
+std::map<int,std::vector<int>> SBNspec::GetCollapsedChannelIndicies(){
+
+    std::map<int,std::vector<int>> ans;
+    int nc =0;
+
+	for(int im = 0; im < num_modes; im++){
+		for(int id =0; id < num_detectors; id++){
+            int edge = id*num_bins_detector_block + num_bins_mode_block*im; // This is the starting index for this detector
+			for(int ic = 0; ic < num_channels; ic++){
+				int corner=edge;
+                int end = corner+num_bins.at(ic);
+                std::cout<<"This channel "<<ic<<" starts at "<<corner<<" and ends at "<<end<<std::endl;
+                edge += num_bins.at(ic);
+                std::vector<int> tmp = {corner,end};
+                ans[nc] = tmp;
+                nc++;
+			}
+		}
+	}
+	return ans ;
+}
+
+
+std::vector<TH1D> SBNspec::GetBlankChannelHists(){
+
+    std::vector<TH1D> ans;
+    std::vector<int> vchan;
+    int nc =0;
+
+	for(int im = 0; im < num_modes; im++){
+		for(int id =0; id < num_detectors; id++){
+			for(int ic = 0; ic < num_channels; ic++){
+                //channel num nc
+                vchan.push_back(nc);
+                nc+= num_subchannels.at(ic);
+			}
+		}
+	}
+    std::cout<<"We have : "<<vchan.size()<< " unique channels"<<std::endl;
+    for(int i=0; i< vchan.size();i++){
+        std::cout<<vchan[i]<<" "<<std::endl;
+        ans.push_back(hist[vchan[i]]);
+        ans.back().Reset();
+    }
+	return ans ;
+}
+
+

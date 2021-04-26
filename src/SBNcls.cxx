@@ -106,6 +106,7 @@ int SBNcls::CalcCLS(int numMC, std::string tag){
         for(int m=0; m< numMC; m++){
             for(int p =0; p< prob_values.size();p++){
                 if(h0_results[i].m_values[m]>=h1_results[i].m_quantiles[p]){
+                //if(h0_results[i].m_values[m]>=-2.17665){
                     h0_results[i].m_nlower[p] += 1.0/(double(numMC));
                 }
             }
@@ -113,7 +114,6 @@ int SBNcls::CalcCLS(int numMC, std::string tag){
 
         std::cout<<"We have "<<h1_results[i].m_pdf.Integral()<<" integral of H1 and "<<h0_results[i].m_pdf.Integral()<<" integral of H0 for metric "<<h1_results[i].m_tag<<std::endl;
     }
-
 
     std::cout << "Total wall time: " << difftime(time(0), start_time)/1.0 << " Secs.\n";
 
@@ -126,16 +126,14 @@ int SBNcls::CalcCLS(int numMC, std::string tag){
     makePlots( h0_results[3], h0_results[4], tag+"_Base_PearsonChi_true_H0", 0);
     makePlots( h1_results[3], h1_results[4], tag+"_Base_PearsonChi_true_H1", 0);
 
-
     return 0 ;
     }
 
-
     int SBNcls::compareToRealData(SBNspec * data){
 
-            data->CollapseVector();
+        data->CollapseVector();
 
-            int num_bins_total_compressed = data->num_bins_total_compressed;
+        int num_bins_total_compressed = data->num_bins_total_compressed;
         float* collapsed = new float[data->num_bins_total_compressed];
         for(int i=0; i < num_bins_total_compressed; i++){
                 collapsed[i] = data->collapsed_vector[i];

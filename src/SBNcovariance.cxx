@@ -126,7 +126,7 @@ SBNcovariance::SBNcovariance(std::string xmlname, bool useuniverse) : SBNconfig(
 
         std::cout<<"Total Entries: "<<trees.at(fid)->GetEntries()<<" good event "<<good_event<<std::endl;
         trees.at(fid)->GetEntry(good_event);
-
+        std::cout<<__LINE__<<" Got Good"<<std::endl;
     } // end fid
 
 
@@ -799,9 +799,10 @@ int SBNcovariance::FillHistograms(int file, int uni, double wei){
 int SBNcovariance::FormCovarianceMatrix(std::string tag){
 
 	//std::map<bool, std::string> map_shape_only{{true, "NCDeltaRadOverlaySM"}};
-	std::map<bool, std::string> map_shape_only{{false, "NCDeltaRadOverlayLEE"}};
-	//std::map<bool, std::string> map_shape_only{{false, "NCPi0NotCoh"}};
+	//std::map<bool, std::string> map_shape_only{{false, "NCDeltaLEE"}};
+	std::map<bool, std::string> map_shape_only{{false, "NCPi0NotCoh"}};
 	//std::map<bool, std::string> map_shape_only{{true, "NCPi0NotCoh"}};
+	//std::map<bool, std::string> map_shape_only{{true, "NCPi0NotCoh"},{true,"NCPi0Coh"}};
 
 	for(auto const& imap : map_shape_only){
 		bool lshape_only = imap.first;
