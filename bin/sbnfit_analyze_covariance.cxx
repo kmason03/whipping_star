@@ -260,7 +260,7 @@ int main(int argc, char* argv[])
     std::vector<std::vector<TH1D>> v_sys_hist(v_sys.size(),vhist);
 
     std::vector<int> cols = {kRed-7,kBlue-7,kGreen-3,kCyan};
-    std::vector<std::string> nams = {"Detector Systematics","Flux Systematics","GENIE Systematics","G4 Systematics"};
+    std::vector<std::string> nams = {"Detector Systematics","Flux Systematics","GENIE Systematics","Geant4 Systematics"};
 
     gStyle->SetOptStat(0);
 
@@ -291,7 +291,7 @@ int main(int argc, char* argv[])
                 bincount++;
             }
 
-            TLegend *l = new TLegend(0.11,0.79,0.89,0.89);
+            TLegend *l = new TLegend(0.11,0.69,0.89,0.89);
             l->SetNColumns(2);
             l->SetLineWidth(0);
             l->SetLineColor(kWhite);
@@ -299,28 +299,31 @@ int main(int argc, char* argv[])
 
             v_summed_hist[i].SetLineColor(kBlack);
             v_summed_hist[i].SetLineWidth(2);
+            v_summed_hist[i].Scale(100.0);
             v_summed_hist[i].Draw("hist");
-            v_summed_hist[i].GetYaxis()->SetTitle("Fractional Error");
+            v_summed_hist[i].GetYaxis()->SetTitle("Fractional Error (%)");
 //            v_summed_hist[i].GetYaxis()->SetTitleOffset(0.5);
             v_summed_hist[i].GetXaxis()->SetTitle((sig.channel_units.at(i).c_str()));
             v_summed_hist[i].SetMinimum(0);
             //v_summed_hist[i].SetMaximum(v_summed_hist[i].GetMaximum()*1.4);
-            v_summed_hist[i].SetMaximum(0.55);
+            v_summed_hist[i].SetMaximum(65);
             l->AddEntry(&v_summed_hist[i],"Total Systematics","l");
 
             v_stat_hist[i].SetLineColor(kGray);
             v_stat_hist[i].SetLineWidth(2);
+            v_stat_hist[i].Scale(100);
             v_stat_hist[i].Draw("hist same");
             v_stat_hist[i].SetLineStyle(9);
             
-            
             v_mcstat_hist[i].SetLineWidth(2);
             v_mcstat_hist[i].SetLineColor(kMagenta);
+            v_mcstat_hist[i].Scale(100);
             v_mcstat_hist[i].Draw("hist same");
             l->AddEntry(&v_mcstat_hist[i],"Intrinsic MC Stats","l");
             
             for(int k=0; k<v_sys.size();k++){
                      v_sys_hist[k][i].SetLineColor(cols[k]);
+                     v_sys_hist[k][i].Scale(100);
                      v_sys_hist[k][i].Draw("hist same");
                      v_sys_hist[k][i].SetLineWidth(2);
                      l->AddEntry(&v_sys_hist[k][i],(nams[k].c_str()),"l");

@@ -54,7 +54,7 @@ class SBNcls{
         sample_with_gaussian = false;
 colH0 = kRed-7;
         colH1 = kBlue-4;
-
+        has_data_overlayed = false;
 	}
 	SBNcls(SBNspec *inh0, SBNspec * inh1) : h0(inh0), h1(inh1), chi_h0(*inh0),chi_h1(*inh1){
 		which_sample = 0; //default Poisson
@@ -67,6 +67,7 @@ colH0 = kRed-7;
         sample_with_gaussian = false;
         colH0 = kRed-7;
         colH1 = kBlue-4;
+        has_data_overlayed = false;
 	}
 
 
@@ -131,10 +132,13 @@ colH0 = kRed-7;
 
     int setMode(int);
     int makePlots(CLSresult &h0_result, CLSresult & h1_result, std::string tag,  int which_mode=0);
+    int makePlots(CLSresult &h0_result, CLSresult & h1_result, std::string tag,  int which_mode=0,double dataval=0,double datapval=0);
     int runConstraintTest();
 
     int compareToRealData(SBNspec * data);
-
+    bool has_data_overlayed;
+    std::vector<double> data_result_chis;
+    std::vector<double> data_result_pvals;
 
 
     int runPi0Tests();

@@ -256,16 +256,20 @@ int main(int argc, char* argv[])
 
         cls_factory.setMode(which_mode);
         if(tester){cls_factory.runConstraintTest();return 0;}
-        cls_factory.CalcCLS(num_MC_events, tag);
-
+       
         if(real_data_string!="null"){
+            std::cout<<"Starting to load data file "<<real_data_string<<std::endl;
             SBNspec *data = new SBNspec(real_data_string,xml);
+            std::cout<<"Loaded the real data, starting to compare the CLS_factory to real data"<<
             cls_factory.compareToRealData(data);
             TMatrixD empty(data->num_bins_total_compressed,data->num_bins_total_compressed);
             empty.Zero();
             sig.CompareSBNspecs(empty,data,tag+"_datamc");
         }
+        
+        cls_factory.CalcCLS(num_MC_events, tag);
 
+        
     }else{
 	bkg.RemoveMCError();
 	sig.RemoveMCError();
