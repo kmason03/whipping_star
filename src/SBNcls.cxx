@@ -114,6 +114,7 @@ int SBNcls::CalcCLS(int numMC, std::string tag){
             if(has_data_overlayed){
                 if(h0_results[i].m_values[m]>=data_result_chis[i]){
                     data_result_pvals[i] += 1.0/(double(numMC));
+                    std::cout<<"HARP "<<i<<" "<<data_result_chis[i]<<" "<<data_result_pvals[i]<<std::endl;
                 }
             }
 
@@ -127,11 +128,16 @@ int SBNcls::CalcCLS(int numMC, std::string tag){
     std::vector<std::string> nice_names = {"Pearson_Chi","Poisson_Log_Likelihood","CNP_Chi"};
 
     for(int i=0;i< 3;i++){
-        makePlots( h0_results[i], h1_results[i], tag+nice_names[i], which_mode,i);
+        if(has_data_overlayed)
+        {
+            makePlots( h0_results[i], h1_results[i], tag+nice_names[i], which_mode,  data_result_chis[i], data_result_pvals[i]);
+        }else{
+            makePlots( h0_results[i], h1_results[i], tag+nice_names[i], which_mode);
+        }
     }
 
-    makePlots( h0_results[3], h0_results[4], tag+"_Base_PearsonChi_true_H0", 0,0,0);
-    makePlots( h1_results[3], h1_results[4], tag+"_Base_PearsonChi_true_H1", 0,0,0);
+    makePlots( h0_results[3], h0_results[4], tag+"_Base_PearsonChi_true_H0", 0);
+    makePlots( h1_results[3], h1_results[4], tag+"_Base_PearsonChi_true_H1", 0);
 
     return 0 ;
 }
@@ -195,7 +201,7 @@ int SBNcls::compareToRealData(SBNspec * data){
 
 int SBNcls::makePlots(CLSresult &h0_result, CLSresult & h1_result, std::string tag, int which_mode){
     has_data_overlayed = false;
-    makePlots(h0_result,h1_result, tag, which_mode, 0,0);
+    makePlots(h0_result,h1_result, tag, which_mode, 0.0, 0.0);
 }
 int SBNcls::makePlots(CLSresult &h0_result, CLSresult & h1_result, std::string tag, int which_mode, double datachival, double datapval){
 
@@ -351,11 +357,13 @@ int SBNcls::makePlots(CLSresult &h0_result, CLSresult & h1_result, std::string t
     if(draw_both)leg->AddEntry(&h1_pdf,legends[1].c_str(),"lf");
     if(which_mode==0)leg->AddEntry(analytical_graph,("#chi^{2} PDF "+std::to_string(h0->num_bins_total_compressed)+" dof").c_str(),"l");
 
+    TLine*ldat;
+    TLatex*qdatnam;
     if(which_mode==1 && has_data_overlayed==true){//PlotDataOnTop
-        TLine *ldat = new TLine(datachival,0.0, datachival,maxval*1.05);
+        ldat = new TLine(datachival,0.0, datachival,maxval*1.05);
         ldat->SetLineColor(kMagenta);
         ldat->SetLineWidth(2);
-        TLatex * qdatnam = new TLatex();
+        qdatnam = new TLatex();
         qdatnam->SetTextSize(0.045);
         qdatnam->SetTextAlign(12);  //align at top
         qdatnam->SetTextAngle(-90);

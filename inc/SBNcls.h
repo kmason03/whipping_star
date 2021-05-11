@@ -131,8 +131,8 @@ colH0 = kRed-7;
     int DrawSampleCovariance(std::string);
 
     int setMode(int);
-    int makePlots(CLSresult &h0_result, CLSresult & h1_result, std::string tag,  int which_mode=0);
-    int makePlots(CLSresult &h0_result, CLSresult & h1_result, std::string tag,  int which_mode=0,double dataval=0,double datapval=0);
+    int makePlots(CLSresult &h0_result, CLSresult & h1_result, std::string tag,  int which_mode);
+    int makePlots(CLSresult &h0_result, CLSresult & h1_result, std::string tag,  int which_mode,double dataval,double datapval);
     int runConstraintTest();
 
     int compareToRealData(SBNspec * data);
