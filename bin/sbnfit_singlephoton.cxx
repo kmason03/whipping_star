@@ -201,15 +201,15 @@ int main(int argc, char* argv[])
     //mygrid.AddConstrainedDimension("All", 0.5, 1.5, 0.01, 1.19);   //0.1 FULL
    // NCpi0 cos(theta_pi0) flat fit
    // TECHNOTE V6 version
-    mygrid.AddConstrainedDimension("NCPi0NotCoh", 0.5, 1.25, 0.01, 1.0);   //0.1 FULL
-    mygrid.AddConstrainedDimension("NCPi0Coh", 0, 5, 0.05, 1.0); //0.1full
+    //mygrid.AddConstrainedDimension("NCPi0NotCoh", 0.5, 1.25, 0.01, 1.0);   //0.1 FULL
+    //mygrid.AddConstrainedDimension("NCPi0Coh", 0, 5, 0.05, 1.0); //0.1full
     //mygrid.AddConstrainedDimension("NCPi0NotCoh", 0.2, 1.55, 0.01, 1.0);   //0.1 FULL
     //mygrid.AddConstrainedDimension("NCPi0Coh", 0, 7, 0.05, 1.0); //0.1full
     // NCpi0 momentum, momentum-dependent fit
     //mygrid.AddConstrainedDimension("NCPi0NotCoh", 0.5, 1.25, 0.02, 1.0);   //0.1 FULL
     //mygrid.AddConstrainedDimension("NCPi0Coh", 0, 8, 0.2, 1.0); 
     //mygrid.AddFixedDimension("NCPi0NotCoh", 1.19);   //fixed
-    //mygrid.AddDimension("NCDelta", 0, 6, 0.01 );
+    mygrid.AddDimension("NCDelta", 0, 6, 0.01 );
     //mygrid.AddDimension("NCDeltaLEE", 0, 5, 0.01 );
     //mygrid.AddDimension("NCDeltaLEE", 0, 2.5, 0.005 );
 
@@ -268,8 +268,8 @@ int main(int argc, char* argv[])
 		  //sp.ModifyCV(delta_scaling, {1.0, 1.0});
 		}
 		sp.LoadSpectraApplyFullScaling(); 
-		sp.CalcChiGridScanShapeOnlyFit();
-		//sp.CalcChiGridScan();
+		//sp.CalcChiGridScanShapeOnlyFit();
+		sp.CalcChiGridScan();
 	}else if(mode == "plot"){
 		sp.GrabFitMap();
 		if(interpolation_number != -99) sp.SetInterpolationNumber(interpolation_number);

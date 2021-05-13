@@ -55,7 +55,7 @@ class SBNchi : public SBNconfig{
 
 	//This is the core spectra that you are comparing too. This is used to calculate covariance matrix and in a way is on the 'bottom' of the chi^2.
 	SBNspec core_spectrum;
-	bool is_stat_only;
+	bool is_stat_only; //controls whether systematic uncertainty (including MC intrinsic error) will be included
 
 	//always contains the last chi^2 value calculated
 	double last_calculated_chi;

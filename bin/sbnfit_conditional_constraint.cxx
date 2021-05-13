@@ -64,8 +64,9 @@ int main(int argc, char* argv[])
         {"help", 		no_argument,	0, 'h'},
     	{"covar",		required_argument,    0, 'c'},
     	{"genie",		required_argument,    0, 'g'},
-        {"flat", required_argument,0,'f'},
-        {"zero",no_argument,0,'z'},
+        {"flat", 		required_argument,0,'f'},
+        {"zero",		no_argument,0,'z'},
+	{"overlaydata", 	no_argument,          0, 'o'},
         {"cmin",required_argument,0,'k'},
         {"cmax",required_argument,0,'p'},
         {0,			    no_argument, 		0,  0},
@@ -78,6 +79,7 @@ int main(int argc, char* argv[])
     std::string genie_file = "NONE";
     bool stats_only = true;
     bool use_genie = false;
+    bool overlay_data = false;
     std::string signal_file;
     std::string data_file;
 
@@ -94,7 +96,7 @@ int main(int argc, char* argv[])
 
     while(iarg != -1)
     {
-        iarg = getopt_long(argc,argv, "f:x:s:d:t:c:g:k:p:zh", longopts, &index);
+        iarg = getopt_long(argc,argv, "f:x:s:d:t:c:g:k:p:zoh", longopts, &index);
 
         switch(iarg)
         {
@@ -130,6 +132,9 @@ int main(int argc, char* argv[])
                 break;
 	    case 'd':
 		data_file = optarg;
+		break;
+	    case 'o':
+		overlay_data = true;
 		break;
             case '?':
             case 'h':
@@ -169,9 +174,9 @@ int main(int argc, char* argv[])
     data.CollapseVector();
 
     //configuration
-    int start_pt = 11;
-    int start_pt_1g0p=1;//1g1p only has 6 bins
     int Nsubchannel = 9; 
+    int start_pt_1g0p=cv.hist[0].GetXaxis()->GetNbins();
+    int start_pt = start_pt_1g0p + cv.hist[Nsubchannel].GetXaxis()->GetNbins();
 
     std::vector<SBNspec> vec_spec(1, cv);
     std::string constrain_str="NCDeltaLEE";
@@ -374,12 +379,14 @@ int main(int argc, char* argv[])
 	    std::cout << "Nue only original  chi2 value is " << chi_nueoriginal << std::endl;
 	    std::cout << "Nue constrained  chi2 value is " << chi_constrain << std::endl;
 	    std::cout << "Nue constrained, overall systematic uncertainty is:" << std::endl;
-	    std::cout << "\t\t\t1g1p MC intrinsic error " << sqrt(intri_1g1p) << std::endl;
-	    std::cout << "\t\t\t1g1p overall unconstrained error: " << sqrt(overall_1g1p_uncons) << std::endl;
-	    std::cout << "\t\t\t1g1p overall constrained error: " << sqrt(overall_syst_1g1p) << std::endl;
-	    std::cout << "\t\t\t1g0p MC intrinsic error " << sqrt(intri_1g0p) << std::endl;
-	    std::cout << "\t\t\t1g0p overall unconstrained error " << sqrt(overall_1g0p_uncons) << std::endl;
-	    std::cout << "\t\t\t1g0p overall constrained error: " << sqrt(overall_syst_1g0p) << std::endl;
+	    std::cout << "\t1g1p MC intrinsic error " << sqrt(intri_1g1p) << std::endl;
+	    std::cout << "\t1g1p overall unconstrained error: " << sqrt(overall_1g1p_uncons) << std::endl;
+	    std::cout << "\t1g1p overall constrained error: " << sqrt(overall_syst_1g1p) << std::endl;
+	    std::cout << "\t1g0p MC intrinsic error " << sqrt(intri_1g0p) << std::endl;
+	    std::cout << "\t1g0p overall unconstrained error " << sqrt(overall_1g0p_uncons) << std::endl;
+	    std::cout << "\t1g0p overall constrained error: " << sqrt(overall_syst_1g0p) << std::endl;
+	    std::cout << "Unconstrained 1g1p events: " << std::accumulate(fspec.collapsed_vector.begin(), fspec.collapsed_vector.begin() + start_pt_1g0p, 0.0);
+	    std::cout << ", unconstrained 1g0p events: " << std::accumulate(fspec.collapsed_vector.begin()+start_pt_1g0p, fspec.collapsed_vector.begin()+start_pt, 0.0) << std::endl;
 	    std::cout << "constrained 1g1p events: " << std::accumulate(constrained_pred.begin(), constrained_pred.begin()+start_pt_1g0p, 0.0);
 	    std::cout << ", constrained 1g0p events: " << std::accumulate(constrained_pred.begin()+start_pt_1g0p, constrained_pred.end(), 0.0)<< std::endl;
 
@@ -431,7 +438,7 @@ int main(int argc, char* argv[])
 	  std::vector<std::string> vec_string{"1g1p", "1g0p"};
 
 	  for(int i=0;i<2; i++){
-		  TCanvas* c=new TCanvas("c", "c");
+		  TCanvas* c=new TCanvas(Form("c_%d", i), "c");
 		  gStyle->SetOptStat(0);
 		  //gStyle->SetErrorX();
 		  TLegend* leg=new TLegend(0.7,0.7,0.9,0.9);
@@ -462,24 +469,26 @@ int main(int argc, char* argv[])
 		  leg->AddEntry(vec_hist_original[i], Form("%s Orignal", vec_string[i].c_str()), "LF");
 		  leg->AddEntry(vec_hist_constrain[i], Form("%s Constrained",vec_string[i].c_str()), "LF");
 
-		  //leg->AddEntry(vec_hist_data[i], Form("%s Toy Data",vec_string[i].c_str()), "ep");
 
+		  if(overlay_data){
+		      vec_hist_data[i]->SetMarkerStyle(20);
+		      vec_hist_data[i]->SetMarkerColor(kBlack);
+		      vec_hist_data[i]->SetMarkerSize(1.2);
+		      vec_hist_data[i]->SetLineWidth(2);
+		      vec_hist_data[i]->SetLineColor(kBlack);
+		      vec_hist_data[i]->Draw("E1same");
+		      leg->AddEntry(vec_hist_data[i], Form("%s Fake Data",vec_string[i].c_str()), "ep");
+		  }
 		  leg->Draw();
-		  vec_hist_data[i]->SetMarkerStyle(20);
-		  vec_hist_data[i]->SetMarkerColor(kBlack);
-		  vec_hist_data[i]->SetMarkerSize(1.2);
-		  vec_hist_data[i]->SetLineWidth(2);
-		  vec_hist_data[i]->SetLineColor(kBlack);
-		  vec_hist_data[i]->Draw("E1same");
 		  c->Update();
 		  fout->cd();
 		  if(which_spec_index ==0){
 			 //c->SaveAs("CV_1g1p_constrain_comparison.png", "png");
-			 c->SaveAs(("CV_"+vec_string[i]+"_constrain_comparison.pdf").c_str(), "pdf");
+			 c->SaveAs((tag+"CV_"+vec_string[i]+"_constrain_comparison.pdf").c_str(), "pdf");
 			 c->Write(Form("CV_%s_comparison",vec_string[i].c_str()));
 		  }
 		  if(which_spec_index ==1){
-			 c->SaveAs(("BF_"+vec_string[i]+"_constrain_comparison.pdf").c_str(), "pdf");
+			 c->SaveAs((tag+"BF_"+vec_string[i]+"_constrain_comparison.pdf").c_str(), "pdf");
 			 c->Write(Form("BF_%s_comparison",vec_string[i].c_str()));
 		  }
 

@@ -163,6 +163,10 @@ int main(int argc, char* argv[])
 
     }else{
         SBNcovariance example_covar(xml, bool_use_universe);
+
+	//Write out variations in histograms
+	example_covar.WriteOutVariation(std::string("NCPi0"));
+	
         //Form the covariance matrix from loaded weights and MC events
         example_covar.FormCovarianceMatrix(tag);
 

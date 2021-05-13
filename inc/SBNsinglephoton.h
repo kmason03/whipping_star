@@ -57,7 +57,7 @@ namespace sbn{
 
 	//regular grid, for a flat normalization
         NGrid m_grid;
-        int m_num_total_gridpoints;
+        int m_flat_total_gridpoints;
         std::vector<std::vector<double>> m_vec_grid;
 
         // extra grid for polynomial scaling purpose
@@ -66,9 +66,10 @@ namespace sbn{
 	bool m_bool_poly_grid;  //use polynomial grid or not
 	std::vector<std::vector<double>> m_vec_poly_grid;
 
-
+	int m_fit_dimension;   //total num of parameters being fit
 	int m_total_gridpoints;  //total number of grid points 
 
+	int m_cv_spec_index = -1;   //global index of cv spectrum
         std::vector<SBNspec> m_scaled_spec_grid;  
 
         TMatrixT<double> * m_full_fractional_covariance_matrix; //full systematic( include detector) covariance matrix
@@ -145,7 +146,7 @@ namespace sbn{
 	int LoadData(std::string filename);
 	int SetPolyGrid(NGrid ingrid);
 	
-	int PrintOutFitInfo(std::map<int, std::vector<double>>& , std::string tag, bool);
+	int PrintOutFitInfo(const std::map<int, std::vector<double>>& , std::string tag, bool);
 	int WriteOutInfo(std::map<int, std::vector<double>>& );
 	//not finished yet, what information do we wnat to print out
 	int GrabFitMap();
@@ -169,8 +170,9 @@ namespace sbn{
 	int CloseFiles();	
 	int PoissonFluctuation(SBNspec *);
 
-
-
+	private:
+	void MaskScaleFactor(double&);
+	void DrawMarginalizedChi(std::vector<TH1D*> vec_hist, std::string intag);
 
     };
 
