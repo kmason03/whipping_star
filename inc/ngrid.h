@@ -39,6 +39,7 @@ struct NGridDimension{
     double f_constrain_range;
 
     std::vector<double> f_points;
+    std::vector<double> f_edges;  //edges that can be used in creating histograms
 
     NGridDimension(std::string name, double min, double max, double step) : f_name(name), f_min(min), f_max(max), f_step(step) {
         f_N = ceil(fabs(f_min-f_max)/step);
@@ -79,16 +80,24 @@ struct NGridDimension{
     }
 
 
-    int GetNPoints(){return f_N;};
+    int GetNPoints() const {return f_N;};
 
     void CalcGrid(){
         for(int i=0; i<f_N; i++){
             f_points[i]= f_min + i*f_step;
         }
+	f_edges = f_points;
+	f_edges.push_back(f_points.back() + f_step);
         return;
     }
-    double GetPoint(int n){ return f_points[n];    };
 
+    inline const std::string& GetName() const {return f_name; }
+    inline double GetPoint(int n){ return f_points[n];    };
+    inline const std::vector<double>& GetPoints() const { return f_points; }
+    inline const std::vector<double>& GetEdges() const {return f_edges; }
+    inline double GetMax() const {return f_max;}
+    inline double GetMin() const {return f_min;}
+    inline double GetStep() const { return f_step;}
 };
 
 struct NGrid{

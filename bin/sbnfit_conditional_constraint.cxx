@@ -178,7 +178,7 @@ int main(int argc, char* argv[])
     int start_pt_1g0p=cv.hist[0].GetXaxis()->GetNbins();
     int start_pt = start_pt_1g0p + cv.hist[Nsubchannel].GetXaxis()->GetNbins();
 
-    std::vector<SBNspec> vec_spec(1, cv);
+    std::vector<SBNspec> vec_spec(2, cv);
     std::string constrain_str="NCDeltaLEE";
     //std::string constrain_str="NCDelta";
     //get the NULL spectrum
@@ -186,7 +186,7 @@ int main(int argc, char* argv[])
     //vec_spec[0].Scale("NCDelta", 0.0);
     //get the BF values
     //vec_spec[1].Scale("NCDeltaLEE", 0.0);
-    //vec_spec[1].Scale("NCDelta", 3.35);
+    vec_spec[1].Scale("NCDelta", 0.93);
     
     std::cout<<"Loading fractional covariance matrix from "<<covar_file<<std::endl;
 
@@ -438,7 +438,7 @@ int main(int argc, char* argv[])
 	  std::vector<std::string> vec_string{"1g1p", "1g0p"};
 
 	  for(int i=0;i<2; i++){
-		  TCanvas* c=new TCanvas(Form("c_%d", i), "c");
+		  TCanvas* c=new TCanvas(Form("c_%d_%d",which_spec_index, i), "c");
 		  gStyle->SetOptStat(0);
 		  //gStyle->SetErrorX();
 		  TLegend* leg=new TLegend(0.7,0.7,0.9,0.9);
@@ -494,7 +494,7 @@ int main(int argc, char* argv[])
 
 	  }
 
-	  which_spec_index++;
+	  ++which_spec_index;
     }
 /*    TFile *fout = new TFile(("Constraint_"+tag+"_output.root").c_str(),"recreate");
     fout->cd();

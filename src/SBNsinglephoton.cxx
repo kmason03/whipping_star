@@ -16,7 +16,7 @@ SBNsinglephoton::SBNsinglephoton(std::string xmlname, std::string intag, NGrid i
     if(is_verbose){
 	std::cout << "Flat Grid:" << std::endl;
     	for(auto const & igrid: m_grid.f_dimensions)
-	    std::cout << "\t" << igrid.f_name << ": "<< igrid.f_N<< " points, ("<<igrid.f_min << ", " << igrid.f_max<<"), stepsize " << igrid.f_step << std::endl; 
+	    std::cout << "\t" << igrid.GetName() << ": "<< igrid.GetNPoints()<< " points, ("<<igrid.GetMin() << ", " << igrid.GetMax()<<"), stepsize " << igrid.GetStep() << std::endl; 
     }
 
     // set up poly grid
@@ -59,7 +59,7 @@ int SBNsinglephoton::SetPolyGrid(NGrid in_polygrid){
     if(is_verbose){
 	std::cout << "Poly Grid:" << std::endl;
     	for(const auto &pgrid : m_poly_grid.f_dimensions)
-            std::cout << "\t" << pgrid.f_name << ": "<< pgrid.f_N<< " points, ("<< pgrid.f_min << ", " << pgrid.f_max<<"), stepsize " << pgrid.f_step << std::endl;
+            std::cout << "\t" << pgrid.GetName() << ": "<< pgrid.GetNPoints()<< " points, ("<< pgrid.GetMin() << ", " << pgrid.GetMax()<<"), stepsize " << pgrid.GetStep() << std::endl;
     }
 
     return 0;
@@ -345,10 +345,10 @@ int SBNsinglephoton::LoadSpectraOnTheFly(){
 	int flat_grid_npoint=0;
 	int period=0;
 	for(int i=0; i<m_grid.f_num_dimensions; i++){
-	    period *= m_grid.f_dimensions[i].f_N;
-	    if(m_grid.f_dimensions[i].f_name == m_poly_grid.f_dimensions[0].f_name){
+	    period *= m_grid.f_dimensions[i].GetNPoints();
+	    if(m_grid.f_dimensions[i].GetName() == m_poly_grid.f_dimensions[0].GetName()){
 		 flat_grid_index=i;
-		 flat_grid_npoint=m_grid.f_dimensions[i].f_N;
+		 flat_grid_npoint=m_grid.f_dimensions[i].GetNPoints();
 		 period =1;
 	    }
 	}
@@ -360,7 +360,7 @@ int SBNsinglephoton::LoadSpectraOnTheFly(){
 	std::vector<SBNspec> m_prescale_spec(m_poly_total_gridpoints*flat_grid_npoint, tm);	
 	for(int i=0; i<m_poly_total_gridpoints; i++){
 	    std::vector<double> ipoint = m_vec_poly_grid[i];
-	    std::vector<double> fgrid_point = m_grid.f_dimensions[flat_grid_index].f_points;
+	    std::vector<double> fgrid_point = m_grid.f_dimensions[flat_grid_index].GetPoints();
 	    for(int j=0; j< flat_grid_npoint; j++){
 		if(is_verbose && (vec_index%50==0)) std::cout << "On Point " << vec_index << std::endl;
 		this->ScaleSpectrum(&m_prescale_spec[vec_index], fgrid_point[j], ipoint);
@@ -371,6 +371,10 @@ int SBNsinglephoton::LoadSpectraOnTheFly(){
 	vec_index=0;
 	std::vector<double> central_value_flat(m_grid.f_num_dimensions, 1.0);  //flat grid point for GENIE central value
 	std::vector<double> central_value_poly(m_poly_grid.f_num_dimensions, 0.0);  //poly grid point for GENIE central value
+	for(int i=0; i != m_grid.f_num_dimensions; ++i){
+            if(m_grid.f_dimensions[i].GetName().find("NCDeltaLEE") != std::string::npos)  //for LEE component, the scale factor for CV is 0
+                central_value_flat[i]= 0.0;
+        }
 
 	//get the total scaled spectra
 	if(is_verbose) std::cout << "SBNsinglephoton::LoadSpectraOnTheFly\t||\tGrab the whole scaled spectra " <<std::endl;
@@ -384,8 +388,8 @@ int SBNsinglephoton::LoadSpectraOnTheFly(){
 
 		m_scaled_spec_grid[vec_index]=*m_cv_spectrum;
 		for(int k=0; k<jpoint.size(); k++){
-		      if(k == flat_grid_index) m_scaled_spec_grid[vec_index].Scale(m_grid.f_dimensions[k].f_name,0.0);
-		      else m_scaled_spec_grid[vec_index].Scale(m_grid.f_dimensions[k].f_name, jpoint[k]);
+		      if(k == flat_grid_index) m_scaled_spec_grid[vec_index].Scale(m_grid.f_dimensions[k].GetName(),0.0);
+		      else m_scaled_spec_grid[vec_index].Scale(m_grid.f_dimensions[k].GetName(), jpoint[k]);
 		}
 
 		int flat_index = (j%(period*flat_grid_npoint))/period; 
@@ -415,6 +419,10 @@ int SBNsinglephoton::LoadSpectraApplyFullScaling(){
 
     if(!m_bool_poly_grid){
 	std::vector<double> central_value_point(m_grid.f_num_dimensions, 1.0);  //flat grid point for GENIE central value
+	for(int i=0; i != m_grid.f_num_dimensions; ++i){
+	    if(m_grid.f_dimensions[i].GetName().find("NCDeltaLEE") != std::string::npos)  //for LEE component, the scale factor for CV is 0
+		central_value_point[i]= 0.0;
+	}
 
         //SBNspec temp_cv = *m_cv_spectrum;
         SBNspec temp_cv(tag+"_CV.SBNspec.root", this->xmlname, false);
@@ -430,7 +438,7 @@ int SBNsinglephoton::LoadSpectraApplyFullScaling(){
 
             m_scaled_spec_grid[j] = temp_cv; //start with genie CV
             for(int jp=0; jp< jpoint.size(); jp++){
-                m_scaled_spec_grid[j].Scale(m_grid.f_dimensions[jp].f_name, jpoint[jp]); // scale corresponding subchannel
+                m_scaled_spec_grid[j].Scale(m_grid.f_dimensions[jp].GetName(), jpoint[jp]); // scale corresponding subchannel
                 //m_scaled_spec_grid[j].ScaleAll(jpoint[jp]);  
             }
 
@@ -543,21 +551,21 @@ int SBNsinglephoton::CalcChiGridScanShapeOnlyFit(){
 
         //calculate the shape only covariance matrix for genie uncertainty, to get rid of normalization uncertainty
         for(int i=0; i<m_grid.f_num_dimensions; i++){
-            //if(m_grid.f_dimensions[i].f_name == "NCDeltaLEE") continue;
+            //if(m_grid.f_dimensions[i].GetName() == "NCDeltaLEE") continue;
             SBNspec temp_comp = last_best_spectrum;
-            temp_comp.Keep(m_grid.f_dimensions[i].f_name, 1.0);
+            temp_comp.Keep(m_grid.f_dimensions[i].GetName(), 1.0);
 
             //only genie for the 3 scaled channels
             genie_systematic_matrix = m_chi->FillSystMatrix(*m_genie_fractional_covariance_matrix, temp_comp.full_vector, temp_comp.full_err_vector);
             fout->cd();
-            genie_systematic_matrix.Write(Form("full_genie_%s_%d", m_grid.f_dimensions[i].f_name.c_str(), n_iter));	
+            genie_systematic_matrix.Write(Form("full_genie_%s_%d", m_grid.f_dimensions[i].GetName().c_str(), n_iter));	
             
             //This is then the either Shape or Shape plus Mixed genie for 3 scaled channels
             //genie_systematic_matrix = m_chi->CalcShapeOnlyCovarianceMatrix(*m_genie_fractional_covariance_matrix, &temp_comp, &temp_comp);
             genie_systematic_matrix = m_chi->CalcShapeMixedCovarianceMatrix(*m_genie_fractional_covariance_matrix, &temp_comp, &temp_comp);
-            genie_systematic_matrix.Write(Form("ShapeMixed_genie_%s_%d", m_grid.f_dimensions[i].f_name.c_str(), n_iter));	
+            genie_systematic_matrix.Write(Form("ShapeMixed_genie_%s_%d", m_grid.f_dimensions[i].GetName().c_str(), n_iter));	
             full_systematic_covariance += genie_systematic_matrix;//this point its flux all+det all + genie only 3 param shape+mixed
-            background_spectrum.Scale(m_grid.f_dimensions[i].f_name, 0.0);   
+            background_spectrum.Scale(m_grid.f_dimensions[i].GetName(), 0.0);   
         }
         //add genie uncertainties for other subchannels to total covariance matrix. Its being Re-Used here. 
         genie_systematic_matrix = m_chi->FillSystMatrix(*m_genie_fractional_covariance_matrix, background_spectrum.full_vector, background_spectrum.full_err_vector);
@@ -567,7 +575,6 @@ int SBNsinglephoton::CalcChiGridScanShapeOnlyFit(){
 
         //use CNP statistical covariance matrix
         total_covariance_matrix = m_chi->AddStatMatrixCNP(&collapsed_full_systematic_matrix, last_best_spectrum.collapsed_vector, m_data_spectrum->collapsed_vector);
-        //std::cout << "SBNsinglephoton::CalcChiGridScanShapeOnlyFit\t||check " << __LINE__ << std::endl;
         fout->cd();
         genie_systematic_matrix.Write(Form("full_genie_otherbkg_%d", n_iter));
         full_systematic_covariance.Write(Form("syst_uncollapsed_matrix_%d", n_iter));
@@ -1195,69 +1202,44 @@ int SBNsinglephoton::SaveHistogram(std::map<int, std::vector<double>>& inmap){
 		auto grid_y = m_grid.f_dimensions.at(1);
 
 		// fill original 2D chi surface
-		TH2D* hr = new TH2D("h_chi_surface", Form("#Delta#chi^{2} surface; %s;%s", title_map[grid_y.f_name].c_str(), title_map[grid_x.f_name].c_str()), grid_y.f_N, grid_y.f_min, grid_y.f_max, grid_x.f_N, grid_x.f_min, grid_x.f_max);
-		std::vector<double> mchi_grid_x(grid_x.f_N, DBL_MAX);
-		std::vector<double> mchi_grid_y(grid_y.f_N, DBL_MAX);
+		TH2D* hr = new TH2D("h_chi_surface", Form("#Delta#chi^{2} surface; %s;%s", title_map[grid_y.GetName()].c_str(), title_map[grid_x.GetName()].c_str()), grid_y.GetNPoints(), &grid_y.GetEdges()[0], grid_x.GetNPoints(), &grid_x.GetEdges()[0]);
+		std::vector<double> mchi_grid_x(grid_x.GetNPoints(), DBL_MAX);
+		std::vector<double> mchi_grid_y(grid_y.GetNPoints(), DBL_MAX);
 		for(size_t i = 0; i != vec_chi.size() ; ++i){
-		     size_t grid_x_index = i/grid_y.f_N;
-		     size_t grid_y_index = i%grid_y.f_N;
+		     size_t grid_x_index = i/grid_y.GetNPoints();
+		     size_t grid_y_index = i%grid_y.GetNPoints();
 		     mchi_grid_x[grid_x_index] = std::min(mchi_grid_x[grid_x_index], vec_chi[i]);
 		     mchi_grid_y[grid_y_index] = std::min(mchi_grid_y[grid_y_index], vec_chi[i]);
 		     hr->SetBinContent(grid_y_index+1, grid_x_index+1, vec_chi[i]);
 		}
+		hr->Write();
 
 		//generate interpolated 2D chi surface
-		TH2D h_chi_surface = this->Do2DInterpolation(m_interpolation_number, grid_y.f_points, grid_x.f_points,vec_chi, tag);
+		TH2D h_chi_surface = this->Do2DInterpolation(m_interpolation_number, grid_y.GetPoints(), grid_x.GetPoints(),vec_chi, tag);
 		h_chi_surface.SetName("h_chi_interpolated_surface");
-		h_chi_surface.SetTitle(Form("#Delta#chi^{2} surface; %s;%s", title_map[grid_y.f_name].c_str(), title_map[grid_x.f_name].c_str()));
+		h_chi_surface.SetTitle(Form("#Delta#chi^{2} surface; %s;%s", title_map[grid_y.GetName()].c_str(), title_map[grid_x.GetName()].c_str()));
 		h_chi_surface.Write();
 
 		hr->GetXaxis()->SetRangeUser(h_chi_surface.GetXaxis()->GetXmin(), h_chi_surface.GetXaxis()->GetXmax());
                 hr->GetYaxis()->SetRangeUser(h_chi_surface.GetYaxis()->GetXmin(), h_chi_surface.GetYaxis()->GetXmax());
+		//std::cout << "Interpolated x range: " << h_chi_surface.GetXaxis()->GetXmin() << ", " << h_chi_surface.GetXaxis()->GetXmax() << std::endl;
+		//std::cout << "Trimmed x range:" << hr->GetXaxis()->GetXmin() << ", " << hr->GetXaxis()->GetXmax()  << std::endl;
 		//draw contours
 		std::vector<TGraph> contour_graph = this->FindContour(h_chi_surface, 3, tag);  //want 3 contour
 	        //TCanvas* c_canvas=(TCanvas*)this->DrawContour(hr, contour_graph, m_vec_grid[m_best_index]).Clone();	
 	        this->DrawContour(hr, contour_graph, m_vec_grid[m_best_index]);	
 
 		std::vector<TH1D*> vec_mchi_hist;
-		vec_mchi_hist.push_back(new TH1D(Form("h_mchi_%s", (grid_x.f_name).c_str()), Form("Marginalized #Delta#chi^{2} distribution; %s; #Delta#chi^{2}", title_map[grid_x.f_name].c_str()), grid_x.f_N, grid_x.f_min, grid_x.f_max));
-	 	vec_mchi_hist.push_back(new TH1D(Form("h_mchi_%s", (grid_y.f_name).c_str()), Form("Marginalized #Delta#chi^{2} distribution; %s; #Delta#chi^{2}", title_map[grid_y.f_name].c_str()), grid_y.f_N, grid_y.f_min, grid_y.f_max));
+		vec_mchi_hist.push_back(new TH1D(Form("h_mchi_%s", (grid_x.GetName()).c_str()), Form("Marginalized #Delta#chi^{2} distribution; %s; #Delta#chi^{2}", title_map[grid_x.GetName()].c_str()), grid_x.GetNPoints(), &grid_x.GetEdges()[0]));
+	 	vec_mchi_hist.push_back(new TH1D(Form("h_mchi_%s", (grid_y.GetName()).c_str()), Form("Marginalized #Delta#chi^{2} distribution; %s; #Delta#chi^{2}", title_map[grid_y.GetName()].c_str()), grid_y.GetNPoints(), &grid_y.GetEdges()[0]));
 
-		for(size_t i = 0; i != grid_x.f_N; ++i)
+		for(size_t i = 0; i != grid_x.GetNPoints(); ++i)
 		    vec_mchi_hist[0]->SetBinContent(i+1, mchi_grid_x[i]);
 
-		for(size_t i =0; i!= grid_y.f_N; ++i)
+		for(size_t i =0; i!= grid_y.GetNPoints(); ++i)
 		    vec_mchi_hist[1]->SetBinContent(i+1, mchi_grid_y[i]);
 
 		DrawMarginalizedChi(vec_mchi_hist, tag);	
-/*
-		 for(auto &h:vec_mchi_hist){
-                        h->Write();
-                        TCanvas* c=new TCanvas("c", "c");
-			TLegend* leg = new TLegend(0.4, 0.7, 0.7, 0.9);
-			leg->SetFillStyle(0);
-   			leg->SetBorderSize(0);
-                        gStyle->SetOptStat(0);
-                        h->Draw("hist");
-                        TLine line(h->GetXaxis()->GetXmin(), 1.0, h->GetXaxis()->GetXmax(), 1.0);
-                        TLine line90(h->GetXaxis()->GetXmin(), 2.71, h->GetXaxis()->GetXmax(), 2.71);
-                        TLine line99(h->GetXaxis()->GetXmin(), 6.63, h->GetXaxis()->GetXmax(), 6.63);
-                        line.SetLineColor(8);
-                        line90.SetLineColor(42);
-                        line99.SetLineColor(46);
-                        line.Draw("same");
-                        line90.Draw("same");
-                        line99.Draw("same");
-			leg->SetHeader("C.L. lines", "C");
-			leg->AddEntry(&line, "1#sigma","L");
-			leg->AddEntry(&line90, "90%", "L");
- 			leg->AddEntry(&line99, "99%", "L");
-			leg->Draw();
-                        c->Update();
-                        c->SaveAs((tag+"_"+h->GetName()+".pdf").c_str(), "pdf");
-
-                }
-*/	
 	   }else{
 		if(is_verbose) std::cout<< "SBNsinglephoton::SaveHistogram\t|| Case: NCpi0 normalization fit, with energy/momentum dependent scaling to " << m_poly_grid.f_num_dimensions << "nd order!" << std::endl;
 		 auto grid_1order = m_poly_grid.f_dimensions.at(0);
@@ -1267,8 +1249,8 @@ int SBNsinglephoton::SaveHistogram(std::map<int, std::vector<double>>& inmap){
 		 NGridDimension grid_fother = grid_1order;
 		 int period = 0;  // very important variable!! 
 		 for(auto &grid:m_grid.f_dimensions){
-			period *= grid.f_N;
-			if(grid.f_name == grid_1order.f_name){
+			period *= grid.GetNPoints();
+			if(grid.GetName() == grid_1order.GetName()){
 			    grid_flat = grid;
 			    period = 1;
 			}else{
@@ -1277,40 +1259,39 @@ int SBNsinglephoton::SaveHistogram(std::map<int, std::vector<double>>& inmap){
 		 }		
 
 		 //2D marginalized chi^2 surface
-		 TH2D h_mchi_poly("h_mchi_poly", Form("marginalized #Delta#chi^{2}; %s; %s", title_map[grid_flat.f_name].c_str(), title_map["NCPi0NotCohMom"].c_str()), grid_flat.f_N, grid_flat.f_min, grid_flat.f_max, grid_1order.f_N, grid_1order.f_min, grid_1order.f_max);
-		 TH2D h_mchi_flat("h_mchi_flat", Form("marginalized #Delta#chi^{2}; %s; %s", title_map[grid_fother.f_name].c_str(), title_map[grid_flat.f_name].c_str()), grid_fother.f_N, grid_fother.f_min, grid_fother.f_max, grid_flat.f_N, grid_flat.f_min, grid_flat.f_max);
-
-		 TH2D h_mchi_mix("h_mchi_mix", Form("marginalized #Delta#chi^{2}; %s; %s", title_map[grid_fother.f_name].c_str(), title_map["NCPi0NotCohMom"].c_str()), grid_fother.f_N, grid_fother.f_min, grid_fother.f_max, grid_1order.f_N, grid_1order.f_min, grid_1order.f_max);
+		 TH2D h_mchi_poly("h_mchi_poly", Form("marginalized #Delta#chi^{2}; %s; %s", title_map[grid_flat.GetName()].c_str(), title_map["NCPi0NotCohMom"].c_str()), grid_flat.GetNPoints(), &grid_flat.GetEdges()[0], grid_1order.GetNPoints(), &grid_1order.GetEdges()[0]);
+		 TH2D h_mchi_flat("h_mchi_flat", Form("marginalized #Delta#chi^{2}; %s; %s", title_map[grid_fother.GetName()].c_str(), title_map[grid_flat.GetName()].c_str()), grid_fother.GetNPoints(), &grid_fother.GetEdges()[0], grid_flat.GetNPoints(), &grid_flat.GetEdges()[0]);
+		 TH2D h_mchi_mix("h_mchi_mix", Form("marginalized #Delta#chi^{2}; %s; %s", title_map[grid_fother.GetName()].c_str(), title_map["NCPi0NotCohMom"].c_str()), grid_fother.GetNPoints(), &grid_fother.GetEdges()[0], grid_1order.GetNPoints(), &grid_1order.GetEdges()[0]);
 
 		 // 1D marginalzied chi^2 curve
 		 std::vector<TH1D*> vh_mchi(3);
-		 vh_mchi[0] = new TH1D(Form("h_mchi_flat_%s", (grid_flat.f_name).c_str()), Form("marginalized #Delta#chi^{2}; %s;marginalized #Delta#chi^{2}",title_map[grid_flat.f_name].c_str()), grid_flat.f_N, grid_flat.f_min, grid_flat.f_max);
-		 vh_mchi[1] = new TH1D(Form("h_mchi_poly_%s", (grid_1order.f_name).c_str()), Form("marginalized #Delta#chi^{2}; %s;marginalized #Delta#chi^{2}",title_map["NCPi0NotCohMom"].c_str()), grid_1order.f_N, grid_1order.f_min, grid_1order.f_max);
-		 vh_mchi[2] = new TH1D(Form("h_mchi_%s", (grid_fother.f_name).c_str()), Form("marginalized #Delta#chi^{2}; %s; marginalized #Delta#chi^{2}",title_map[grid_fother.f_name].c_str()),grid_fother.f_N, grid_fother.f_min, grid_fother.f_max);
+		 vh_mchi[0] = new TH1D(Form("h_mchi_flat_%s", (grid_flat.GetName()).c_str()), Form("marginalized #Delta#chi^{2}; %s;marginalized #Delta#chi^{2}",title_map[grid_flat.GetName()].c_str()), grid_flat.GetNPoints(), &grid_flat.GetEdges()[0]);
+		 vh_mchi[1] = new TH1D(Form("h_mchi_poly_%s", (grid_1order.GetName()).c_str()), Form("marginalized #Delta#chi^{2}; %s;marginalized #Delta#chi^{2}",title_map["NCPi0NotCohMom"].c_str()), grid_1order.GetNPoints(), &grid_1order.GetEdges()[0]);
+		 vh_mchi[2] = new TH1D(Form("h_mchi_%s", (grid_fother.GetName()).c_str()), Form("marginalized #Delta#chi^{2}; %s; marginalized #Delta#chi^{2}",title_map[grid_fother.GetName()].c_str()),grid_fother.GetNPoints(), &grid_fother.GetEdges()[0]);
 
 		 // initialize histogram content
-		 for(int i=0;i<grid_flat.f_N; i++){
+		 for(int i=0;i<grid_flat.GetNPoints(); i++){
 			vh_mchi[0]->SetBinContent(i+1, DBL_MAX);
-			for(int j=0;j<grid_1order.f_N; j++)
+			for(int j=0;j<grid_1order.GetNPoints(); j++)
 			    h_mchi_poly.SetBinContent(i+1, j+1, DBL_MAX);
-			for(int j=0;j<grid_fother.f_N; j++)
+			for(int j=0;j<grid_fother.GetNPoints(); j++)
 			    h_mchi_flat.SetBinContent(j+1, i+1, DBL_MAX);
 		 } 	
-		 for(int i=0;i<grid_fother.f_N; i++){
+		 for(int i=0;i<grid_fother.GetNPoints(); i++){
 			vh_mchi[2]->SetBinContent(i+1,DBL_MAX);
-			for(int j=0;j<grid_1order.f_N; j++)
+			for(int j=0;j<grid_1order.GetNPoints(); j++)
 			    h_mchi_mix.SetBinContent(i+1, j+1, DBL_MAX);
 		 } 
-		for(int i=0; i<grid_1order.f_N; i++) vh_mchi[1]->SetBinContent(i+1, DBL_MAX);
+		for(int i=0; i<grid_1order.GetNPoints(); i++) vh_mchi[1]->SetBinContent(i+1, DBL_MAX);
 	
 		 //start filling chi^2 surface/curve histograms
 		 for(int i=0; i<vec_chi.size(); i++){
 		     int temp_poly_index = i/m_flat_total_gridpoints;
         	     int temp_mgrid_index = i%m_flat_total_gridpoints; 
-		     int flat_index = (temp_mgrid_index%(period* grid_flat.f_N))/period; //get its index in flat dimension for current point
+		     int flat_index = (temp_mgrid_index%(period* grid_flat.GetNPoints()))/period; //get its index in flat dimension for current point
 			// needs more work
-		     int fother_index = temp_mgrid_index%grid_fother.f_N; //index for another flat dimension
-		     if(period == 1) fother_index = temp_mgrid_index/grid_flat.f_N;
+		     int fother_index = temp_mgrid_index%grid_fother.GetNPoints(); //index for another flat dimension
+		     if(period == 1) fother_index = temp_mgrid_index/grid_flat.GetNPoints();
 		     if(vec_chi[i] < h_mchi_poly.GetBinContent(flat_index+1, temp_poly_index+1)) h_mchi_poly.SetBinContent(flat_index+1, temp_poly_index+1, vec_chi[i]);
 		     if(vec_chi[i] < h_mchi_flat.GetBinContent(fother_index+1, flat_index+1)) h_mchi_flat.SetBinContent(fother_index+1, flat_index+1, vec_chi[i]);
 		     if(vec_chi[i] < h_mchi_mix.GetBinContent(fother_index+1, temp_poly_index+1)) h_mchi_mix.SetBinContent(fother_index+1, temp_poly_index+1, vec_chi[i]);
@@ -1328,35 +1309,35 @@ int SBNsinglephoton::SaveHistogram(std::map<int, std::vector<double>>& inmap){
 
 		//save marginalized chi
 		std::vector<double> marginalized_chi_poly, marginalized_chi_mix;
-		for(int i=0; i< grid_1order.f_N;i++){
-		    for(int j=0; j< grid_flat.f_N; j++)
+		for(int i=0; i< grid_1order.GetNPoints();i++){
+		    for(int j=0; j< grid_flat.GetNPoints(); j++)
 			marginalized_chi_poly.push_back(h_mchi_poly.GetBinContent(j+1, i+1));
-		    for(int j=0; j< grid_fother.f_N; j++)
+		    for(int j=0; j< grid_fother.GetNPoints(); j++)
 			marginalized_chi_mix.push_back(h_mchi_mix.GetBinContent(j+1, i+1));
 		}
 
 
 		//save marginalized chi
 		std::vector<double> marginalized_chi_flat;
-		for(int i=0; i< grid_flat.f_N;i++)
-		    for(int j=0; j< grid_fother.f_N; j++)
+		for(int i=0; i< grid_flat.GetNPoints();i++)
+		    for(int j=0; j< grid_fother.GetNPoints(); j++)
 			marginalized_chi_flat.push_back(h_mchi_flat.GetBinContent(j+1, i+1));
 
 		//draw the contour
-		TH2D h_mchi_flatinter = this->Do2DInterpolation(m_interpolation_number, grid_fother.f_points, grid_flat.f_points, marginalized_chi_flat, tag+"_Flat");
-		std::vector<TGraph> vg_mchi_flat_contour = this->FindContour(h_mchi_flatinter, 3, tag+"_Flat");
+		TH2D h_mchi_flatinter = this->Do2DInterpolation(m_interpolation_number, grid_fother.GetPoints(), grid_flat.GetPoints(), marginalized_chi_flat, tag+"_Flat");
+		std::vector<TGraph> vg_mchi_flat_contour = this->FindContour(h_mchi_flatinter, 2, tag+"_Flat");
 		h_mchi_flat.GetXaxis()->SetRangeUser(h_mchi_flatinter.GetXaxis()->GetXmin(), h_mchi_flatinter.GetXaxis()->GetXmax());
                 h_mchi_flat.GetYaxis()->SetRangeUser(h_mchi_flatinter.GetYaxis()->GetXmin(), h_mchi_flatinter.GetYaxis()->GetXmax());
 		this->DrawContour(&h_mchi_flat, vg_mchi_flat_contour, tag+"_Flat",std::vector<double>{});
 
 		//draw the contour
-		TH2D h_mchi_polyinter = this->Do2DInterpolation(m_interpolation_number, grid_flat.f_points, grid_1order.f_points, marginalized_chi_poly, tag+"_Poly");
+		TH2D h_mchi_polyinter = this->Do2DInterpolation(m_interpolation_number, grid_flat.GetPoints(), grid_1order.GetPoints(), marginalized_chi_poly, tag+"_Poly");
 		std::vector<TGraph> vg_mchi_contour = this->FindContour(h_mchi_polyinter, 3, tag+"_Poly");
 		h_mchi_poly.GetXaxis()->SetRangeUser(h_mchi_polyinter.GetXaxis()->GetXmin(), h_mchi_polyinter.GetXaxis()->GetXmax());
                 h_mchi_poly.GetYaxis()->SetRangeUser(h_mchi_polyinter.GetYaxis()->GetXmin(), h_mchi_polyinter.GetYaxis()->GetXmax());
 		this->DrawContour(&h_mchi_poly, vg_mchi_contour,tag+"_Poly", std::vector<double>{});
 
-		TH2D h_mchi_mixinter = this->Do2DInterpolation(m_interpolation_number, grid_fother.f_points, grid_1order.f_points, marginalized_chi_mix, tag+"_Mix");
+		TH2D h_mchi_mixinter = this->Do2DInterpolation(m_interpolation_number, grid_fother.GetPoints(), grid_1order.GetPoints(), marginalized_chi_mix, tag+"_Mix");
 		std::vector<TGraph> vg_mchi_mix_contour = this->FindContour(h_mchi_mixinter, 3, tag+"_Mix");
 		h_mchi_mix.GetXaxis()->SetRangeUser(h_mchi_mixinter.GetXaxis()->GetXmin(), h_mchi_mixinter.GetXaxis()->GetXmax());
                 h_mchi_mix.GetYaxis()->SetRangeUser(h_mchi_mixinter.GetYaxis()->GetXmin(), h_mchi_mixinter.GetYaxis()->GetXmax());
@@ -1368,9 +1349,9 @@ int SBNsinglephoton::SaveHistogram(std::map<int, std::vector<double>>& inmap){
 	else if(m_grid.f_num_dimensions == 1){
 	   TH1D* h_dchi=nullptr;
 	   NGridDimension xgrid = m_grid.f_dimensions.at(0);
-	   if(xgrid.f_name == "NCDelta") h_dchi = new TH1D("h_delta_chi", Form("#Delta#chi^{2} distribution;%s; #Delta#chi^{2} ",title_map[xgrid.f_name].c_str()), m_grid.f_num_total_points, xgrid.f_min, xgrid.f_max);
-	   else if(xgrid.f_name == "NCDeltaLEE" ) h_dchi = new TH1D("h_delta_chi", Form("#Delta#chi^{2} distribution;%s; #Delta#chi^{2} ",title_map[xgrid.f_name].c_str()), m_grid.f_num_total_points, xgrid.f_min, xgrid.f_max);
-	   //else if(xgrid.f_name == "NCDeltaLEE" ) h_dchi = new TH1D("h_delta_chi", Form("#Delta#chi^{2} distribution;%s; #Delta#chi^{2} ",title_map[xgrid.f_name].c_str()), m_grid.f_num_total_points, (xgrid.f_min)*2, (xgrid.f_max)*2);
+	   if(xgrid.GetName() == "NCDelta") h_dchi = new TH1D("h_delta_chi", Form("#Delta#chi^{2} distribution;%s; #Delta#chi^{2} ",title_map[xgrid.GetName()].c_str()), m_grid.f_num_total_points, &xgrid.GetEdges()[0]);
+	   else if(xgrid.GetName() == "NCDeltaLEE" ) h_dchi = new TH1D("h_delta_chi", Form("#Delta#chi^{2} distribution;%s; #Delta#chi^{2} ",title_map[xgrid.GetName()].c_str()), m_grid.f_num_total_points, &xgrid.GetEdges()[0]);
+	   //else if(xgrid.GetName() == "NCDeltaLEE" ) h_dchi = new TH1D("h_delta_chi", Form("#Delta#chi^{2} distribution;%s; #Delta#chi^{2} ",title_map[xgrid.GetName()].c_str()), m_grid.f_num_total_points, (xgrid.GetMin())*2, (xgrid.GetMax())*2);
 	   for(int i=0 ;i< vec_chi.size(); i++){
 		std::vector<double> ipoint = m_vec_grid[i];
 		//h_dchi->Fill(ipoint[0], vec_chi[i]);
@@ -1389,37 +1370,37 @@ int SBNsinglephoton::SaveHistogram(std::map<int, std::vector<double>>& inmap){
 		std::vector<double> temp_best_point = m_vec_grid[m_best_index];
 
 		//marginalize over 1 parameter	
-		//TH2D* h_mchi2_xy = new TH2D("h_mchi2_xy", Form("marginalized #Delta#chi^{2} surface; %s;%s", title_map[grid_x.f_name].c_str(), title_map[grid_y.f_name].c_str()), grid_x.f_N, grid_x.f_min, grid_x.f_max, grid_y.f_N, grid_y.f_min, grid_y.f_max);
-		TH2D* h_mchi2_xy = new TH2D("h_mchi2_xy", Form("marginalized #Delta#chi^{2} surface; %s;%s", title_map[grid_y.f_name].c_str(), title_map[grid_x.f_name].c_str()), grid_y.f_N, grid_y.f_min, grid_y.f_max, grid_x.f_N, grid_x.f_min, grid_x.f_max);
-		TH2D* h_mchi2_yz = new TH2D("h_mchi2_yz", Form("marginalized #Delta#chi^{2} surface; %s;%s", title_map[grid_y.f_name].c_str(), title_map[grid_z.f_name].c_str()), grid_y.f_N, grid_y.f_min, grid_y.f_max, grid_z.f_N, (grid_z.f_min)*2+1, (grid_z.f_max)*2+1);
-		TH2D* h_mchi2_xz = new TH2D("h_mchi2_xz", Form("marginalized #Delta#chi^{2} surface; %s;%s", title_map[grid_x.f_name].c_str(), title_map[grid_z.f_name].c_str()), grid_x.f_N, grid_x.f_min, grid_x.f_max, grid_z.f_N, (grid_z.f_min)*2+1, (grid_z.f_max)*2+1);
+		//TH2D* h_mchi2_xy = new TH2D("h_mchi2_xy", Form("marginalized #Delta#chi^{2} surface; %s;%s", title_map[grid_x.GetName()].c_str(), title_map[grid_y.GetName()].c_str()), grid_x.GetNPoints(), grid_x.GetMin(), grid_x.GetMax(), grid_y.GetNPoints(), grid_y.GetMin(), grid_y.GetMax());
+		TH2D* h_mchi2_xy = new TH2D("h_mchi2_xy", Form("marginalized #Delta#chi^{2} surface; %s;%s", title_map[grid_y.GetName()].c_str(), title_map[grid_x.GetName()].c_str()), grid_y.GetNPoints(), &grid_y.GetEdges()[0], grid_x.GetNPoints(), &grid_x.GetEdges()[0]);
+		TH2D* h_mchi2_yz = new TH2D("h_mchi2_yz", Form("marginalized #Delta#chi^{2} surface; %s;%s", title_map[grid_y.GetName()].c_str(), title_map[grid_z.GetName()].c_str()), grid_y.GetNPoints(), &grid_y.GetEdges()[0], grid_z.GetNPoints(), (grid_z.GetMin())*2+1, (grid_z.GetMax())*2+1);
+		TH2D* h_mchi2_xz = new TH2D("h_mchi2_xz", Form("marginalized #Delta#chi^{2} surface; %s;%s", title_map[grid_x.GetName()].c_str(), title_map[grid_z.GetName()].c_str()), grid_x.GetNPoints(), &grid_x.GetEdges()[0], grid_z.GetNPoints(), (grid_z.GetMin())*2+1, (grid_z.GetMax())*2+1);
 		//global minimum
-		TH2D* h_gchi2_xy = new TH2D("h_gchi2_xy", Form("h_gchi2_xy; %s;%s", title_map[grid_x.f_name].c_str(), title_map[grid_y.f_name].c_str()), grid_x.f_N, grid_x.f_min, grid_x.f_max, grid_y.f_N, grid_y.f_min, grid_y.f_max);
-		TH2D* h_gchi2_yz = new TH2D("h_gchi2_yz", Form("h_gchi2_yz; %s;%s", title_map[grid_y.f_name].c_str(), title_map[grid_z.f_name].c_str()), grid_y.f_N, grid_y.f_min, grid_y.f_max, grid_z.f_N, (grid_z.f_min)*2+1, (grid_z.f_max)*2+1);
-		TH2D* h_gchi2_xz = new TH2D("h_gchi2_xz", Form("h_gchi2_xz; %s;%s", title_map[grid_x.f_name].c_str(), title_map[grid_z.f_name].c_str()), grid_x.f_N, grid_x.f_min, grid_x.f_max, grid_z.f_N, (grid_z.f_min)*2+1, (grid_z.f_max)*2+1);
+		TH2D* h_gchi2_xy = new TH2D("h_gchi2_xy", Form("h_gchi2_xy; %s;%s", title_map[grid_x.GetName()].c_str(), title_map[grid_y.GetName()].c_str()), grid_x.GetNPoints(), &grid_x.GetEdges()[0], grid_y.GetNPoints(), &grid_y.GetEdges()[0]);
+		TH2D* h_gchi2_yz = new TH2D("h_gchi2_yz", Form("h_gchi2_yz; %s;%s", title_map[grid_y.GetName()].c_str(), title_map[grid_z.GetName()].c_str()), grid_y.GetNPoints(), &grid_y.GetEdges()[0], grid_z.GetNPoints(), (grid_z.GetMin())*2+1, (grid_z.GetMax())*2+1);
+		TH2D* h_gchi2_xz = new TH2D("h_gchi2_xz", Form("h_gchi2_xz; %s;%s", title_map[grid_x.GetName()].c_str(), title_map[grid_z.GetName()].c_str()), grid_x.GetNPoints(), &grid_x.GetEdges()[0], grid_z.GetNPoints(), (grid_z.GetMin())*2+1, (grid_z.GetMax())*2+1);
 
 		//minimize over two parameters
-		TH1D* h_chi_delta = new TH1D("h_chi_delta", Form("h_chi_delta; %s;#Delta#chi^{2}",title_map[grid_z.f_name].c_str()), grid_z.f_N, (grid_z.f_min)*2+1, (grid_z.f_max)*2+1);
+		TH1D* h_chi_delta = new TH1D("h_chi_delta", Form("h_chi_delta; %s;#Delta#chi^{2}",title_map[grid_z.GetName()].c_str()), grid_z.GetNPoints(), (grid_z.GetMin())*2+1, (grid_z.GetMax())*2+1);
 
 		//vectors that stores marginalized chi
 		std::vector<double> mchi_xy, mchi_yz, mchi_xz, gchi_xy, gchi_yz, gchi_xz;
 
-		for(int ix=1;ix <= grid_x.f_N; ix++){
-		        //for(int iy=1; iy <= grid_y.f_N; iy++) h_mchi2_xy->SetBinContent(ix, iy, DBL_MAX);
-		        for(int iy=1; iy <= grid_y.f_N; iy++) h_mchi2_xy->SetBinContent(iy, ix, DBL_MAX);
-        		for(int iz=1; iz <= grid_z.f_N; iz++) h_mchi2_xz->SetBinContent(ix, iz, DBL_MAX);
+		for(int ix=1;ix <= grid_x.GetNPoints(); ix++){
+		        //for(int iy=1; iy <= grid_y.GetNPoints(); iy++) h_mchi2_xy->SetBinContent(ix, iy, DBL_MAX);
+		        for(int iy=1; iy <= grid_y.GetNPoints(); iy++) h_mchi2_xy->SetBinContent(iy, ix, DBL_MAX);
+        		for(int iz=1; iz <= grid_z.GetNPoints(); iz++) h_mchi2_xz->SetBinContent(ix, iz, DBL_MAX);
    		}
 
-   		for(int iz=1; iz <= grid_z.f_N; iz++){
-        		for(int iy=1; iy <= grid_y.f_N; iy++)  h_mchi2_yz->SetBinContent(iy, iz, DBL_MAX);
+   		for(int iz=1; iz <= grid_z.GetNPoints(); iz++){
+        		for(int iy=1; iy <= grid_y.GetNPoints(); iy++)  h_mchi2_yz->SetBinContent(iy, iz, DBL_MAX);
         		h_chi_delta->SetBinContent(iz, DBL_MAX);
    		}
 
 
-		for(int ix=0; ix < grid_x.f_N; ix++){
-       		    for(int iy=0; iy < grid_y.f_N; iy++){
-           		for(int iz=0 ; iz< grid_z.f_N; iz++){
-                	    int ip = ix*grid_y.f_N*grid_z.f_N + iy*grid_z.f_N + iz; // index of grid point
+		for(int ix=0; ix < grid_x.GetNPoints(); ix++){
+       		    for(int iy=0; iy < grid_y.GetNPoints(); iy++){
+           		for(int iz=0 ; iz< grid_z.GetNPoints(); iz++){
+                	    int ip = ix*grid_y.GetNPoints()*grid_z.GetNPoints() + iy*grid_z.GetNPoints() + iz; // index of grid point
 		            std::vector<double> point = m_vec_grid[ip];
 
 
@@ -1456,48 +1437,33 @@ int SBNsinglephoton::SaveHistogram(std::map<int, std::vector<double>>& inmap){
         	    }
    		}
 
-	/*	for(int iy=1;iy <= grid_y.f_N; iy++){
-		        for(int ix=1; ix <= grid_x.f_N; ix++) mchi_xy.push_back(h_mchi2_xy->GetBinContent(ix, iy));
+	/*	for(int iy=1;iy <= grid_y.GetNPoints(); iy++){
+		        for(int ix=1; ix <= grid_x.GetNPoints(); ix++) mchi_xy.push_back(h_mchi2_xy->GetBinContent(ix, iy));
    		}
-	*/	for(int ix=1;ix <= grid_x.f_N; ix++){
-		        for(int iy=1; iy <= grid_y.f_N; iy++) mchi_xy.push_back(h_mchi2_xy->GetBinContent(iy, ix));
+	*/	for(int ix=1;ix <= grid_x.GetNPoints(); ix++){
+		        for(int iy=1; iy <= grid_y.GetNPoints(); iy++) mchi_xy.push_back(h_mchi2_xy->GetBinContent(iy, ix));
    		}
 
-   		for(int iz=1; iz <= grid_z.f_N; iz++){
-        		for(int iy=1; iy <= grid_y.f_N; iy++)  mchi_yz.push_back(h_mchi2_yz->GetBinContent(iy, iz));
-        		for(int ix=1; ix <= grid_x.f_N; ix++)  mchi_xz.push_back(h_mchi2_xz->GetBinContent(ix, iz));
+   		for(int iz=1; iz <= grid_z.GetNPoints(); iz++){
+        		for(int iy=1; iy <= grid_y.GetNPoints(); iy++)  mchi_yz.push_back(h_mchi2_yz->GetBinContent(iy, iz));
+        		for(int ix=1; ix <= grid_x.GetNPoints(); ix++)  mchi_xz.push_back(h_mchi2_xz->GetBinContent(ix, iz));
    		}
 		
 		h_mchi2_xy->Write(); h_mchi2_xz->Write(); h_mchi2_yz->Write();
 		h_gchi2_xy->Write(); h_gchi2_xz->Write(); h_gchi2_yz->Write();
-		h_chi_delta->Write();
 	
-		TCanvas c("c_chi_delta", "c_chi_delta");
-		h_chi_delta->Draw("hist");
-		TLine line(h_chi_delta->GetXaxis()->GetXmin(), 1.0, h_chi_delta->GetXaxis()->GetXmax(), 1.0);
-		TLine line90(h_chi_delta->GetXaxis()->GetXmin(), 2.71, h_chi_delta->GetXaxis()->GetXmax(), 2.71);
-		line.SetLineColor(8);
-		line90.SetLineColor(42);
-		line.Draw("same");
-		line90.Draw("same");
-		c.Update();
-		c.SaveAs((tag+"_pretty_margin_chi.pdf").c_str(), "pdf");
-		c.Write();
+		DrawMarginalizedChi(std::vector<TH1D*>{h_chi_delta}, tag);
 
 
-
-		if(grid_x.f_N >=5 && grid_y.f_N>=5){
+		if(grid_x.GetNPoints() >=5 && grid_y.GetNPoints()>=5){
 			//draw 1,2,3 sigma contours for h_mchi2_zy
-			TH2D h_mchi2_xy_inter =this->Do2DInterpolation(m_interpolation_number,grid_y.f_points, grid_x.f_points, mchi_xy, tag+"_XY"); 
+			TH2D h_mchi2_xy_inter =this->Do2DInterpolation(m_interpolation_number,grid_y.GetPoints(), grid_x.GetPoints(), mchi_xy, tag+"_XY"); 
 			std::vector<TGraph> g_mchi_contour = this->FindContour(h_mchi2_xy_inter, 3, tag+"_XY");
 
 			h_mchi2_xy->GetXaxis()->SetRangeUser(h_mchi2_xy_inter.GetXaxis()->GetXmin(), h_mchi2_xy_inter.GetXaxis()->GetXmax());
 			h_mchi2_xy->GetYaxis()->SetRangeUser(h_mchi2_xy_inter.GetYaxis()->GetXmin(), h_mchi2_xy_inter.GetYaxis()->GetXmax());
 			std::cout << "x max: " << h_mchi2_xy->GetXaxis()->GetXmax() << " "<< h_mchi2_xy_inter.GetXaxis()->GetXmax() << std::endl;
 			this->DrawContour(h_mchi2_xy, g_mchi_contour, std::vector<double>{});
-			//TCanvas* c_2Dplot =(TCanvas*)this->DrawContour(h_mchi2_xy, g_mchi_contour, std::vector<double>{}).Clone();
-			//fin->cd();
-			//c_2Dplot->Write();
 		}
 	   } //end of the m_bool_poly_grid=false loop
 	}//end of 3 dimension case
@@ -1512,7 +1478,7 @@ int SBNsinglephoton::SaveHistogram(std::map<int, std::vector<double>>& inmap){
 //2D interpolation
 //x, y vector should only be in increasing order
 //NOTE::elements of the vector should first change with vector 'x', then change with vector 'y'!! Order is important here!
-TH2D SBNsinglephoton::Do2DInterpolation(int inter_number, std::vector<double>& x, std::vector<double>& y, std::vector<double>& value, std::string intag){
+TH2D SBNsinglephoton::Do2DInterpolation(int inter_number, const std::vector<double>& x, const std::vector<double>& y, const std::vector<double>& value, std::string intag){
 	double x_min = x[0];
 	double x_max = x[x.size()-1];
 	double y_min = y[0];
@@ -1625,8 +1591,8 @@ std::vector<TGraph> SBNsinglephoton::FindContour(TH2D &hin, int n, std::string i
         }
 
         std::cout << "Contour " << CL_string[i] << ": " << contour[i] << std::endl;
-        std::cout << "range for x : " << std::setprecision(3) << x_min << "~" << x_max << std::endl;
-        std::cout << "range for y : " << std::setprecision(3) << y_min << "~" << y_max << std::endl;
+        std::cout << "(2D projected) range for x : " << std::setprecision(3) << x_min << "~" << x_max << std::endl;
+        std::cout << "(2D projected) range for y : " << std::setprecision(3) << y_min << "~" << y_max << std::endl;
     }
 
    //conts->SetOwner(kTRUE);
@@ -1701,7 +1667,7 @@ int SBNsinglephoton::PrintOutFitInfo(const std::map<int, std::vector<double>>& i
     std::vector<double> m_point = m_vec_grid[m_grid_index];
     std::cout << intag<<": At flat point";
     for(int i=0; i<m_point.size(); i++)
-        std::cout << ", " << m_grid.f_dimensions[i].f_name << ": "<< m_point[i] ;
+        std::cout << ", " << m_grid.f_dimensions[i].GetName() << ": "<< m_point[i] ;
     if(m_bool_poly_grid){
         std::vector<double> m_poly_point = m_vec_poly_grid[m_poly_grid_index];
 
@@ -1814,8 +1780,8 @@ int SBNsinglephoton::ModifyCV(double infactor, std::vector<double> param){
     //apply flat scaling
     for(auto const &dim:m_grid.f_dimensions){
         if(dim.f_has_constrain  && (index < param.size()) ){
-	    if(dim.f_name == "NCPi0NotCoh") non_coh_factor = param[index];  //remember the scaling for NCpi0NotCoh, for the poly grid.
-            m_cv_spectrum->Scale(dim.f_name, param[index]);
+	    if(dim.GetName() == "NCPi0NotCoh") non_coh_factor = param[index];  //remember the scaling for NCpi0NotCoh, for the poly grid.
+            m_cv_spectrum->Scale(dim.GetName(), param[index]);
             index++;
         }
     }
@@ -1872,19 +1838,19 @@ SBNspec SBNsinglephoton::GeneratePointSpectra(int np){
 
     std::vector<double> temp_p_grid = m_vec_grid[m_grid_index];
     for(int i=0;i<m_grid.f_num_dimensions; i++){
-        if(m_grid.f_dimensions[i].f_name == "NCDeltaLEE" && temp_p_grid[i]<0 ){
+        if(m_grid.f_dimensions[i].GetName() == "NCDeltaLEE" && temp_p_grid[i]<0 ){
             spec_rgrid_part.Scale("NCDeltaLEE", 0.0);
             spec_rgrid_part.Scale("NCDelta", 1+temp_p_grid[i]*2.0);
         }
         else
-            spec_rgrid_part.Scale(m_grid.f_dimensions[i].f_name, temp_p_grid[i]);
+            spec_rgrid_part.Scale(m_grid.f_dimensions[i].GetName(), temp_p_grid[i]);
             //spec_rgrid_part.ScaleAll(temp_p_grid[i]);
     }
 
     if(m_bool_poly_grid){
         double non_coh_factor;   
         for(int i=0;i<m_grid.f_num_dimensions; i++){
-            if(m_grid.f_dimensions[i].f_name == "NCPi0NotCoh"){
+            if(m_grid.f_dimensions[i].GetName() == "NCPi0NotCoh"){
                 non_coh_factor=temp_p_grid[i];
                 spec_rgrid_part.Scale("NCPi0NotCoh", 0.0);
             }
@@ -1948,26 +1914,32 @@ void SBNsinglephoton::MaskScaleFactor(double& factor){
 void SBNsinglephoton::DrawMarginalizedChi(std::vector<TH1D*> vec_hist, std::string intag){
 
     fin->cd();
+
+    std::vector<double> chi_contour{1.0, 2.71, 6.63};
+    std::vector<std::string> contour_label{"1#sigma", "90%", "99%"};
+    std::vector<int> line_style{1, 2, 3}; //corresponds to Solid, Dashed, Dotted respectively
+
     for(auto &h:vec_hist){
 	h->Write();
 	TCanvas* c=new TCanvas((std::string("canvas_")+h->GetName()).c_str(), "c");
 	TLegend* leg = new TLegend(0.15, 0.7, 0.6, 0.9);
 	leg->SetFillStyle(0);
 	leg->SetBorderSize(0);
+	leg->SetHeader("C.L. lines", "");
 	gStyle->SetOptStat(0);
 	h->Draw("hist");
-	TLine* line = new TLine(h->GetXaxis()->GetXmin(), 1.0, h->GetXaxis()->GetXmax(), 1.0);
-	TLine* line90 = new TLine(h->GetXaxis()->GetXmin(), 2.71, h->GetXaxis()->GetXmax(), 2.71);
-	TLine* line99 = new TLine(h->GetXaxis()->GetXmin(), 6.63, h->GetXaxis()->GetXmax(), 6.63);
-	line->SetLineColor(6);	line90->SetLineColor(6); line99->SetLineColor(6);
-	line->SetLineStyle(kSolid); line90->SetLineStyle(kDashed); line99->SetLineStyle(kDotted);
-	line->Draw("same");
-	line90->Draw("same");
-	line99->Draw("same");
-	leg->SetHeader("C.L. lines", "");
-	leg->AddEntry(line, "1#sigma","L");
-	leg->AddEntry(line90, "90%", "L");
-	leg->AddEntry(line99, "99%", "L");
+
+	std::vector<TLine*> lines;
+    	for(int i = 0; i != chi_contour.size(); ++i){
+	    if( h->GetMaximum() > chi_contour[i]){
+		lines.emplace_back(new TLine(h->GetXaxis()->GetXmin(), chi_contour[i], h->GetXaxis()->GetXmax(), chi_contour[i]));
+		lines.back()->SetLineColor(6);
+		lines.back()->SetLineStyle(line_style[i]);
+		lines.back()->Draw("same");
+		leg->AddEntry(lines.back(), contour_label[i].c_str(),"L");	
+	    }else 
+		 break;
+ 	}	
 	leg->SetTextSize(0.043);
 	leg->Draw();
 	c->Update();
