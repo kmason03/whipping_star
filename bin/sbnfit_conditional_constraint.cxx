@@ -174,11 +174,17 @@ int main(int argc, char* argv[])
     data.CollapseVector();
 
     //configuration
-    int Nsubchannel = 9; 
-    int start_pt_1g0p=cv.hist[0].GetXaxis()->GetNbins();
+    //case1: configuration for 2 channels to be constrained, ie. 1g1p and 1g0p
+    //int Nsubchannel = 9; 
+    //int start_pt_1g0p=cv.hist[0].GetXaxis()->GetNbins();
+
+    //case2: configuration for 1 channel to be constrained, ie 1g1p for near sideband
+    //in this case, you should trust result of `1g0p` printed out in the log
+    int Nsubchannel = 0;
+    int start_pt_1g0p=0;
     int start_pt = start_pt_1g0p + cv.hist[Nsubchannel].GetXaxis()->GetNbins();
 
-    std::vector<SBNspec> vec_spec(2, cv);
+    std::vector<SBNspec> vec_spec(1, cv);
     std::string constrain_str="NCDeltaLEE";
     //std::string constrain_str="NCDelta";
     //get the NULL spectrum
@@ -186,7 +192,7 @@ int main(int argc, char* argv[])
     //vec_spec[0].Scale("NCDelta", 0.0);
     //get the BF values
     //vec_spec[1].Scale("NCDeltaLEE", 0.0);
-    vec_spec[1].Scale("NCDelta", 0.93);
+    //vec_spec[1].Scale("NCDelta", 0.93);
     
     std::cout<<"Loading fractional covariance matrix from "<<covar_file<<std::endl;
 
@@ -435,20 +441,21 @@ int main(int argc, char* argv[])
 	  std::vector<TH1D*> vec_hist_original{h_1g1p_original, h_1g0p_original};
 	  std::vector<TH1D*> vec_hist_constrain{h_1g1p_constrain, h_1g0p_constrain};
 	  std::vector<TH1D*> vec_hist_data{h_1g1p_data, h_1g0p_data};
-	  std::vector<std::string> vec_string{"1g1p", "1g0p"};
+	  //std::vector<std::string> vec_string{"1g1p", "1g0p"};
+	  std::vector<std::string> vec_string{"Garbage", "1g1p Near Sideband"};
 
 	  for(int i=0;i<2; i++){
 		  TCanvas* c=new TCanvas(Form("c_%d_%d",which_spec_index, i), "c");
 		  gStyle->SetOptStat(0);
 		  //gStyle->SetErrorX();
-		  TLegend* leg=new TLegend(0.7,0.7,0.9,0.9);
+		  TLegend* leg=new TLegend(0.6,0.7,0.9,0.9);
 		  vec_hist_original[i]->SetLineColor(kMagenta+3);
 		  vec_hist_original[i]->SetLineWidth(2);
 		  vec_hist_original[i]->SetLineStyle(kDashed);
 		  TH1D* h_1g_original_copy= (TH1D*)vec_hist_original[i]->Clone();
 		  vec_hist_original[i]->SetFillColorAlpha(kMagenta -10, 0.8);
 		  //vec_hist_original[i]->SetFillColor(kMagenta -10);
-		  vec_hist_original[i]->SetTitle(Form("%s; Reco shower energy/GeV; Events", vec_string[i].c_str()));
+		  vec_hist_original[i]->SetTitle(Form("%s;%s; Events", vec_string[i].c_str(), cv.channel_units[0].c_str()));
 		  //h_1g1p_original->SetFillStyle(4050);  //only useful for TPad
 		  vec_hist_original[i]->SetMaximum(std::max(vec_hist_original[i]->GetMaximum(), vec_hist_data[i]->GetMaximum())*1.8);
 		  vec_hist_original[i]->SetMinimum(0);
@@ -470,25 +477,34 @@ int main(int argc, char* argv[])
 		  leg->AddEntry(vec_hist_constrain[i], Form("%s Constrained",vec_string[i].c_str()), "LF");
 
 
+		  //legend to print chi^2 and pvalues
+		  TLegend* chi_leg = new TLegend(0.15, 0.8, 0.4, 0.9);
+		  //chi_leg->SetNColumns(2);
+		  chi_leg->SetFillStyle(0);
+        	  chi_leg->SetBorderSize(0);
+		  chi_leg->SetTextSize(0.033);
+		  chi_leg->AddEntry(vec_hist_original[i], Form("#chi^{2}: %.2f, P_{val}: %.2f", chi_nueoriginal, TMath::Prob(chi_nueoriginal,start_pt - start_pt_1g0p ) ));
+		  chi_leg->AddEntry(vec_hist_constrain[i], Form("#chi^{2}: %.2f, P_{val}: %.2f", chi_constrain, TMath::Prob(chi_constrain, start_pt-start_pt_1g0p ) ));
+
 		  if(overlay_data){
 		      vec_hist_data[i]->SetMarkerStyle(20);
 		      vec_hist_data[i]->SetMarkerColor(kBlack);
 		      vec_hist_data[i]->SetMarkerSize(1.2);
 		      vec_hist_data[i]->SetLineWidth(2);
 		      vec_hist_data[i]->SetLineColor(kBlack);
-		      vec_hist_data[i]->Draw("E1same");
-		      leg->AddEntry(vec_hist_data[i], Form("%s Fake Data",vec_string[i].c_str()), "ep");
+		      vec_hist_data[i]->Draw("E1X0same");
+		      leg->AddEntry(vec_hist_data[i], Form("%s Data",vec_string[i].c_str()), "ep");
 		  }
 		  leg->Draw();
+		  chi_leg->Draw();
 		  c->Update();
 		  fout->cd();
 		  if(which_spec_index ==0){
-			 //c->SaveAs("CV_1g1p_constrain_comparison.png", "png");
-			 c->SaveAs((tag+"CV_"+vec_string[i]+"_constrain_comparison.pdf").c_str(), "pdf");
+			 c->SaveAs((tag+"_CV_"+vec_string[i]+"_constrain_comparison.pdf").c_str(), "pdf");
 			 c->Write(Form("CV_%s_comparison",vec_string[i].c_str()));
 		  }
 		  if(which_spec_index ==1){
-			 c->SaveAs((tag+"BF_"+vec_string[i]+"_constrain_comparison.pdf").c_str(), "pdf");
+			 c->SaveAs((tag+"_BF_"+vec_string[i]+"_constrain_comparison.pdf").c_str(), "pdf");
 			 c->Write(Form("BF_%s_comparison",vec_string[i].c_str()));
 		  }
 
