@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <getopt.h>
 #include <cstring>
+#include <cstdlib>
 
 #include "TFile.h"
 #include "TTree.h"
@@ -61,6 +62,7 @@ int main(int argc, char* argv[])
         {"tag", 		required_argument,	0, 't'},
         {"signal", 		required_argument,	0, 's'},
         {"data", 		required_argument,	0, 'd'},
+	{"num_channel",		required_argument,      0, 'n'},
         {"help", 		no_argument,	0, 'h'},
     	{"covar",		required_argument,    0, 'c'},
     	{"genie",		required_argument,    0, 'g'},
@@ -75,6 +77,7 @@ int main(int argc, char* argv[])
     int iarg = 0;
     opterr=1;
     int index;
+    int num_channel_to_constrain = 2;   //normally we'd like to constrain 2 channels: 1g1p+1g0p
     std::string covar_file = "Stats_Only";
     std::string genie_file = "NONE";
     bool stats_only = true;
@@ -96,7 +99,7 @@ int main(int argc, char* argv[])
 
     while(iarg != -1)
     {
-        iarg = getopt_long(argc,argv, "f:x:s:d:t:c:g:k:p:zoh", longopts, &index);
+        iarg = getopt_long(argc,argv, "f:x:s:d:n:t:c:g:k:p:zoh", longopts, &index);
 
         switch(iarg)
         {
@@ -133,6 +136,9 @@ int main(int argc, char* argv[])
 	    case 'd':
 		data_file = optarg;
 		break;
+	    case 'n':
+		num_channel_to_constrain = atoi(optarg);
+		break; 
 	    case 'o':
 		overlay_data = true;
 		break;
@@ -166,6 +172,7 @@ int main(int argc, char* argv[])
     time_t start_time = time(0);
 
     std::cout<<"Begining Covariance Plotting for tag: "<<tag<<std::endl;
+    std::cout<<"Number of constrained channels: " << num_channel_to_constrain << std::endl; 
     std::cout<<"Loading SBNspec file : "<<signal_file<<" with xml "<<xml<<std::endl;
     SBNspec cv(signal_file,xml, false);
     SBNspec data(data_file,xml, false);
@@ -180,9 +187,27 @@ int main(int argc, char* argv[])
 
     //case2: configuration for 1 channel to be constrained, ie 1g1p for near sideband
     //in this case, you should trust result of `1g0p` printed out in the log
-    int Nsubchannel = 0;
-    int start_pt_1g0p=0;
-    int start_pt = start_pt_1g0p + cv.hist[Nsubchannel].GetXaxis()->GetNbins();
+    //int Nsubchannel = 0;
+    //int start_pt_1g0p=0;
+    //int start_pt = start_pt_1g0p + cv.hist[Nsubchannel].GetXaxis()->GetNbins();
+
+
+    // setup the bins and starting point for the constrained channels
+    // this is based on the assumption that constrained channels sit in the front of the xml
+    std::vector<int> channel_bin_index{0};   //starting index for constraind channel in the collapsed covar matrix
+    std::vector<int> channel_hist_index{0};
+    std::vector<std::string> channel_string; //name of the channel, gonna be title of the plot 
+    std::vector<std::string> channel_unit;   //x axis name of the plot
+    for(int i=0; i != num_channel_to_constrain; ++i){
+	channel_string.push_back(cv.channel_names[i]);
+	channel_unit.push_back(cv.channel_units[i]);
+	channel_hist_index.push_back(channel_hist_index.back() + cv.num_subchannels[i]);
+	channel_bin_index.push_back(channel_bin_index.back() + cv.num_bins[i]);
+    }
+
+
+    //starting point that separates constrained channel and the one constraining
+    int start_pt = channel_bin_index.back();
 
     std::vector<SBNspec> vec_spec(1, cv);
     std::string constrain_str="NCDeltaLEE";
@@ -294,7 +319,7 @@ int main(int argc, char* argv[])
     for(SBNspec& fspec:vec_spec){
 	    fspec.CollapseVector();
 	    fspec.CalcErrorVector();
-	    std::cout << "\n\n\nOn spec:  " << which_spec_index<< std::endl;;
+	    std::cout << "\n\n\nOn spec:  " << (which_spec_index ==0 ? "CV" : "BF" ) << std::endl;;
 	    SBNchi SigChi(fspec, *cov);
 	    if(stats_only) SigChi.is_stat_only=true;
 	//    SigChi.SetFracPlotBounds(cmin,cmax);
@@ -361,156 +386,132 @@ int main(int argc, char* argv[])
 	     SigChi.DrawComparisonIndividual(fspec, data, total_collapsed_mat, "Spec"+std::to_string(which_spec_index)+"_VS_Data", false);
 
 	    // **************************done calculating chi2 *******************************************
-	    double intri_1g1p = 0., intri_1g0p = 0;   //total MC intrinsic error
-	    double overall_1g1p_uncons = 0, overall_1g0p_uncons =0;  //overall unconstrained syst error
-	    double overall_syst_1g1p=0, overall_syst_1g0p=0;      //overall constrained syst error
-	    for(int i=0; i<start_pt; i++){
-		if(i<start_pt_1g0p) intri_1g1p += pow(fspec.collapsed_err_vector.at(i), 2.0);
-		else if(i < start_pt) intri_1g0p += pow(fspec.collapsed_err_vector.at(i), 2.0);
-
-		for(int j=0 ;j <start_pt; j++){
-		  if(i <start_pt_1g0p && j<start_pt_1g0p){
-			 overall_1g1p_uncons+=collapsed_covar(i,j);
-			 overall_syst_1g1p +=constrained_mat(i,j);
-		  }
-		  else if( (i>= start_pt_1g0p) && (j >=start_pt_1g0p) ){
-			 overall_1g0p_uncons+=collapsed_covar(i,j);
-			 overall_syst_1g0p +=constrained_mat(i,j);
-		  }
-		}
-	    } 
 
 	    std::cout << "\n=============== Overall Summary ======================" << std::endl;
 	    std::cout << "Numu-nue side-by-side chi2 value is " << chi_total << std::endl;
 	    std::cout << "Nue only original  chi2 value is " << chi_nueoriginal << std::endl;
 	    std::cout << "Nue constrained  chi2 value is " << chi_constrain << std::endl;
-	    std::cout << "Nue constrained, overall systematic uncertainty is:" << std::endl;
-	    std::cout << "\t1g1p MC intrinsic error " << sqrt(intri_1g1p) << std::endl;
-	    std::cout << "\t1g1p overall unconstrained error: " << sqrt(overall_1g1p_uncons) << std::endl;
-	    std::cout << "\t1g1p overall constrained error: " << sqrt(overall_syst_1g1p) << std::endl;
-	    std::cout << "\t1g0p MC intrinsic error " << sqrt(intri_1g0p) << std::endl;
-	    std::cout << "\t1g0p overall unconstrained error " << sqrt(overall_1g0p_uncons) << std::endl;
-	    std::cout << "\t1g0p overall constrained error: " << sqrt(overall_syst_1g0p) << std::endl;
-	    std::cout << "Unconstrained 1g1p events: " << std::accumulate(fspec.collapsed_vector.begin(), fspec.collapsed_vector.begin() + start_pt_1g0p, 0.0);
-	    std::cout << ", unconstrained 1g0p events: " << std::accumulate(fspec.collapsed_vector.begin()+start_pt_1g0p, fspec.collapsed_vector.begin()+start_pt, 0.0) << std::endl;
-	    std::cout << "constrained 1g1p events: " << std::accumulate(constrained_pred.begin(), constrained_pred.begin()+start_pt_1g0p, 0.0);
-	    std::cout << ", constrained 1g0p events: " << std::accumulate(constrained_pred.begin()+start_pt_1g0p, constrained_pred.end(), 0.0)<< std::endl;
-
 	    std::cout << "=============== Overall Summary ======================\n" << std::endl;
 	    for(int i=0; i<start_pt; i++){
 		std::cout<<i<<" N: "<<fspec.collapsed_vector.at(i)<<" Original: "<<sqrt(collapsed_covar(i,i))/fspec.collapsed_vector.at(i)<<" New: "<<sqrt(constrained_mat(i,i))/fspec.collapsed_vector.at(i)<<" Ratio: "<<sqrt(constrained_mat(i,i))/sqrt(collapsed_covar(i,i))<<std::endl;
 	    }
 
 
-
-	   // ***************************start drawing histograms******************************************
-	   TH1D* h_1g1p_original=(TH1D*)(cv.hist[0]).Clone(); h_1g1p_original->Reset();
-	   TH1D* h_1g1p_constrain=(TH1D*)(cv.hist[0]).Clone();  h_1g1p_constrain->Reset();
-	   TH1D* h_1g1p_data=(TH1D*)(cv.hist[0]).Clone();  h_1g1p_data->Reset();
-
-	   for(int i=0; i<h_1g1p_data->GetXaxis()->GetNbins(); i++){
-		h_1g1p_original->SetBinContent(i+1, fspec.collapsed_vector.at(i));
-		h_1g1p_constrain->SetBinContent(i+1, constrained_pred[i]);
-		h_1g1p_data->SetBinContent(i+1, data.collapsed_vector.at(i));
-
-		//reset error bars
-		h_1g1p_original->SetBinError(i+1, sqrt(original_mat(i,i)));
-		h_1g1p_constrain->SetBinError(i+1, sqrt(constrained_mat(i,i)));
-		h_1g1p_data->SetBinError(i+1, sqrt(h_1g1p_data->GetBinContent(i+1)));
-	   }
+            // *********************** loop over each constrained channel *********************************
+	    for(int i = 0; i != num_channel_to_constrain; ++i){
+		TMatrixT<double> sub_unconstrain = collapsed_covar.GetSub(channel_bin_index[i], channel_bin_index[i+1] -1, channel_bin_index[i], channel_bin_index[i+1] -1);
+		TMatrixT<double> sub_constrain = constrained_mat.GetSub(channel_bin_index[i], channel_bin_index[i+1] -1, channel_bin_index[i], channel_bin_index[i+1] -1);
 
 
-	   //there are "Nsubchannel" subchannels for each channel
-	   TH1D* h_1g0p_original=(TH1D*)(cv.hist[Nsubchannel]).Clone(); h_1g0p_original->Reset();
-	   TH1D* h_1g0p_constrain=(TH1D*)(cv.hist[Nsubchannel]).Clone();  h_1g0p_constrain->Reset();
-	   TH1D* h_1g0p_data=(TH1D*)(cv.hist[Nsubchannel]).Clone();  h_1g0p_data->Reset();
+		double intrinsic_error = std::inner_product(fspec.collapsed_err_vector.begin() +channel_bin_index[i], fspec.collapsed_err_vector.begin() +channel_bin_index[i+1], fspec.collapsed_err_vector.begin() + channel_bin_index[i], 0.0);
+		double overall_sys_unconstrain = sub_unconstrain.Sum();
+		double overall_sys_constrain = sub_constrain.Sum();
 
-	   for(int i=0; i<h_1g0p_data->GetXaxis()->GetNbins(); i++){
-		int local_index = start_pt_1g0p+i;
-		h_1g0p_original->SetBinContent(i+1, fspec.collapsed_vector.at(local_index));
-		h_1g0p_constrain->SetBinContent(i+1, constrained_pred[local_index]);
-		h_1g0p_data->SetBinContent(i+1, data.collapsed_vector.at(local_index));
-
-		//reset error bars
-		h_1g0p_original->SetBinError(i+1, sqrt(original_mat(local_index, local_index)));
-		h_1g0p_constrain->SetBinError(i+1, sqrt(constrained_mat(local_index, local_index)));
-		h_1g0p_data->SetBinError(i+1, sqrt(h_1g0p_data->GetBinContent(i+1)));
-	        //std::cout << " " << sqrt(original_mat(local_index, local_index)) << " " << sqrt(full_constrained_mat(local_index, local_index)) << std::endl;
-	   }
-
-	  std::vector<TH1D*> vec_hist_original{h_1g1p_original, h_1g0p_original};
-	  std::vector<TH1D*> vec_hist_constrain{h_1g1p_constrain, h_1g0p_constrain};
-	  std::vector<TH1D*> vec_hist_data{h_1g1p_data, h_1g0p_data};
-	  //std::vector<std::string> vec_string{"1g1p", "1g0p"};
-	  std::vector<std::string> vec_string{"Garbage", "1g1p Near Sideband"};
-
-	  for(int i=0;i<2; i++){
-		  TCanvas* c=new TCanvas(Form("c_%d_%d",which_spec_index, i), "c");
-		  gStyle->SetOptStat(0);
-		  //gStyle->SetErrorX();
-		  TLegend* leg=new TLegend(0.6,0.7,0.9,0.9);
-		  vec_hist_original[i]->SetLineColor(kMagenta+3);
-		  vec_hist_original[i]->SetLineWidth(2);
-		  vec_hist_original[i]->SetLineStyle(kDashed);
-		  TH1D* h_1g_original_copy= (TH1D*)vec_hist_original[i]->Clone();
-		  vec_hist_original[i]->SetFillColorAlpha(kMagenta -10, 0.8);
-		  //vec_hist_original[i]->SetFillColor(kMagenta -10);
-		  vec_hist_original[i]->SetTitle(Form("%s;%s; Events", vec_string[i].c_str(), cv.channel_units[0].c_str()));
-		  //h_1g1p_original->SetFillStyle(4050);  //only useful for TPad
-		  vec_hist_original[i]->SetMaximum(std::max(vec_hist_original[i]->GetMaximum(), vec_hist_data[i]->GetMaximum())*1.8);
-		  vec_hist_original[i]->SetMinimum(0);
-
-		  vec_hist_constrain[i]->SetLineColor(kGreen+3);
-		  vec_hist_constrain[i]->SetLineWidth(2);
-		  TH1D* h_1g_constrain_copy = (TH1D*)vec_hist_constrain[i]->Clone();
-		  vec_hist_constrain[i]->SetFillColorAlpha(kGreen-7, 0.9);
-		  //vec_hist_constrain[i]->SetFillColor(kGreen -10);
-		  gStyle->SetHatchesLineWidth(3);
-		  vec_hist_constrain[i]->SetFillStyle(3345);
-
-		  //vec_hist_constrain[i]->Draw("E2");
-		  vec_hist_original[i]->Draw("E2");
-		  h_1g_original_copy->Draw("HIST SAME");
-		  vec_hist_constrain[i]->Draw("E2same");
-		  h_1g_constrain_copy->Draw("HIST SAME");
-		  leg->AddEntry(vec_hist_original[i], Form("%s Orignal", vec_string[i].c_str()), "LF");
-		  leg->AddEntry(vec_hist_constrain[i], Form("%s Constrained",vec_string[i].c_str()), "LF");
+		std::cout << "====== Channel: " << channel_string[i] << ", MC intrinsic error: " << sqrt(intrinsic_error) << ", overall unconstrained error: " << sqrt(overall_sys_unconstrain) << ", overall constrained error: " << sqrt(overall_sys_constrain) << "\n\t\t unconstrained events: " << std::accumulate(fspec.collapsed_vector.begin()  +channel_bin_index[i], fspec.collapsed_vector.begin() +channel_bin_index[i+1], 0.0) << ", constrained events: " << std::accumulate(constrained_pred.begin() + channel_bin_index[i], constrained_pred.begin()+channel_bin_index[i+1], 0.0) << std::endl;
 
 
-		  //legend to print chi^2 and pvalues
-		  TLegend* chi_leg = new TLegend(0.15, 0.8, 0.4, 0.9);
-		  //chi_leg->SetNColumns(2);
-		  chi_leg->SetFillStyle(0);
-        	  chi_leg->SetBorderSize(0);
-		  chi_leg->SetTextSize(0.033);
-		  chi_leg->AddEntry(vec_hist_original[i], Form("#chi^{2}: %.2f, P_{val}: %.2f", chi_nueoriginal, TMath::Prob(chi_nueoriginal,start_pt - start_pt_1g0p ) ));
-		  chi_leg->AddEntry(vec_hist_constrain[i], Form("#chi^{2}: %.2f, P_{val}: %.2f", chi_constrain, TMath::Prob(chi_constrain, start_pt-start_pt_1g0p ) ));
+             	//calculate chi2 of individual histogram
+		double sub_chi_constrain = 0, sub_chi_unconstrain = 0;
+		TMatrixT<double> full_sub_unconstrain = sub_unconstrain;
+		TMatrixT<double> full_sub_constrain = sub_constrain;
 
-		  if(overlay_data){
-		      vec_hist_data[i]->SetMarkerStyle(20);
-		      vec_hist_data[i]->SetMarkerColor(kBlack);
-		      vec_hist_data[i]->SetMarkerSize(1.2);
-		      vec_hist_data[i]->SetLineWidth(2);
-		      vec_hist_data[i]->SetLineColor(kBlack);
-		      vec_hist_data[i]->Draw("E1X0same");
-		      leg->AddEntry(vec_hist_data[i], Form("%s Data",vec_string[i].c_str()), "ep");
-		  }
-		  leg->Draw();
-		  chi_leg->Draw();
-		  c->Update();
-		  fout->cd();
-		  if(which_spec_index ==0){
-			 c->SaveAs((tag+"_CV_"+vec_string[i]+"_constrain_comparison.pdf").c_str(), "pdf");
-			 c->Write(Form("CV_%s_comparison",vec_string[i].c_str()));
-		  }
-		  if(which_spec_index ==1){
-			 c->SaveAs((tag+"_BF_"+vec_string[i]+"_constrain_comparison.pdf").c_str(), "pdf");
-			 c->Write(Form("BF_%s_comparison",vec_string[i].c_str()));
-		  }
+             	for(int j= channel_bin_index[i], row=0; j!=channel_bin_index[i+1]; ++j, ++row){
+                     full_sub_constrain(row, row) +=  ( data.collapsed_vector.at(j) >0.001 ? 3.0/(1.0/data.collapsed_vector.at(j) +  2.0/constrained_pred[j])  : constrained_pred[j]/2.0 );
+                     full_sub_unconstrain(row, row) +=  ( data.collapsed_vector.at(j) >0.001 ? 3.0/(1.0/data.collapsed_vector.at(j) +  2.0/fspec.collapsed_vector.at(j))  : fspec.collapsed_vector.at(j)/2.0 );
+                }
 
-	  }
+                TMatrixT<double> sub_constrained_invert = SigChi.InvertMatrix(full_sub_constrain);
+		TMatrixT<double> sub_unconstrain_invert = SigChi.InvertMatrix(full_sub_unconstrain);
+                for(int j=channel_bin_index[i], row=0; j!=channel_bin_index[i+1]; ++j, ++row){
+                    for(int k=channel_bin_index[i], col=0; k!=channel_bin_index[i+1]; ++k, ++col){
+                        sub_chi_constrain += sub_constrained_invert(row, col)*(data.collapsed_vector.at(j)-constrained_pred[j])*(data.collapsed_vector.at(k)-constrained_pred[k]);
+			sub_chi_unconstrain += sub_unconstrain_invert(row, col)*(data.collapsed_vector.at(j) - fspec.collapsed_vector.at(j))*(data.collapsed_vector.at(k) - fspec.collapsed_vector.at(k));
+                    }
+                } 
 
-	  ++which_spec_index;
+   	       // ***************************start drawing histograms******************************************
+ 	       TH1D* h_original=(TH1D*)(cv.hist[channel_hist_index[i]]).Clone(); h_original->Reset();
+	       TH1D* h_constrain=(TH1D*)h_original->Clone();  h_constrain->Reset();
+	       TH1D* h_data=(TH1D*)h_original->Clone();  h_data->Reset();
+
+	       for(int j=channel_bin_index[i], bin = 1; j< channel_bin_index[i+1]; ++j, ++bin){
+		   h_original->SetBinContent(bin, fspec.collapsed_vector.at(j));
+		   h_constrain->SetBinContent(bin, constrained_pred[j]);
+		   h_data->SetBinContent(bin, data.collapsed_vector.at(j));
+
+		   //reset error bars
+		   h_original->SetBinError(bin, sqrt(sub_unconstrain(bin-1, bin-1)));
+		   h_constrain->SetBinError(bin, sqrt(sub_constrain(bin-1, bin-1)));
+		   h_data->SetBinError(bin, sqrt(h_data->GetBinContent(bin)));
+	       }
+
+
+	       TCanvas* c=new TCanvas(Form("c_%d_%d",which_spec_index, i), "c");
+	       gStyle->SetOptStat(0);
+	       //gStyle->SetErrorX();
+	       TLegend* leg=new TLegend(0.6,0.7,0.9,0.9);
+	       h_original->SetLineColor(kMagenta+3);
+	       h_original->SetLineWidth(2);
+	       h_original->SetLineStyle(kDashed);
+	       TH1D* h_original_copy= (TH1D*)h_original->Clone();
+	       h_original->SetFillColorAlpha(kMagenta -10, 0.8);
+	       //h_original->SetFillColor(kMagenta -10);
+	       h_original->SetTitle(Form("%s;%s; Events", channel_string[i].c_str(), channel_unit[i].c_str()));
+	       //h_1g1p_original->SetFillStyle(4050);  //only useful for TPad
+               h_original->SetMaximum(std::max(h_original->GetMaximum(), h_data->GetMaximum())*1.8);
+	       h_original->SetMinimum(0);
+
+	       h_constrain->SetLineColor(kGreen+3);
+	       h_constrain->SetLineWidth(2);
+	       TH1D* h_constrain_copy = (TH1D*)h_constrain->Clone();
+	       h_constrain->SetFillColorAlpha(kGreen-7, 0.9);
+	       //h_constrain->SetFillColor(kGreen -10);
+	       gStyle->SetHatchesLineWidth(3);
+	       h_constrain->SetFillStyle(3345);
+
+	       h_original->Draw("E2");
+	       h_original_copy->Draw("HIST SAME");
+	       h_constrain->Draw("E2same");
+	       h_constrain_copy->Draw("HIST SAME");
+	       leg->AddEntry(h_original, Form("%s Orignal", channel_string[i].c_str()), "LF");
+	       leg->AddEntry(h_constrain, Form("%s Constrained",channel_string[i].c_str()), "LF");
+
+
+	       //legend to print chi^2 and pvalues
+	       TLegend* chi_leg = new TLegend(0.15, 0.8, 0.4, 0.9);
+	       //chi_leg->SetNColumns(2);
+	       chi_leg->SetFillStyle(0);
+               chi_leg->SetBorderSize(0);
+	       chi_leg->SetTextSize(0.033);
+	       chi_leg->AddEntry(h_original, Form("#chi^{2}: %.2f, P_{val}: %.2f", sub_chi_unconstrain, TMath::Prob(sub_chi_unconstrain, channel_bin_index[i+1] - channel_bin_index[i]) ));
+	       chi_leg->AddEntry(h_constrain, Form("#chi^{2}: %.2f, P_{val}: %.2f", sub_chi_constrain, TMath::Prob(sub_chi_constrain, channel_bin_index[i+1] - channel_bin_index[i]) ));
+
+	       if(overlay_data){
+		   h_data->SetMarkerStyle(20);
+		   h_data->SetMarkerColor(kBlack);
+		   h_data->SetMarkerSize(1.2);
+		   h_data->SetLineWidth(2);
+		   h_data->SetLineColor(kBlack);
+		   h_data->Draw("E1X0same");
+		   leg->AddEntry(h_data, Form("%s Data",channel_string[i].c_str()), "ep");
+	       }
+	       leg->Draw();
+	       chi_leg->Draw();
+	       c->Update();
+	       fout->cd();
+	       if(which_spec_index ==0){
+	           c->SaveAs((tag+"_CV_"+channel_string[i]+"_constrain_comparison.pdf").c_str(), "pdf");
+		   c->Write(Form("CV_%s_comparison",channel_string[i].c_str()));
+	       }
+	       if(which_spec_index ==1){
+		   c->SaveAs((tag+"_BF_"+channel_string[i]+"_constrain_comparison.pdf").c_str(), "pdf");
+	           c->Write(Form("BF_%s_comparison",channel_string[i].c_str()));
+	       }
+
+
+   	   }  //end of constrained channel loop
+
+	   ++which_spec_index;
     }
 /*    TFile *fout = new TFile(("Constraint_"+tag+"_output.root").c_str(),"recreate");
     fout->cd();
