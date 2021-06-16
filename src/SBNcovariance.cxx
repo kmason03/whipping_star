@@ -799,7 +799,7 @@ int SBNcovariance::FillHistograms(int file, int uni, double wei){
 int SBNcovariance::FormCovarianceMatrix(std::string tag){
 
 	//std::map<bool, std::string> map_shape_only{{true, "NCDeltaRadOverlaySM"}};
-	//std::map<bool, std::string> map_shape_only{{false, "NCDeltaLEE"}};
+	//std::map<bool, std::string> map_shape_only{{true,"NCDeltaLEE"}};
 	std::map<bool, std::string> map_shape_only{{false, "NCPi0NotCoh"}};
 	//std::map<bool, std::string> map_shape_only{{true, "NCPi0NotCoh"}};
 	//std::map<bool, std::string> map_shape_only{{true, "NCPi0NotCoh"},{true,"NCPi0Coh"}};
@@ -809,7 +809,6 @@ int SBNcovariance::FormCovarianceMatrix(std::string tag){
 		if(lshape_only == false) continue;
 		std::string lname_subchannel = imap.second;
 		if(is_verbose) std::cout << "SBNcovariance::FormCovariancematrix\t||\tSubchannel " << lname_subchannel << " will be constructed as shape-only matrix ? " << lshape_only << std::endl;	
-
 
 
 		//save the toal number of events of CV for specific subchannels, and their global bin indices.

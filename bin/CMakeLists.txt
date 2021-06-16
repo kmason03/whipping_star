@@ -21,8 +21,13 @@ target_link_libraries (sbnfit_fix_fractional SBNfitlib tinyxmllib EventWeight)
 #add_executable (sbnfit_flat_fractional sbnfit_flat_fractional.cxx)
 #target_link_libraries (sbnfit_flat_fractional SBNfitlib tinyxmllib EventWeight)
 
-add_executable (DLtest DLDis.cc)
-target_link_libraries (DLtest SBNfitlib tinyxmllib EventWeight)
+#Davio DL
+#add_executable (DLtest DLDis.cc)
+#target_link_libraries (DLtest SBNfitlib tinyxmllib EventWeight)
+
+add_executable (probtest probtest.cxx)
+target_link_libraries (probtest SBNfitlib tinyxmllib EventWeight)
+
 
 
 

@@ -55,6 +55,8 @@ class SBNcls{
 colH0 = kRed-7;
         colH1 = kBlue-4;
         has_data_overlayed = false;
+        data_result_chis.resize(3);
+        data_result_pvals.resize(3);
 	}
 	SBNcls(SBNspec *inh0, SBNspec * inh1) : h0(inh0), h1(inh1), chi_h0(*inh0),chi_h1(*inh1){
 		which_sample = 0; //default Poisson
@@ -68,6 +70,9 @@ colH0 = kRed-7;
         colH0 = kRed-7;
         colH1 = kBlue-4;
         has_data_overlayed = false;
+        data_result_chis.resize(3);
+        data_result_pvals.resize(3);
+
 	}
 
 

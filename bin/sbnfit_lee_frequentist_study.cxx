@@ -209,6 +209,14 @@ int main(int argc, char* argv[])
 
     std::cout<<"Legends are being set to "<<legends<<std::endl;
 
+    SBNspec *data;
+    if(real_data_string!="null"){
+            std::cout<<"Starting to load data file "<<real_data_string<<std::endl;
+            data = new SBNspec(real_data_string,xml);
+    }
+    TMatrixD empty(bkg.num_bins_total_compressed,bkg.num_bins_total_compressed);
+    empty.Zero();
+
     std::cout<<"Loading fractional covariance matrix from "<<covariance_file<<std::endl;
 
     TFile * fsys;
@@ -258,17 +266,13 @@ int main(int argc, char* argv[])
         if(tester){cls_factory.runConstraintTest();return 0;}
        
         if(real_data_string!="null"){
-            std::cout<<"Starting to load data file "<<real_data_string<<std::endl;
-            SBNspec *data = new SBNspec(real_data_string,xml);
-            std::cout<<"Loaded the real data, starting to compare the CLS_factory to real data"<<
+            std::cout<<"Starting to compare the CLS_factory to real data"<<
             cls_factory.compareToRealData(data);
-            TMatrixD empty(data->num_bins_total_compressed,data->num_bins_total_compressed);
-            empty.Zero();
-            sig.CompareSBNspecs(empty,data,tag+"_datamc");
         }
-        
+       
         cls_factory.CalcCLS(num_MC_events, tag);
-
+        
+        if(real_data_string!="null") sig.CompareSBNspecs(empty, data, tag+"_datamc");
         
     }else{
 	bkg.RemoveMCError();

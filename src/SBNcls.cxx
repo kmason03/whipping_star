@@ -17,6 +17,7 @@ double SBNcls::pval2sig2sided(double pval){
 }
 
 double SBNcls::pval2sig1sided(double pval){
+    //same as TMath::NormQuantile(1-p);
     return sqrt(2)*TMath::ErfInverse(1-pval*2.0);
 }
 
@@ -111,10 +112,10 @@ int SBNcls::CalcCLS(int numMC, std::string tag){
 
             }
 
-            if(has_data_overlayed){
+            if(has_data_overlayed && i<3){
                 if(h0_results[i].m_values[m]>=data_result_chis[i]){
                     data_result_pvals[i] += 1.0/(double(numMC));
-                    std::cout<<"HARP "<<i<<" "<<data_result_chis[i]<<" "<<data_result_pvals[i]<<std::endl;
+                    //std::cout<<"HARP "<<i<<" "<<data_result_chis[i]<<" "<<data_result_pvals[i]<<std::endl;
                 }
             }
 
@@ -136,16 +137,20 @@ int SBNcls::CalcCLS(int numMC, std::string tag){
         }
     }
 
+     std::cout<<"HH1"<<__LINE__<<std::endl;
+
+    has_data_overlayed = false;
     makePlots( h0_results[3], h0_results[4], tag+"_Base_PearsonChi_true_H0", 0);
     makePlots( h1_results[3], h1_results[4], tag+"_Base_PearsonChi_true_H1", 0);
+
+    std::cout<<"HH1"<<__LINE__<<std::endl;
 
     return 0 ;
 }
 
 int SBNcls::compareToRealData(SBNspec * data){
 
-    has_data_overlayed = true;
-
+    has_data_overlayed = true; // we have data
     data->CollapseVector();
 
     int num_bins_total_compressed = data->num_bins_total_compressed;
@@ -153,8 +158,6 @@ int SBNcls::compareToRealData(SBNspec * data){
     for(int i=0; i < num_bins_total_compressed; i++){
         collapsed[i] = data->collapsed_vector[i];
     }
-
-    //    h0_results = chi_h0.Mike_NP(h0, chi_h0, chi_h1, numMC, which_sample , 0);
 
     float** h0_vec_matrix_inverted = new float*[num_bins_total_compressed];
     float** h1_vec_matrix_inverted = new float*[num_bins_total_compressed];
@@ -196,6 +199,20 @@ int SBNcls::compareToRealData(SBNspec * data){
     data_result_chis = {val_chi_h0-val_chi_h1, val_pois_h0-val_pois_h1,val_cnp_h0-val_cnp_h1};
     data_result_pvals = {0,0,0};
 
+    delete[] h1_corein;
+    delete[] h0_corein;
+
+    for(int i=0; i < num_bins_total_compressed; i++){
+        delete[] h1_vec_matrix_inverted[i];  
+        delete[] h0_vec_matrix_inverted[i];  
+    }
+
+    delete[] h1_vec_matrix_inverted;
+    delete[] h0_vec_matrix_inverted;
+
+    delete[] collapsed;
+
+
     return 0;
 }
 
@@ -204,6 +221,8 @@ int SBNcls::makePlots(CLSresult &h0_result, CLSresult & h1_result, std::string t
     makePlots(h0_result,h1_result, tag, which_mode, 0.0, 0.0);
 }
 int SBNcls::makePlots(CLSresult &h0_result, CLSresult & h1_result, std::string tag, int which_mode, double datachival, double datapval){
+
+
 
     double max_plot = std::max(h0_result.m_max_value,h1_result.m_max_value)*1.5;
     double min_plot = std::min(h0_result.m_min_value,h1_result.m_min_value);
@@ -357,8 +376,10 @@ int SBNcls::makePlots(CLSresult &h0_result, CLSresult & h1_result, std::string t
     if(draw_both)leg->AddEntry(&h1_pdf,legends[1].c_str(),"lf");
     if(which_mode==0)leg->AddEntry(analytical_graph,("#chi^{2} PDF "+std::to_string(h0->num_bins_total_compressed)+" dof").c_str(),"l");
 
+    
     TLine*ldat;
     TLatex*qdatnam;
+    
     if(which_mode==1 && has_data_overlayed==true){//PlotDataOnTop
         ldat = new TLine(datachival,0.0, datachival,maxval*1.05);
         ldat->SetLineColor(kMagenta);
@@ -385,6 +406,7 @@ int SBNcls::makePlots(CLSresult &h0_result, CLSresult & h1_result, std::string t
         
         leg->AddEntry(ldat,("Data #alpha("+ a_string +" | "+whatsigma+ ")").c_str(),"l");
     }
+    
     leg->Draw();
 
 
@@ -402,6 +424,11 @@ int SBNcls::makePlots(CLSresult &h0_result, CLSresult & h1_result, std::string t
     cp->Write();	
     cp->SaveAs(("SBNfit_Cls_"+tag+".pdf").c_str(),"pdf");	
     fp->Close();
+
+    if(has_data_overlayed){
+        //delete ldat;
+        //delete qdatnam;
+    }
 
     return 0;
 
