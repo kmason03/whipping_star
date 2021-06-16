@@ -120,6 +120,8 @@ namespace sbn{
 			int CalcFullVector();
 			int CollapseVector();
 
+            int RemoveMCError();
+
 			double GetTotalEvents();
 
 			int GetGlobalBinNumber(double invar, int which_hist);
