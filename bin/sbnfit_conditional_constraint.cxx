@@ -145,15 +145,18 @@ int main(int argc, char* argv[])
             case '?':
             case 'h':
                 std::cout<<"---------------------------------------------------"<<std::endl;
-                std::cout<<"sbnfit_conditional_constraint allows for the plotting of covariance matricies from input root files containing reconstructed variables and covariance matricies. "<<std::endl;
+                std::cout<<"sbnfit_conditional_constraint allows for the plotting of constrained channels and covariance matricies from input root files containing reconstructed variables and covariance matricies; constrained channels should be the first few channels in the xml provided"<<std::endl;
                 std::cout<<"---------------------------------------------------"<<std::endl;
                 std::cout<<"--- Required arguments: ---"<<std::endl;
                 std::cout<<"\t-x\t--xml\t\tInput configuration .xml file for SBNconfig"<<std::endl;
-                std::cout<<"\t-t\t--tag\t\tA unique tag to identify the outputs [Default to TEST]"<<std::endl;
                 std::cout<<"\t-s\t--signal\t\tInput signal SBNspec.root file"<<std::endl;
+		std::cout<<"\t-d\t--data\t\tInput data root file" << std::endl;
                 std::cout<<"\t-c\t--covar\t\tInput Systematic Fractional Covariance"<<std::endl;
-                std::cout<<"\t-g\t--genie covar\t\tInput GENIE Systematic Fractional Covariance"<<std::endl;
                 std::cout<<"--- Optional arguments: ---"<<std::endl;
+                std::cout<<"\t-t\t--tag\t\tA unique tag to identify the outputs [Default to TEST]"<<std::endl;
+		std::cout<<"\t-o\t--overlaydata\t\tOverlay data points on the constrained plots"<<std::endl;
+		std::cout<<"\t-n\t--num_channel\t\tNumber of channels to constrain [Default to 2]"<<std::endl;
+                std::cout<<"\t-g\t--genie\t\tInput GENIE Systematic Fractional Covariance, remove Genie correlation between constrain_str and other components"<<std::endl;
                 std::cout<<"\t-f\t--flat\t\tAdd a flat percent systematic to fractional covariance matrix (all channels) (default false, pass in percent, i.e 5.0 for 5\% experimental)"<<std::endl;
                 std::cout<<"\t-z\t--zero\t\tZero out all off diagonal elements of the systematics covariance matrix (default false, experimental!)"<<std::endl;
                 std::cout<<"\t--cmax\t max for fractional covariance plot" << std::endl;
