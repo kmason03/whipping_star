@@ -63,14 +63,15 @@ int main(int argc, char* argv[])
         {"signal", 		required_argument,	0, 's'},
         {"data", 		required_argument,	0, 'd'},
 	{"num_channel",		required_argument,      0, 'n'},
-        {"help", 		no_argument,	0, 'h'},
-    	{"covar",		required_argument,    0, 'c'},
-    	{"genie",		required_argument,    0, 'g'},
-        {"flat", 		required_argument,0,'f'},
-        {"zero",		no_argument,0,'z'},
-	{"overlaydata", 	no_argument,          0, 'o'},
-        {"cmin",required_argument,0,'k'},
-        {"cmax",required_argument,0,'p'},
+	{"bestfit",             required_argument,      0, 'b'},
+        {"help", 		no_argument,	        0, 'h'},
+    	{"covar",		required_argument,      0, 'c'},
+    	{"genie",		required_argument,      0, 'g'},
+        {"flat", 		required_argument,      0,'f'},
+        {"zero",		no_argument,            0,'z'},
+	{"overlaydata", 	no_argument,            0, 'o'},
+        {"cmin",		required_argument,      0,'k'},
+        {"cmax",		required_argument,      0,'p'},
         {0,			    no_argument, 		0,  0},
     };
 
@@ -78,11 +79,14 @@ int main(int argc, char* argv[])
     opterr=1;
     int index;
     int num_channel_to_constrain = 2;   //normally we'd like to constrain 2 channels: 1g1p+1g0p
+    std::string delimiter=",";          //delimiter for the comma-separated argument
+    std::string fitting_subchannel="NONE";
     std::string covar_file = "Stats_Only";
     std::string genie_file = "NONE";
     bool stats_only = true;
     bool use_genie = false;
     bool overlay_data = false;
+    bool is_bestfit = false;
     std::string signal_file;
     std::string data_file;
 
@@ -91,6 +95,8 @@ int main(int argc, char* argv[])
 
     bool remove_correlations = false;
 
+
+    double best_fit_value = 0;
     double cmin = 0;
     double cmax = -9;
 
@@ -99,7 +105,7 @@ int main(int argc, char* argv[])
 
     while(iarg != -1)
     {
-        iarg = getopt_long(argc,argv, "f:x:s:d:n:t:c:g:k:p:zoh", longopts, &index);
+        iarg = getopt_long(argc,argv, "f:x:s:d:n:t:b:c:g:k:p:zoh", longopts, &index);
 
         switch(iarg)
         {
@@ -127,9 +133,13 @@ int main(int argc, char* argv[])
                 stats_only = false;
 	          break;
 	    case 'g':
-		use_genie=true;
-		genie_file = optarg;
-		break;		
+	    {	use_genie=true;
+		std::string comma_separated_argument = optarg; //assume first is the subchannel name, second is genie file
+		fitting_subchannel = comma_separated_argument.substr(0, comma_separated_argument.find(delimiter));
+		genie_file = comma_separated_argument.substr(comma_separated_argument.find(delimiter)+delimiter.length());
+		//genie_file = optarg;
+		break;
+	    }		
             case 's':
                 signal_file = optarg;
                 break;
@@ -139,6 +149,13 @@ int main(int argc, char* argv[])
 	    case 'n':
 		num_channel_to_constrain = atoi(optarg);
 		break; 
+ 	    case 'b':
+	    {   is_bestfit = true;
+		std::string comma_separated_argument = optarg; //assume first is the subchannel name, followed by BF value
+		fitting_subchannel = comma_separated_argument.substr(0, comma_separated_argument.find(delimiter));
+		best_fit_value = std::stod(comma_separated_argument.substr(comma_separated_argument.find(delimiter)+delimiter.length()));
+		break;
+            }
 	    case 'o':
 		overlay_data = true;
 		break;
@@ -156,7 +173,8 @@ int main(int argc, char* argv[])
                 std::cout<<"\t-t\t--tag\t\tA unique tag to identify the outputs [Default to TEST]"<<std::endl;
 		std::cout<<"\t-o\t--overlaydata\t\tOverlay data points on the constrained plots"<<std::endl;
 		std::cout<<"\t-n\t--num_channel\t\tNumber of channels to constrain [Default to 2]"<<std::endl;
-                std::cout<<"\t-g\t--genie\t\tInput GENIE Systematic Fractional Covariance, remove Genie correlation between constrain_str and other components"<<std::endl;
+		std::cout<<"\t-b\t--bestfit\t\tIf we are constraining the bestfit spectrum. [Default to false] [Format should be: subchannel,BFvalue]"<< std::endl;
+                std::cout<<"\t-g\t--genie\t\tInput GENIE Systematic Fractional Covariance, remove Genie correlation between fitting_subchannel and other components. [Format should be: subchannel,GENIEfile]"<<std::endl;
                 std::cout<<"\t-f\t--flat\t\tAdd a flat percent systematic to fractional covariance matrix (all channels) (default false, pass in percent, i.e 5.0 for 5\% experimental)"<<std::endl;
                 std::cout<<"\t-z\t--zero\t\tZero out all off diagonal elements of the systematics covariance matrix (default false, experimental!)"<<std::endl;
                 std::cout<<"\t--cmax\t max for fractional covariance plot" << std::endl;
@@ -213,15 +231,14 @@ int main(int argc, char* argv[])
     int start_pt = channel_bin_index.back();
 
     std::vector<SBNspec> vec_spec(1, cv);
-    std::string constrain_str="NCDeltaLEE";
-    //std::string constrain_str="NCDelta";
-    //get the NULL spectrum
-    vec_spec[0].Scale("NCDeltaLEE", 0.0);
-    //vec_spec[0].Scale("NCDelta", 0.0);
     //get the BF values
-    //vec_spec[1].Scale("NCDeltaLEE", 0.0);
-    //vec_spec[1].Scale("NCDelta", 0.93);
-    
+    if(is_bestfit){
+	 std::cout << "Constraining spectrum at Best-Fit value: " << best_fit_value << " for " << fitting_subchannel << std::endl;
+	 vec_spec[0].Scale(fitting_subchannel, best_fit_value);
+    }else 
+	std::cout << "Constraining CV spectrum " << std::endl;
+	
+
     std::cout<<"Loading fractional covariance matrix from "<<covar_file<<std::endl;
 
     TFile * fsys;
@@ -270,6 +287,8 @@ int main(int argc, char* argv[])
 
     //grab genie covariance matrix
     if(use_genie){
+	std::cout << "Running with GENIE correlation between " << fitting_subchannel << " and other subchannels removed !" << std::endl;
+	std::cout << "GENIE file used: " << genie_file << std::endl;
 	fsys = new TFile(genie_file.c_str(), "read");
 	genie_cov  = (TMatrixT<double>*)fsys->Get("individualDir/All_UBGenie_frac_covariance");
         *genie_cov += *((TMatrixT<double>*)fsys->Get("individualDir/AxFFCCQEshape_UBGenie_frac_covariance"));
@@ -297,11 +316,11 @@ int main(int argc, char* argv[])
 
 	 //remove correlation in genie
 	SBNspec temp_cv(cv);
-        temp_cv.Keep(constrain_str, 1.0);
+        temp_cv.Keep(fitting_subchannel, 1.0);
         temp_cv.CalcFullVector();
         std::vector<double> temp_full = temp_cv.full_vector;
         temp_cv=cv;
-        temp_cv.Scale(constrain_str, 0.0);
+        temp_cv.Scale(fitting_subchannel, 0.0);
         std::vector<double> temp_others = temp_cv.full_vector;
 
         for(int i=0; i<temp_full.size(); i++){
@@ -322,7 +341,7 @@ int main(int argc, char* argv[])
     for(SBNspec& fspec:vec_spec){
 	    fspec.CollapseVector();
 	    fspec.CalcErrorVector();
-	    std::cout << "\n\n\nOn spec:  " << (which_spec_index ==0 ? "CV" : "BF" ) << std::endl;;
+	    std::cout << "\n\n\nOn spec:  " << ( is_bestfit ? "BF" : "CV" ) << std::endl;;
 	    SBNchi SigChi(fspec, *cov);
 	    if(stats_only) SigChi.is_stat_only=true;
 	//    SigChi.SetFracPlotBounds(cmin,cmax);
@@ -386,7 +405,7 @@ int main(int argc, char* argv[])
 	    }
      
 	     //print out the comparison
-	     SigChi.DrawComparisonIndividual(fspec, data, total_collapsed_mat, "Spec"+std::to_string(which_spec_index)+"_VS_Data", false);
+	     //SigChi.DrawComparisonIndividual(fspec, data, total_collapsed_mat, "Spec"+std::to_string(which_spec_index)+"_VS_Data", false);
 
 	    // **************************done calculating chi2 *******************************************
 
@@ -395,9 +414,9 @@ int main(int argc, char* argv[])
 	    std::cout << "Nue only original  chi2 value is " << chi_nueoriginal << std::endl;
 	    std::cout << "Nue constrained  chi2 value is " << chi_constrain << std::endl;
 	    std::cout << "=============== Overall Summary ======================\n" << std::endl;
-	    for(int i=0; i<start_pt; i++){
-		std::cout<<i<<" N: "<<fspec.collapsed_vector.at(i)<<" Original: "<<sqrt(collapsed_covar(i,i))/fspec.collapsed_vector.at(i)<<" New: "<<sqrt(constrained_mat(i,i))/fspec.collapsed_vector.at(i)<<" Ratio: "<<sqrt(constrained_mat(i,i))/sqrt(collapsed_covar(i,i))<<std::endl;
-	    }
+	    //for(int i=0; i<start_pt; i++){
+	    //    std::cout<<i<<" N: "<<fspec.collapsed_vector.at(i)<<" Original: "<<sqrt(collapsed_covar(i,i))/fspec.collapsed_vector.at(i)<<" New: "<<sqrt(constrained_mat(i,i))/fspec.collapsed_vector.at(i)<<" Ratio: "<<sqrt(constrained_mat(i,i))/sqrt(collapsed_covar(i,i))<<std::endl;
+	    //}
 
 
             // *********************** loop over each constrained channel *********************************
@@ -452,7 +471,9 @@ int main(int argc, char* argv[])
 	       TCanvas* c=new TCanvas(Form("c_%d_%d",which_spec_index, i), "c");
 	       gStyle->SetOptStat(0);
 	       //gStyle->SetErrorX();
-	       TLegend* leg=new TLegend(0.6,0.7,0.9,0.9);
+	       TLegend* leg=new TLegend(0.45,0.7,0.89,0.89);
+	       leg->SetBorderSize(0);
+	       leg->SetTextSize(0.032);
 	       h_original->SetLineColor(kMagenta+3);
 	       h_original->SetLineWidth(2);
 	       h_original->SetLineStyle(kDashed);
@@ -461,7 +482,7 @@ int main(int argc, char* argv[])
 	       //h_original->SetFillColor(kMagenta -10);
 	       h_original->SetTitle(Form("%s;%s; Events", channel_string[i].c_str(), channel_unit[i].c_str()));
 	       //h_1g1p_original->SetFillStyle(4050);  //only useful for TPad
-               h_original->SetMaximum(std::max(h_original->GetMaximum(), h_data->GetMaximum())*1.8);
+               h_original->SetMaximum(std::max(std::initializer_list<double>{h_original->GetMaximum(), h_data->GetMaximum(), h_constrain->GetMaximum()})*2.5);
 	       h_original->SetMinimum(0);
 
 	       h_constrain->SetLineColor(kGreen+3);
@@ -476,18 +497,18 @@ int main(int argc, char* argv[])
 	       h_original_copy->Draw("HIST SAME");
 	       h_constrain->Draw("E2same");
 	       h_constrain_copy->Draw("HIST SAME");
-	       leg->AddEntry(h_original, Form("%s Orignal", channel_string[i].c_str()), "LF");
-	       leg->AddEntry(h_constrain, Form("%s Constrained",channel_string[i].c_str()), "LF");
+	       leg->AddEntry(h_original, Form("%s MC prediction - %.1f", channel_string[i].c_str(), h_original->Integral()), "LF");
+	       leg->AddEntry(h_constrain, Form("%s Constrained prediction - %.1f",channel_string[i].c_str(), h_constrain->Integral()), "LF");
 
 
 	       //legend to print chi^2 and pvalues
-	       TLegend* chi_leg = new TLegend(0.15, 0.8, 0.4, 0.9);
+	       TLegend* chi_leg = new TLegend(0.11, 0.76, 0.35, 0.89);
 	       //chi_leg->SetNColumns(2);
 	       chi_leg->SetFillStyle(0);
                chi_leg->SetBorderSize(0);
-	       chi_leg->SetTextSize(0.033);
-	       chi_leg->AddEntry(h_original, Form("#chi^{2}: %.2f, P_{val}: %.2f", sub_chi_unconstrain, TMath::Prob(sub_chi_unconstrain, channel_bin_index[i+1] - channel_bin_index[i]) ));
-	       chi_leg->AddEntry(h_constrain, Form("#chi^{2}: %.2f, P_{val}: %.2f", sub_chi_constrain, TMath::Prob(sub_chi_constrain, channel_bin_index[i+1] - channel_bin_index[i]) ));
+	       chi_leg->SetTextSize(0.03);
+	       chi_leg->AddEntry(h_original, Form("#chi^{2}_{CNP}/ndof: %.2f/%d, P^{Wilks}_{val}: %.3f", sub_chi_unconstrain, channel_bin_index[i+1] - channel_bin_index[i], TMath::Prob(sub_chi_unconstrain, channel_bin_index[i+1] - channel_bin_index[i]) ));
+	       chi_leg->AddEntry(h_constrain, Form("#chi^{2}_{CNP}/ndof: %.2f/%d, P^{Wilks}_{val}: %.3f", sub_chi_constrain, channel_bin_index[i+1] - channel_bin_index[i],  TMath::Prob(sub_chi_constrain, channel_bin_index[i+1] - channel_bin_index[i]) ));
 
 	       if(overlay_data){
 		   h_data->SetMarkerStyle(20);
@@ -496,19 +517,29 @@ int main(int argc, char* argv[])
 		   h_data->SetLineWidth(2);
 		   h_data->SetLineColor(kBlack);
 		   h_data->Draw("E1X0same");
-		   leg->AddEntry(h_data, Form("%s Data",channel_string[i].c_str()), "ep");
+		   leg->AddEntry(h_data, Form("%s Data - %d",channel_string[i].c_str(), (int)h_data->Integral()), "ep");
 	       }
 	       leg->Draw();
-	       chi_leg->Draw();
 	       c->Update();
 	       fout->cd();
-	       if(which_spec_index ==0){
+	       if(is_bestfit){
+		   c->SaveAs((tag+"_BF_"+channel_string[i]+"_constrain_comparison.pdf").c_str(), "pdf");
+	           c->Write(Form("BF_%s_comparison",channel_string[i].c_str()));
+	       }else{
 	           c->SaveAs((tag+"_CV_"+channel_string[i]+"_constrain_comparison.pdf").c_str(), "pdf");
 		   c->Write(Form("CV_%s_comparison",channel_string[i].c_str()));
 	       }
-	       if(which_spec_index ==1){
-		   c->SaveAs((tag+"_BF_"+channel_string[i]+"_constrain_comparison.pdf").c_str(), "pdf");
-	           c->Write(Form("BF_%s_comparison",channel_string[i].c_str()));
+
+	       if(overlay_data){
+	       	   chi_leg->Draw();
+		   c->Update();
+		   if(is_bestfit){
+                   	c->SaveAs((tag+"_Wchi_BF_"+channel_string[i]+"_constrain_comparison.pdf").c_str(), "pdf");
+                   	c->Write(Form("BF_Wchi_%s_comparison",channel_string[i].c_str()));
+               	   }else{
+                   	c->SaveAs((tag+"_Wchi_CV_"+channel_string[i]+"_constrain_comparison.pdf").c_str(), "pdf");
+                   	c->Write(Form("CV_Wchi_%s_comparison",channel_string[i].c_str()));
+                   }	
 	       }
 
 

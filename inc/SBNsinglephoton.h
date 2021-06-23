@@ -25,6 +25,7 @@
 #include "TSystem.h"
 #include "TMarker.h"
 #include "TObjArray.h"
+#include "TArrow.h"
 
 #include "TMath.h"
 #include <ctime>
@@ -151,8 +152,8 @@ namespace sbn{
 	//not finished yet, what information do we wnat to print out
 	int GrabFitMap();
 	void SetInterpolationNumber(int );
-	int SaveHistogram();
-	int SaveHistogram(std::map<int, std::vector<double>>& );
+	int SaveHistogram(bool sensitivity=false);
+	int SaveHistogram(std::map<int, std::vector<double>>& , bool sensitivity=false);
 	TH2D Do2DInterpolation(int, const std::vector<double>& x, const std::vector<double>& y, const std::vector<double>& value, std::string);
 	std::vector<TGraph> FindContour(TH2D&, int n, std::string);
 	void DrawContour(TH2D*, std::vector<TGraph>&, std::vector<double>);
@@ -172,7 +173,8 @@ namespace sbn{
 
 	private:
 	void MaskScaleFactor(double&);
-	void DrawMarginalizedChi(std::vector<TH1D*> vec_hist, std::string intag);
+	void DrawMarginalizedChi(std::vector<TH1D*> vec_hist, std::string intag, bool sensitivity=false, std::vector<double> bf={});
+	void LocateCVGlobalIndex();
 
     };
 

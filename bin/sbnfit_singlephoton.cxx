@@ -98,6 +98,7 @@ int main(int argc, char* argv[])
     bool bool_edependent = false;   //energy/momentum dependent fit or not
     bool input_data = false;
     bool bool_modify_genie_cv = false;   //modify genie CV before fitting
+    bool bool_gen_sensitivity_curve = false;      //if the plot is intend to be a sensitivity curve
     std::string data_filename;
     std::string covmatrix_file;  //root file containing total covariance matrix
     std::string genie_matrix_file;  //root file containing flux/XS covariance matrix
@@ -124,8 +125,16 @@ int main(int argc, char* argv[])
                 data_filename = optarg;
                 break;
             case 'm':
-                mode = optarg;
+	    {
+            	std::string plot_argument = optarg, delimiter=",";
+	        mode = plot_argument.substr(0,plot_argument.find(delimiter));
+
+		// if we are in plot mode, then we process the second argument
+		if(mode == "plot" && (plot_argument.find(delimiter) != std::string::npos) && (plot_argument.substr(plot_argument.find(delimiter)+delimiter.length()) == "sensitivity"))
+		    bool_gen_sensitivity_curve = true;	
+		
                 break;
+	    }
             case 'c':
                 covmatrix_file = optarg;
                 break;
@@ -204,13 +213,13 @@ int main(int argc, char* argv[])
     //mygrid.AddConstrainedDimension("NCPi0NotCoh", 0.5, 1.25, 0.01, 1.0);   //0.1 FULL
     //mygrid.AddConstrainedDimension("NCPi0Coh", 0, 5, 0.05, 1.0); //0.1full
     // NCpi0 flat normalization fit
-    mygrid.AddConstrainedDimension("NCPi0NotCoh", 0.2, 1.55, 0.01, 1.0);   //0.1 FULL
-    mygrid.AddConstrainedDimension("NCPi0Coh", 0, 7, 0.05, 1.0); //0.1full
+    //mygrid.AddConstrainedDimension("NCPi0NotCoh", 0.2, 1.55, 0.01, 1.0);   //0.1 FULL
+    //mygrid.AddConstrainedDimension("NCPi0Coh", 0, 7, 0.05, 1.0); //0.1full
     // NCpi0 momentum, momentum-dependent fit
     //mygrid.AddConstrainedDimension("NCPi0NotCoh", 0.5, 1.25, 0.02, 1.0);   //0.1 FULL
     //mygrid.AddConstrainedDimension("NCPi0Coh", 0, 8, 0.2, 1.0); 
     //mygrid.AddFixedDimension("NCPi0NotCoh", 1.19);   //fixed
-    //mygrid.AddDimension("NCDelta", 0, 6, 0.01 );
+    mygrid.AddDimension("NCDelta", 0, 6, 0.01 );
     //mygrid.AddDimension("NCDeltaLEE", 0, 5, 0.01 );
     //mygrid.AddDimension("NCDeltaLEE", 0, 2.5, 0.005 );
 
@@ -274,7 +283,7 @@ int main(int argc, char* argv[])
 	}else if(mode == "plot"){
 		sp.GrabFitMap();
 		if(interpolation_number != -99) sp.SetInterpolationNumber(interpolation_number);
-		sp.SaveHistogram();	
+		sp.SaveHistogram(bool_gen_sensitivity_curve);	
 	}
 	else{
 		if(bool_modify_genie_cv) sp.ModifyCV(delta_scaling);
