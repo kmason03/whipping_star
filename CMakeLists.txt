@@ -88,7 +88,7 @@ message("@main CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS}")
 add_subdirectory(tinyxml)
 add_subdirectory(src)
 add_subdirectory(examples)
-add_subdirectory(bin)
+#add_subdirectory(bin)
 add_subdirectory(unit)
-
+add_subdirectory(lee)
 
