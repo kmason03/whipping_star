@@ -42,6 +42,34 @@
 
 using namespace sbn;
 
+double getCritValue(TTree *t, std::string name, double pval){
+    //Iteratively get the critical values directly from TTree's
+    double min = t->GetMinimum(name.c_str())*1.05;
+    double max = t->GetMaximum(name.c_str())*0.95;
+
+    double nentries = (double)t->GetEntries();
+
+    double ans_mid = 0; 
+    double temp_prob;
+
+    for(int i=0; i< 101; i++){
+        ans_mid = min+(max-min)/2.0;
+
+        std::string cut = (name+"<"+std::to_string(ans_mid));
+        temp_prob = t->GetEntries(cut.c_str())/nentries;
+
+        //std::cout<<"getCritValue: "<<i<<" "<<pval<<" ("<<min<<", TestPt: "<<ans_mid<<", "<<max<<")"<<temp_prob<<" "<<nentries<<" "<<t->GetEntries((name+"<"+std::to_string(ans_mid)).c_str())<<"  "<<cut<<" "<<t->GetName()<<std::endl;
+        if(temp_prob > pval){
+            max = ans_mid;
+        }else{
+            min = ans_mid;
+        }
+
+    }
+
+    return ans_mid;
+}
+
 
 double Median(const TH1D * h1) { 
 
@@ -199,7 +227,7 @@ int main(int argc, char* argv[])
     }
     
     NGrid mygrid;
-    mygrid.AddDimension("NCDeltaRadOverlaySM",grid_string);
+    mygrid.AddDimension(input_scale_subchannel,grid_string);
    
     mygrid.Print();
     SBNfeld myfeld(mygrid,tag,xml);
@@ -284,9 +312,9 @@ int main(int argc, char* argv[])
         //Some Manual Color Changing and such
         int plotting_true_gridpoint = 5;
         //std::vector<double> plotting_pvals = {0.68, 0.90, 0.95, 0.99};
-        std::vector<double> plotting_pvals = {0.68, 0.90, 0.99};
+        std::vector<double> plotting_pvals = {0.68, 0.90, 0.95};
         //std::vector<std::string> plotting_strs = {"68%","90%","95%","99%"};
-        std::vector<std::string> plotting_strs = {"68%","90%","99%"};
+        std::vector<std::string> plotting_strs = {"68%","90%","95%"};
         //std::vector<int> gcols = {kGreen+3,kGreen+2,kGreen-3,kGreen-9};
         std::vector<int> gcols = {kRed-9,kBlue-9,kGreen-9};
 
@@ -311,34 +339,40 @@ int main(int argc, char* argv[])
             TTree *t =  (TTree*)fin->Get(("ttree_"+std::to_string(i)).c_str());
             TH1D * cumul = (TH1D*)fin->Get(("delta_chi2_"+std::to_string(i)+"_cumulative").c_str());
             TH1D * h_bfval = (TH1D*)fin->Get(("bf_value_"+std::to_string(i)).c_str());//Added by Ivan
+            TGraph* g_likelihood = (TGraph*)fin->Get(("likelihood_"+std::to_string(i)).c_str());
 
             for(int p =0; p< plotting_pvals.size(); ++p){
                 double plotting_pval = plotting_pvals[p];
 
-                //First lets find a critical chi^2 for this confidence level
-                double critical_delta_chi2 = 0;
-                double critical_delta_chi2_mid = 0;
-                for(int c = cumul->GetNbinsX()-1;  c>0 ; --c){
-                    if(cumul->GetBinContent(c+1) >= plotting_pval && cumul->GetBinContent(c)< plotting_pval){
-                        critical_delta_chi2_mid = cumul->GetBinCenter(c);
-                        critical_delta_chi2 = lin_interp(cumul->GetBinContent(c+1), cumul->GetBinContent(c), cumul->GetBinLowEdge(c+1), cumul->GetBinLowEdge(c)+cumul->GetBinWidth(c), plotting_pval);
+                //First lets find a critical chi^2 for this confidence level. This is the critical value that plotting_pval % of events simulated have a delta chi^2 < Critical Value
+                double critical_delta_chi2 = getCritValue(t,"delta_chi2", plotting_pval);
+
+                std::cout<<"Grid point "<<i<<" has a critical delta chi of "<<critical_delta_chi2<<" for a pval of "<<plotting_pval<<std::endl; 
+                
+                double low_limit = v_true.front();
+                double up_limit = vec_grid[vec_grid.size()-1][0];
+
+                //Find lower
+                for(int low = i; low>0;low--){
+                    double val = g_likelihood->Eval( vec_grid[low][0] ); 
+                    if(val >= critical_delta_chi2){
+                        low_limit = vec_grid[low][0];
                         break;
                     }
                 }
 
-                std::cout<<"Grid point "<<i<<" has a critical delta chi of "<<critical_delta_chi2<<"("<<critical_delta_chi2_mid<<") for a pval of "<<plotting_pval<<std::endl; 
-
-                std::string nam = std::to_string(i)+"bfhist";
-                int Nentries = t->GetEntries(); 
-
-                const unsigned nentries = t->Draw("bf_gridvalue", ("delta_chi2<="+std::to_string(critical_delta_chi2)).c_str());
-                if (nentries) {
-                    double* x = t->GetV1();
-                    //std::cout << "min :" << *(std::min_element(x, x+nentries)) << std::endl;
-                    //std::cout << "max :" << *(std::max_element(x, x+nentries)) << std::endl;
-                    v_min[p].push_back( *(std::min_element(x, x+nentries)) );
-                    v_max[p].push_back( *(std::max_element(x, x+nentries)) );
+                //Find Upper
+                for(int up = i; up<vec_grid.size();up++){
+                    double val = g_likelihood->Eval(vec_grid[up][0]); 
+                    if(val >= critical_delta_chi2){
+                        up_limit = vec_grid[up][0];
+                        break;
+                    }
                 }
+
+                v_min[p].push_back(low_limit);
+                v_max[p].push_back(up_limit);
+
             }//end pval loop
 
        
