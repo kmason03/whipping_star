@@ -503,6 +503,12 @@ int SBNfeld::FullFeldmanCousins(){
 
 
 int SBNfeld::CompareToData(SBNspec *datain){
+    std::vector<double> nota;
+    return this->CompareToData(datain,nota,nota);
+}
+    
+
+int SBNfeld::CompareToData(SBNspec *datain, std::vector<double> minp, std::vector<double>maxp){
 
     //Ok take the background only spectrum and form a background only covariance matrix. CalcCovarianceMatrix includes stats
     TMatrixT<double> background_full_covariance_matrix = m_sbnchi_grid[0]->CalcCovarianceMatrix(m_full_fractional_covariance_matrix, *m_tvec_background_spectrum);
@@ -516,12 +522,24 @@ int SBNfeld::CompareToData(SBNspec *datain){
 
     TFile *fin = new TFile(("SBNfeld_output_"+tag+".root").c_str(),"read");
 
-
     std::cout<<"------ Print DeltaChi^2 ------ "<<std::endl;
     std::vector<double> rall;
     std::vector<double> vall;
     std::vector<double> fcall;
     std::vector<double> wilkscall;
+
+
+    
+    double p_68 =0.6827; 
+    double v_68 = -9;
+
+    double p_90 =0.9; 
+    double v_90 = -9;
+
+    double p_95 =0.95; 
+    double v_95 = -9;
+
+
 
     for(int k=3; k<ans.size();k++){
         int i = k-3;
@@ -529,8 +547,12 @@ int SBNfeld::CompareToData(SBNspec *datain){
 
         TTree *t =  (TTree*)fin->Get(("ttree_"+std::to_string(i)).c_str());
 
-        double pval_fc = (1.0-t->GetEntries(("delta_chi2 > "+std::to_string(ans[k]-ans[2])).c_str())/(double)t->GetEntries())*100.0;
+        double pval_fc = (1.0-t->GetEntries(("delta_chi2 >= "+std::to_string(ans[k]-ans[2])).c_str())/(double)t->GetEntries())*100.0;
         double pval_wilks = (1.0-TMath::Prob(ans[k]-ans[2],1))*100.0;
+    
+        if(pval_fc > 100.0*p_68 && v_68==-9) v_68 = val;
+        if(pval_fc > 100.0*p_90 && v_90==-9) v_90 = val;
+        if(pval_fc > 100.0*p_95 && v_95==-9) v_95 = val;
 
         std::cout<<i<<" val: "<<val<<" dchi: "<<ans[k]-ans[2]<<" pval_wilks: "<<pval_wilks<<" pval_fc: "<<pval_fc<<std::endl;
 
@@ -559,7 +581,32 @@ int SBNfeld::CompareToData(SBNspec *datain){
     g->Draw("al");
     g->SetTitle("");
 
-    g->GetXaxis()->SetTitle("x_{#Delta} (NC #Delta Radiative Scaling)");
+    double y_68 = g->Eval(v_68);
+    double y_90 = g->Eval(v_90);
+    double y_95 = g->Eval(v_95);
+
+    std::cout<<"Val "<<v_68<<" "<<y_68<<std::endl;
+
+    TLine *lr68 = new TLine(v_68,0,v_68,y_68);
+    lr68->SetLineColor(kRed-7);
+    lr68->SetLineWidth(2);
+    lr68->SetLineStyle(2);
+    lr68->Draw("same");
+
+    TLine *lr90 = new TLine(v_90,0,v_90,y_90);
+    lr90->SetLineColor(kGreen-6);
+    lr90->SetLineWidth(2);
+    lr90->SetLineStyle(9);
+    lr90->Draw("same");
+
+    TLine *lr95 = new TLine(v_95,0,v_95,y_95);
+    lr95->SetLineColor(kBlue-7);
+    lr95->SetLineWidth(2);
+    lr95->SetLineStyle(1);
+    lr95->Draw("same");
+
+
+    g->GetXaxis()->SetTitle("x_{#Delta} (NC #Delta Radiative BR Scaling)");
     g->GetYaxis()->SetTitle("#Delta #chi^{2} (data | x_{#Delta})");
     g->GetXaxis()->SetRangeUser(vall.front(),vall.back());
 
@@ -568,12 +615,12 @@ int SBNfeld::CompareToData(SBNspec *datain){
     qnam->SetTextAlign(12);  //align at top
 //  qnam->SetTextAngle(-0);
     qnam->DrawLatexNDC(0.25,0.8,("Best Fit: x_{#Delta}= " +  to_string_prec(bf_val,2) ).c_str());
-    qnam->DrawLatexNDC(0.25,0.75,("#chi^{2}_{Min} = " +  to_string_prec(chi_min,1) +  " ( "+ std::to_string(m_background_spectrum->num_bins_total_compressed-1)+" dof)" ).c_str());
+    qnam->DrawLatexNDC(0.25,0.75,("-2Ln_{Min} = " +  to_string_prec(chi_min,1) +  " ( "+ std::to_string(m_background_spectrum->num_bins_total_compressed-1)+" dof)" ).c_str());
 
     c->Update();
 
     TPad*p2 = (TPad*)c->cd(2);
-    //p2->SetLogy();
+//    p2->SetLogx();
 
     TGraph *gfc = new TGraph(rall.size(),&vall[0],&fcall[0]);
     TGraph *gwilks = new TGraph(rall.size(),&vall[0],&wilkscall[0]);
@@ -594,8 +641,9 @@ int SBNfeld::CompareToData(SBNspec *datain){
 
     gwilks->SetTitle("");
     gwilks->GetHistogram()->SetMaximum(100.0);
+    //gwilks->GetHistogram()->SetMinimum(95.0);
     gwilks->GetXaxis()->SetRangeUser(vall.front(),vall.back());
-    gwilks->GetXaxis()->SetTitle("x_{#Delta} (NC #Delta Radiative Scaling)");
+    gwilks->GetXaxis()->SetTitle("x_{#Delta} (NC #Delta Radiative BR Scaling)");
     gwilks->GetYaxis()->SetTitle("Confidence Level (%)");
 
     TLine *l68 = new TLine(vall.front(),68.0,vall.back(),68.0);
@@ -616,14 +664,29 @@ int SBNfeld::CompareToData(SBNspec *datain){
     l95->SetLineStyle(3);
     l95->Draw();
 
+    std::vector<int> styles = {9,2,3};
+    for(int i=0; i< minp.size(); i++){
+
+        TLine *lop = new TLine(minp[i],0,minp[i],100);
+        lop->SetLineColor(kBlack);
+        lop->SetLineWidth(1);
+        lop->SetLineStyle(styles[i]);
+        lop->Draw();
+    }
+    for(int i=0; i< maxp.size(); i++){
+        TLine *lop = new TLine(maxp[i],0,maxp[i],100);
+        lop->SetLineColor(kBlack);
+        lop->SetLineWidth(1);
+        lop->SetLineStyle(styles[i]);
+        lop->Draw();
+    }
+
     c->SaveAs(("dataFC_"+tag+".pdf").c_str(),"pdf");
-
-
 
     //Some BF 
     m_cv_spec_grid[bf_pt]->CompareSBNspecs(background_collapsed_covariance_matrix,datain, "Data_Comparason_Feld_"+tag);
     std::cout<<"DATA_Comparason_Point : Delta Chi "<<delta_chi<<" Chi^Min "<<chi_min<<" BF_val "<<bf_val<<" BF_PT "<<bf_pt<<std::endl;
-    return 0;
+    return bf_pt;
 };
 
 
