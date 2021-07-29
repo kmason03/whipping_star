@@ -343,6 +343,7 @@ int SBNfeld::FullFeldmanCousins(){
         v_gridvals.push_back(m_grid.f_dimensions[0].GetPoint(t));
     }
 
+
     for(size_t t =0; t < m_num_total_gridpoints; t++){
 
         time_t start_time = time(0);
@@ -382,6 +383,7 @@ int SBNfeld::FullFeldmanCousins(){
 
         //Grab the MC CV likelihood
         std::vector<double> this_likelihood_vector = this->PerformIterativeGridFit(m_cv_spec_grid.at(t)->f_collapsed_vector ,t , inverse_background_collapsed_covariance_matrix,true);
+
         this_likelihood_vector.erase(this_likelihood_vector.begin(), this_likelihood_vector.begin() + 3);
         double this_min = *std::min_element(this_likelihood_vector.begin(), this_likelihood_vector.end()) ;
         for(auto &v: this_likelihood_vector){
@@ -449,6 +451,7 @@ int SBNfeld::FullFeldmanCousins(){
         for(int&v:vec_bf_pt)  h_bf_pt.Fill((double)v);
 
         fout->cd();
+        g_likelihood->Write(("likelihood"+identifier).c_str()); 
         h_delta_chi.Write();
         h_cumulative_delta_chi->Write();
         h_bf_val.Write();
@@ -724,7 +727,6 @@ std::vector<double> SBNfeld::PerformIterativeGridFit(const std::vector<float> &d
     //Step 1.0 Find the global_minimum_for this universe. 
     double chi_min = DBL_MAX;
     for(size_t r =0; r < m_num_total_gridpoints; r++){
-
 
         double detL = UpdateInverseCovarianceMatrixCNP(r, datavec, inverse_current_collapsed_covariance_matrix, m_sbnchi_grid.at(grid_pt));
         double chi_tmp = this->CalcChi(datavec, m_cv_spec_grid[r]->collapsed_vector, inverse_current_collapsed_covariance_matrix);// + detL; comment in for LogDet(M)

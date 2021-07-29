@@ -339,6 +339,7 @@ int main(int argc, char* argv[])
             TTree *t =  (TTree*)fin->Get(("ttree_"+std::to_string(i)).c_str());
             TH1D * cumul = (TH1D*)fin->Get(("delta_chi2_"+std::to_string(i)+"_cumulative").c_str());
             TH1D * h_bfval = (TH1D*)fin->Get(("bf_value_"+std::to_string(i)).c_str());//Added by Ivan
+            
             TGraph* g_likelihood = (TGraph*)fin->Get(("likelihood_"+std::to_string(i)).c_str());
 
             for(int p =0; p< plotting_pvals.size(); ++p){
