@@ -727,7 +727,7 @@ std::vector<double> SBNfeld::PerformIterativeGridFit(const std::vector<float> &d
 
 
         double detL = UpdateInverseCovarianceMatrixCNP(r, datavec, inverse_current_collapsed_covariance_matrix, m_sbnchi_grid.at(grid_pt));
-        double chi_tmp = this->CalcChi(datavec, m_cv_spec_grid[r]->collapsed_vector, inverse_current_collapsed_covariance_matrix) + detL;
+        double chi_tmp = this->CalcChi(datavec, m_cv_spec_grid[r]->collapsed_vector, inverse_current_collapsed_covariance_matrix);// + detL; comment in for LogDet(M)
 
         //std::cout<<"PT: "<<r<<" "<<" Chi: "<<chi_tmp<<" Curr Min "<<chi_min<<" @ "<<best_grid_point<<std::endl;
    
