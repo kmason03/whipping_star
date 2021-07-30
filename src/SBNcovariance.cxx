@@ -7,6 +7,36 @@
 
 using namespace sbn;
 
+SBNcovariance::SBNcovariance(std::string xmlname, std::string tag): SBNconfig(xmlname), output_tag(tag){
+    otag = "SBN covariance::SBNcovariance\t||\t";
+    std::cout << otag << "Start with existing covariance matrix. " << std::endl;
+    std::cout << otag << "Output root file will be " << output_tag << ".root" << std::endl;
+
+    bool is_test = false;
+    if(is_test){
+	TFile* test_file = new TFile("/uboone/app/users/gge/singlephoton/whipping_star/working_directory/SPmodule_test/grab_sub_covariance_matrix_test/TEST_covariance.root", "recreate");
+	TMatrixT<double> test_matrix(num_bins_total, num_bins_total); 
+
+	for(size_t i = 0, accumu_index=0; i != num_channels; ++i){
+	    for(size_t j =0; j!= num_subchannels[i]*num_bins[i]; ++ j){
+	        test_matrix(accumu_index+j, accumu_index+j ) = i+1;
+	    }
+	    accumu_index+=num_subchannels[i]*num_bins[i];
+	}	
+
+        for(size_t i =0; i!=num_bins_total; ++i){
+	    for(size_t j =0; j!=num_bins_total; ++j){
+	       if(i!=j) test_matrix(i,j) = (test_matrix(i,i)+test_matrix(j,j))/2.0;
+	    }
+	}
+
+        test_file->cd();
+	test_matrix.Write("frac_covariance");
+	test_file->Close();
+    }
+}
+
+
 // for single photon: when we use root files with systematics already applied.
 // usually 'useuniverse' is set to 'false' in this case.
 SBNcovariance::SBNcovariance(std::string xmlname, bool useuniverse) : SBNconfig(xmlname, true, useuniverse) {
@@ -2210,3 +2240,87 @@ SBNcovariance::SBNcovariance(std::string xmlname) : SBNconfig(xmlname) {
 	
 	fout->Close();
     }
+
+
+void SBNcovariance::GrabSubMatrix(std::string filename, std::string matrix_name, const std::vector<std::string>& channel_list){
+    otag = "SBN covariance::GrabSubMatrix\t||\t";
+    std::cout << otag << "Input matrix: " << matrix_name << " from file " << filename << std::endl;
+    std::cout << otag << "Form output matrix for channels: " << std::endl;
+    for(auto &ch: channel_list)
+	std::cout << otag << "\t\t" << ch << std::endl;
+
+
+    //grab input matrix
+    TFile* fin = new TFile(filename.c_str(), "read");
+    TMatrixT<double>* matrix_in = (TMatrixT<double>*)fin->Get(matrix_name.c_str());
+    std::cout << otag << "Successfully grab input matrix, size: " << matrix_in->GetNrows() << "x" << matrix_in->GetNcols() << std::endl; 
+    if(matrix_in->GetNrows() != matrix_in->GetNcols()) 
+	throw std::runtime_error("Input matrix has different number of rows/cols");
+
+ 
+    //form new matrix   
+    int output_matrix_dimension = 0;
+    std::vector<size_t> channel_bin_start;
+    std::vector<size_t> channel_num_bin;
+    for(auto &ch : channel_list){
+	size_t bin_start_index = 0;
+	bool bool_found_channel = false;
+
+        for(size_t i = 0; i != num_channels; ++i){
+	    if(channel_names[i] == ch){
+		channel_bin_start.push_back(bin_start_index);
+		channel_num_bin.push_back(num_subchannels[i]*num_bins[i]);
+		output_matrix_dimension += channel_num_bin.back();;
+		bool_found_channel = true;
+		break;
+	    }else{
+	        bin_start_index += num_subchannels[i]*num_bins[i];
+	    }
+       }
+
+       if(!bool_found_channel) std::cout << otag << "WARNING:: Do not found channel: " << ch << "in the xml" << std::endl; 
+    }
+
+    TMatrixT<double> output_matrix(output_matrix_dimension*num_detectors*num_modes, output_matrix_dimension*num_detectors*num_modes);
+
+
+    //now, start to set the content of the matrix
+
+    //first, iterate through row, then iterate through columns
+    size_t running_matrix_index_i = 0;
+    for(size_t mode_i = 0 ; mode_i != num_modes; ++mode_i){
+        for(size_t det_i =0; det_i!= num_detectors; ++det_i){
+
+	    size_t base_index_i  = num_bins_mode_block*mode_i + num_bins_detector_block * det_i;
+	    for(size_t chan_i = 0; chan_i != channel_bin_start.size(); ++ chan_i){
+
+	 	size_t original_matrix_bin_start_i = base_index_i + channel_bin_start[chan_i];
+		size_t running_matrix_index_j = 0;
+
+		for(size_t mode_j = 0; mode_j != num_modes; ++mode_j){
+		    for(size_t det_j = 0; det_j != num_detectors; ++det_j){
+			size_t base_index_j = num_bins_mode_block*mode_j + num_bins_detector_block * det_j;
+
+			for(size_t chan_j = 0; chan_j != channel_bin_start.size(); ++ chan_j){
+			    size_t original_matrix_bin_start_j = base_index_j + channel_bin_start[chan_j];
+
+			    const auto &sub_matrix = matrix_in->GetSub(original_matrix_bin_start_j, original_matrix_bin_start_j+channel_num_bin[chan_j]-1, original_matrix_bin_start_i, original_matrix_bin_start_i+channel_num_bin[chan_i]-1);
+			    output_matrix.SetSub(running_matrix_index_j, running_matrix_index_i, sub_matrix);
+			    running_matrix_index_j += channel_num_bin[chan_j];
+			}
+		    }
+		}
+
+		running_matrix_index_i += channel_num_bin[chan_i];
+
+	    }	     
+        }
+    }
+
+    std::cout << otag << "Write out covariance matrix file: " << output_tag<<".root" << std::endl;
+    TFile* fout = new TFile((output_tag+".root").c_str(), "recreate");
+    fout->cd();
+    output_matrix.Write(matrix_name.c_str());
+    fout->Close();
+    fin->Close();
+}
