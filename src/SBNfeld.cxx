@@ -575,7 +575,6 @@ int SBNfeld::CompareToData(SBNspec *datain, std::vector<double> minp, std::vecto
            for(int i=0; i< pvals.size();i++){
                if(p>=100.0*pvals[i] && resulting_cf_upper[i]<0 ){
                    resulting_cf_upper[i]=vv;
-                           
                }
            }
     }
@@ -587,12 +586,11 @@ int SBNfeld::CompareToData(SBNspec *datain, std::vector<double> minp, std::vecto
            }
     }
 
-    std::cout<<"Plotting CF's "<<std::endl;
+    std::cout<<"Plotting CF's. This is just for plotting purposes."<<std::endl;
     for(int i=0; i< pvals.size();i++){
             std::cout<<i<<" "<<pnams[i]<<" [ "<<resulting_cf_lower[i]<<" , "<<resulting_cf_upper[i]<<" ] "<<std::endl;
     }
 
-    
     
     
     TCanvas*c = new TCanvas("c","c",1600,800);
