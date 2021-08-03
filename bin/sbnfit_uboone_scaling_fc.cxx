@@ -552,8 +552,10 @@ int main(int argc, char* argv[])
             std::cout<<"Grid Pt: "<<i<<", ScaleFactor: "<<vec_grid[i][0]<<std::endl;
             std::cout<<"- Median: "<<bfval_v[i]<<std::endl;
             for(int p=0; p< plotting_pvals.size();++p){
+
                 double measured_val = vec_grid[i][0];
-                std::vector<double> reg = myfeld.getConfidenceRegion(gmins[plotting_pvals.size()-p-1],gmaxs[plotting_pvals.size()-p-1],measured_val);
+                //std::vector<double> reg = myfeld.getConfidenceRegion(gmins[plotting_pvals.size()-p-1],gmaxs[plotting_pvals.size()-p-1],measured_val);
+                std::vector<double> reg = myfeld.getConfidenceRegion(v_min[p][i],v_max[p][i],measured_val);
                 std::cout<<"-- CL: "<<plotting_pvals[p]<<"  Sigma: "<<sqrt(2)*TMath::ErfInverse(plotting_pvals[p])<<"  ConfidenceInterval: ["<<reg[0]<<" -> "<<reg[1]<<"]"<<std::endl;
             }
         }

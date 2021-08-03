@@ -147,6 +147,7 @@ namespace sbn{
        
 
         std::vector<double> getConfidenceRegion(TGraph *gmin, TGraph *gmax,double val);
+        std::vector<double> getConfidenceRegion(double high, double low,double val);
         
         int AddFlatDetSystematic(double percent);
         std::vector<TGraph*> LoadFCMaps(std::string filein);

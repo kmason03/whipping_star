@@ -1135,8 +1135,10 @@ std::vector<double> SBNfeld::getConfidenceRegion(TGraph *gmin, TGraph *gmax, dou
     //Updated function to guarrentee to return grid points, and checks to ensure never knowlingly undercover. 
 
     double high = gmin->Eval(val);
-    double low = gmax->Eval(val);;
+    double low = gmax->Eval(val);
+
     std::vector<double> ret = {-999,-999};
+    std::cout<<val<<" "<<high<<" "<<low<<std::endl;
 
     for(int p=0; p<  m_grid.f_dimensions[0].f_points.size();p++){
         if(m_grid.f_dimensions[0].f_points[p] >= low){
@@ -1154,6 +1156,70 @@ std::vector<double> SBNfeld::getConfidenceRegion(TGraph *gmin, TGraph *gmax, dou
     }
 
     for(int p= m_grid.f_dimensions[0].f_points.size()-1; p>=0;p--){
+    
+    std::cout<<p<<" "<<m_grid.f_dimensions[0].f_points[p]<<" "<<high<<std::endl;
+
+        if(m_grid.f_dimensions[0].f_points[p] <= high){
+                if(p==m_grid.f_dimensions[0].f_points.size()-1){
+                    ret[1] = m_grid.f_dimensions[0].f_points[m_grid.f_dimensions[0].f_points.size()-1];
+                    break;
+                }
+                if(m_grid.f_dimensions[0].f_points[p] == high){
+                    ret[1] = m_grid.f_dimensions[0].f_points[p];
+                    break;
+                }
+                    ret[1] = m_grid.f_dimensions[0].f_points[p+1];
+                break;
+        }
+    }
+
+    //std::cout<<"Before "<<high<<" "<<low<<std::endl;
+    //std::cout<<"After "<<ret[0]<<" "<<ret[1]<<std::endl;
+    if(high > ret[1] && high < m_grid.f_dimensions[0].f_points.back() ){
+        std::cout<<"ERROR the graph high point "<<high<<" is smallerr than the assigned grid point "<<ret[1]<<std::endl;
+        exit(EXIT_FAILURE);
+    }
+    if(low < ret[0] && low > m_grid.f_dimensions[0].f_points.front()){
+        std::cout<<"ERROR the graph low point "<<low<<" is larger than the assigned grid point "<<ret[0]<<std::endl;
+        exit(EXIT_FAILURE);
+    }
+    if(ret[0]>ret[1]){
+        std::cout<<"ERROR the graph low point "<<ret[0]<<" is larger than the high point "<<ret[1]<<std::endl;
+        exit(EXIT_FAILURE);
+    }
+
+    return ret;
+}
+
+
+std::vector<double> SBNfeld::getConfidenceRegion(double low, double high,  double val){
+    //Updated function to guarrentee to return grid points, and checks to ensure never knowlingly undercover. 
+
+//    double high = gmin->Eval(val);
+//    double low = gmax->Eval(val);
+
+    std::vector<double> ret = {-999,-999};
+    //std::cout<<val<<" "<<high<<" "<<low<<std::endl;
+
+    for(int p=0; p<  m_grid.f_dimensions[0].f_points.size();p++){
+        if(m_grid.f_dimensions[0].f_points[p] >= low){
+                if(p==0){
+                    ret[0] = m_grid.f_dimensions[0].f_points.front();
+                    break;
+                }
+                if(m_grid.f_dimensions[0].f_points[p] == low){
+                    ret[0] = m_grid.f_dimensions[0].f_points[p];
+                    break;
+                }
+                ret[0] = m_grid.f_dimensions[0].f_points[p-1];
+                break;
+        }
+    }
+
+    for(int p= m_grid.f_dimensions[0].f_points.size()-1; p>=0;p--){
+    
+    //std::cout<<p<<" "<<m_grid.f_dimensions[0].f_points[p]<<" "<<high<<std::endl;
+
         if(m_grid.f_dimensions[0].f_points[p] <= high){
                 if(p==m_grid.f_dimensions[0].f_points.size()-1){
                     ret[1] = m_grid.f_dimensions[0].f_points[m_grid.f_dimensions[0].f_points.size()-1];
