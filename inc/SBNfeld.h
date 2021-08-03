@@ -49,7 +49,7 @@ namespace sbn{
         int m_num_total_gridpoints;
 
         std::vector<std::vector<double>> m_vec_grid;
-        std::vector<SBNspec*> m_cv_spec_grid;
+        //std::vector<SBNspec*> m_cv_spec_grid;//TMP public
         std::vector<SBNchi*> m_sbnchi_grid;
 
         TMatrixT<double> * m_full_fractional_covariance_matrix;
@@ -79,6 +79,9 @@ namespace sbn{
         double global_scale;
 
         public:
+        std::vector<SBNspec*> m_cv_spec_grid;
+
+
 
         SBNfeld(NGrid ingrid, std::string intag,  std::string inxmlname) : SBNconfig(inxmlname), m_grid(ingrid), tag(intag) {
             m_vec_grid = m_grid.GetGrid();
