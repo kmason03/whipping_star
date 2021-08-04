@@ -110,7 +110,9 @@ int main(int argc, char* argv[])
                 std::cout<<"---------------------------------------------------"<<std::endl;
                 std::cout<<"--- Required arguments: ---"<<std::endl;
                 std::cout<<"\t-x\t--xml\t\tInput configuration .xml file for SBNconfig"<<std::endl;
-                std::cout<<"\t-t\t--tag\t\tA unique tag to identify the outputs [Default to TEST]"<<std::endl;
+                std::cout<<"\t-t\t--tag\t\tA unique tag to identify the outputs [Default to DEFAULT_TAG]"<<std::endl;
+		std::cout<<"\t-c\t--covar\t\tUse with option -s.\tInput: covariance root file,matrix name. Given selected channels, generate a new covariance matrix for these channels from submatrices of the given matrix"<< std::endl;
+		std::cout<<"\t-s\t--selectchannel\t\tUse together with option -c. \tInput: comma separated channel names" << std::endl;
                 std::cout<<"--- Optional arguments: ---"<<std::endl;
                 std::cout<<"\t-d\t--detsys\t use root files with systematically varied histograms (detsys) to build the covariance matrix" << std::endl;
                 std::cout<<"\t-p\t--printall\tRuns in BONUS print mode, making individual spectra plots for ALLVariations. (warning can take a while!) "<<std::endl;
