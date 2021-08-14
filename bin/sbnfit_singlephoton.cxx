@@ -70,6 +70,7 @@ int main(int argc, char* argv[])
         {"modifycv", 		required_argument, 	0, 'p'},
         {"mode", 		required_argument,	0, 'm'},
         {"data", 		required_argument,	0, 'd'},
+	{"asimov",		required_argument,      0, 'a'},
         {"covariancematrix",    required_argument,      0, 'c'},
         {"geniematrix",         required_argument,      0, 'g'},
         {"flat",                required_argument,      0,'f'},
@@ -100,6 +101,7 @@ int main(int argc, char* argv[])
     bool bool_modify_genie_cv = false;   //modify genie CV before fitting
     bool bool_gen_sensitivity_curve = false;      //if the plot is intend to be a sensitivity curve
     std::string data_filename;
+    std::string asimov_dataset;  //string containing information about the Asimov data
     std::string covmatrix_file;  //root file containing total covariance matrix
     std::string genie_matrix_file;  //root file containing flux/XS covariance matrix
     std::string det_matrix_file; //root file containing each det syst covar matrix;
@@ -110,7 +112,7 @@ int main(int argc, char* argv[])
 
     while(iarg != -1)
     {
-        iarg = getopt_long(argc,argv, "x:m:t:d:c:g:i:p:f:szeh", longopts, &index);
+        iarg = getopt_long(argc,argv, "x:m:t:d:c:g:i:p:a:f:szeh", longopts, &index);
 
         switch(iarg)
         {
@@ -166,6 +168,9 @@ int main(int argc, char* argv[])
             case 'i':
                 interpolation_number = (int)strtod(optarg, NULL);
                 break;
+	    case 'a':
+		asimov_dataset = optarg;
+		break;
             case '?':
             case 'h':
                 std::cout<<"---------------------------------------------------"<<std::endl;
@@ -178,10 +183,13 @@ int main(int argc, char* argv[])
                 std::cout<<"\t-m\t--option\t\t gen --- generate energy/momentum dependent pre-scaling file "<<std::endl;
                 std::cout<<"\t-m\t--option\t\t fit --- perform the fit to extract BF value "<<std::endl;
                 std::cout<<"\t-m\t--option\t\t plot --- read files and draw plots "<<std::endl;
+                std::cout<<"\t-m\t--option\t\t plot,sensitivity --- read files and draw plots with sensitivity banner overlaid "<<std::endl;
 		std::cout<<"\t-c\t--covariancematrix\t\tInput fractional covariance matrix"<< std::endl;
 		std::cout<<"\t-g\t--geniematrix\t\tObsolete: Input FluxXS covariance matrix to remove genie uncertainty"<< std::endl;
                 std::cout<<"--- Optional arguments: ---"<<std::endl;
+		std::cout<<"\t-t\t--tag\t\t Name tag for output [default to: NoTag]" << std::endl;
                 std::cout<<"\t-f\t--flat\t\t Input flat systematic fractional covariance matrix"<<std::endl;
+		std::cout<<"\t-a\t--asimov\t\t Input configurations for Asimov dataset, in the form of, eg. NCDelta,3,NCpi0,2" << std::endl;
                 std::cout<<"\t-s\t--stat\t\tStat only runs"<<std::endl;
                 std::cout<<"\t-e\t--edependent\t\tRun in energy-dependent mode, for extraction of NCpi0 non-coherent"<<std::endl;
 		std::cout<<"\t-z\t--zeroout\t\tZero out correlations between subchannels" << std::endl;
@@ -246,6 +254,7 @@ int main(int argc, char* argv[])
 		//load CV, data and prescaled spectra
 		sp.LoadCV();
 		if(input_data) sp.LoadData(data_filename);
+		else sp.SetupAsimovDataset(asimov_dataset);
 
 		//setup systematic fractional covariance matrix
 		if(bool_stat_only) sp.SetStatOnly();
@@ -271,14 +280,17 @@ int main(int argc, char* argv[])
 		    //sp.ZeroOutGenieCorrelation("NCDeltaLEE");
 		}
 
+		//Obsolete
 		//if we want to modify NCpi0 to match the result from NCpi0 normalization fit before performing a combined fit
 		if(bool_modify_genie_cv){
 		  sp.ModifyCV(delta_scaling);
 		  //sp.ModifyCV(delta_scaling, {1.0, 1.0});
 		}
+
+
 		sp.LoadSpectraApplyFullScaling(); 
-		//sp.CalcChiGridScanShapeOnlyFit();
-		sp.CalcChiGridScan();
+		//sp.CalcChiGridScan();
+		sp.CalcChiGridScanVaryMatrices();
 	}else if(mode == "plot"){
 		sp.GrabFitMap();
 		if(interpolation_number != -99) sp.SetInterpolationNumber(interpolation_number);

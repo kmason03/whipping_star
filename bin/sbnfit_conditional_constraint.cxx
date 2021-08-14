@@ -464,7 +464,9 @@ int main(int argc, char* argv[])
 		   //reset error bars
 		   h_original->SetBinError(bin, sqrt(sub_unconstrain(bin-1, bin-1)));
 		   h_constrain->SetBinError(bin, sqrt(sub_constrain(bin-1, bin-1)));
-		   h_data->SetBinError(bin, sqrt(h_data->GetBinContent(bin)));
+
+		   h_data->SetBinErrorOption(TH1::kPoisson);  //use the Poisson error for data point
+		   //h_data->SetBinError(bin, sqrt(h_data->GetBinContent(bin)));
 	       }
 
 

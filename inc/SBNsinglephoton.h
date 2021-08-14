@@ -78,6 +78,7 @@ namespace sbn{
         TMatrixT<double> * m_genie_fractional_covariance_matrix;   //genie only covariance matrix
 
 	SBNspec* m_cv_spectrum;   //genie CV spectra
+	std::string asimov_dataset;
 	SBNspec* m_data_spectrum; // data spectra
         SBNchi*  m_chi;
 
@@ -130,7 +131,8 @@ namespace sbn{
 
 
 	int CalcChiGridScanShapeOnlyFit();  //calculate chi2 surface for NCpi0 fit.
-	int CalcChiGridScan();  //simply grid scan with one systematic covariance matrix
+	int CalcChiGridScan();  //simply grid scan with covariance matrix fixed during each iteration
+	int CalcChiGridScanVaryMatrices();  //simply grid scan with covariance matrix varied at each grid point
 	double CalcChi(bool use_cnp);
 
 	int SetStatOnly();
@@ -144,6 +146,7 @@ namespace sbn{
 	void ZeroOutOffDiagonal();
 
 	int LoadCV();
+	void SetupAsimovDataset(const std::string &);
 	int LoadData(std::string filename);
 	int SetPolyGrid(NGrid ingrid);
 	
@@ -175,6 +178,9 @@ namespace sbn{
 	void MaskScaleFactor(double&);
 	void DrawMarginalizedChi(std::vector<TH1D*> vec_hist, std::string intag, bool sensitivity=false, std::vector<double> bf={});
 	void LocateCVGlobalIndex();
+	void CheckCVLoad();
+	void CheckNumScaledSpectra();
+	void CheckDataLoad();
 
     };
 

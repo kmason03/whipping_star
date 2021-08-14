@@ -42,8 +42,8 @@ SBNsinglephoton::SBNsinglephoton(std::string xmlname, std::string intag, NGrid i
 
     //initialize m_chi
     m_chi = new SBNchi(this->xmlname);
-    //m_chi->is_stat_only = true; //to reproduce NCpi0 fit result in technote v6.
-    m_chi->is_stat_only = false;
+    //m_chi->is_stat_only = true; //not include MC intrinsic error, to reproduce NCpi0 fit result in technote v6.
+    m_chi->is_stat_only = false;  //do include MC intrinsic error
     LocateCVGlobalIndex();
 }
 
@@ -68,16 +68,17 @@ int SBNsinglephoton::SetPolyGrid(NGrid in_polygrid){
 
 int SBNsinglephoton::OpenFiles(){
 
+    otag = "SBNsinglephoton::OpenFiles\t|| ";
     num_files = montecarlo_file.size();
     montecarlo_additional_weight.resize(num_files,1.0);
     montecarlo_additional_weight_formulas.resize(num_files);
 
 
-    if(is_verbose) std::cout<< "SBNsinglephoton::OpenFiles\t|| Open the files"<< std::endl;
+    if(is_verbose) std::cout<< otag << "Open the files"<< std::endl;
     for(auto &fn: montecarlo_file){
         files.push_back(new TFile(fn.c_str()));
         if(files.back()->IsZombie() || !files.back()->IsOpen()){
-            std::cout<<"SBNsinglephoton::OpenFiles\t|| ERROR! Failed to open the file "<<fn<<std::endl;
+            std::cout<<otag << "ERROR! Failed to open the file "<<fn<<std::endl;
             exit(EXIT_FAILURE);
         }
     }
@@ -89,7 +90,7 @@ int SBNsinglephoton::OpenFiles(){
         std::cout<<"--TTree has "<<trees.back()->GetEntries()<<" entries. "<<std::endl;
     }
 
-    if(is_verbose) std::cout << "SBNsinglephoton::OpenFiles\t||Setup any friendtrees" << std::endl;
+    if(is_verbose) std::cout << otag <<  "Setup any friendtrees" << std::endl;
     for(int i=0; i<montecarlo_file.size(); i++){
         const auto& fn = montecarlo_file.at(i);
         auto montecarlo_file_friend_treename_iter = montecarlo_file_friend_treename_map.find(fn);
@@ -156,7 +157,7 @@ int SBNsinglephoton::OpenFiles(){
     }
 
     m_file_open= true;
-    if(is_verbose) std::cout << "SBNsinglephoton::OpenFiles\t|| Finish opening files and setting up TTrees " << std::endl; 
+    if(is_verbose) std::cout << otag << "Finish opening files and setting up TTrees " << std::endl; 
 
     return 0;
 }
@@ -177,7 +178,8 @@ int SBNsinglephoton::CloseFiles(){
 
 int SBNsinglephoton::ScaleSpectrum(SBNspec* inspec, double flat_factor, std::vector<double>& param){
 
-    //if(is_verbose) std::cout<<"SBNsinglephoton::ScaleSpectrum\t|| -----------------------------------------------\n";
+    otag="SBNsinglephoton::ScaleSpectrum\t|| ";
+    //if(is_verbose) std::cout << otag <<"-----------------------------------------------\n";
 
     for(int j=0;j<num_files;j++){
 
@@ -185,7 +187,7 @@ int SBNsinglephoton::ScaleSpectrum(SBNspec* inspec, double flat_factor, std::vec
         for(int i=0; i< std::min(  montecarlo_maxevents.at(j)  ,nentries.at(j)); i++){
             trees.at(j)->GetEntry(i);
 
-            //if(i%1000==0) std::cout<<"SBNsinglephoton::ScaleSpectrum\t|| On event: "<<i<<" of "<<nentries[j]<<" from File: "<<montecarlo_file[j]<<std::endl;
+            //if(i%1000==0) std::cout<<otag << "On event: "<<i<<" of "<<nentries[j]<<" from File: "<<montecarlo_file[j]<<std::endl;
 
             double global_weight = 1.0;
             if( montecarlo_additional_weight_bool[j]){
@@ -197,7 +199,7 @@ int SBNsinglephoton::ScaleSpectrum(SBNspec* inspec, double flat_factor, std::vec
 
 
             if(std::isinf(global_weight) || global_weight != global_weight){
-                std::cout<<"SBNsinglephoton::ScaleSpectrum\t|| ERROR  error @ "<<i<<" in File "<<montecarlo_file.at(j)<<" as its either inf/nan: "<<global_weight<<std::endl;
+                std::cout<<otag << "ERROR  error @ "<<i<<" in File "<<montecarlo_file.at(j)<<" as its either inf/nan: "<<global_weight<<std::endl;
                 exit(EXIT_FAILURE);
             }
 
@@ -229,12 +231,13 @@ int SBNsinglephoton::ScaleSpectrum(SBNspec* inspec, double flat_factor, std::vec
 }
 
 int SBNsinglephoton::PreScaleSpectrum(std::string xmlname, double flat_factor, std::vector<double>& param){
+    otag="SBNsinglephoton::PreScaleSpectrum\t|| ";
     SBNspec tm(xmlname,-1,false);
     SBNspec temp_cv_spectrum = tm;
     SBNspec spec_prescale  = tm;   //prescaled spectrum
 
-    std::cout<<"SBNsinglephoton::PreScaleSpectrum\t|| -----------------------------------------------\n";
-    std::cout<<"SBNsinglephoton::PreScaleSpectrum\t|| -----------------------------------------------\n";
+    std::cout<<otag << "-----------------------------------------------\n";
+    std::cout<<otag << "-----------------------------------------------\n";
 
     for(int j=0;j<num_files;j++){
 
@@ -242,7 +245,7 @@ int SBNsinglephoton::PreScaleSpectrum(std::string xmlname, double flat_factor, s
         for(int i=0; i< std::min(  montecarlo_maxevents.at(j)  ,nentries.at(j)); i++){
             trees.at(j)->GetEntry(i);
 
-            if(i%100==0) std::cout<<"SBNsinglephoton::PreScaleSpectrum\t|| On event: "<<i<<" of "<<nentries[j]<<" from File: "<<montecarlo_file[j]<<std::endl;
+            if(i%100==0) std::cout<<otag << "On event: "<<i<<" of "<<nentries[j]<<" from File: "<<montecarlo_file[j]<<std::endl;
 
             double global_weight = 1.0;
             if( montecarlo_additional_weight_bool[j]){
@@ -254,7 +257,7 @@ int SBNsinglephoton::PreScaleSpectrum(std::string xmlname, double flat_factor, s
 
 
             if(std::isinf(global_weight) || global_weight != global_weight){
-                std::cout<<"SBNsinglephoton::PreScaleSpectrum\t|| ERROR  error @ "<<i<<" in File "<<montecarlo_file.at(j)<<" as its either inf/nan: "<<global_weight<<std::endl;
+                std::cout<<otag<<"ERROR  error @ "<<i<<" in File "<<montecarlo_file.at(j)<<" as its either inf/nan: "<<global_weight<<std::endl;
                 exit(EXIT_FAILURE);
             }
 
@@ -287,7 +290,7 @@ int SBNsinglephoton::PreScaleSpectrum(std::string xmlname, double flat_factor, s
     } // end of nfile loop
 
 
-    if(is_verbose) std::cout<< "SBNsinglephoton::PreScaleSpectrum\t||Write out spectra" << std::endl;
+    if(is_verbose) std::cout<< otag << "Write out spectra" << std::endl;
     // write out prescaled spectra
     std::ostringstream prescale_tag;
     if(flat_factor != 0) prescale_tag << "Flat_" << std::fixed<< std::setprecision(3) << flat_factor << "_PreScaled";
@@ -313,16 +316,17 @@ int SBNsinglephoton::PreScaleSpectrum(std::string xmlname, std::vector<double>& 
 
 
 int SBNsinglephoton::GeneratePreScaledSpectra(){
+    otag="SBNsinglephoton::GeneratePreScaledSpectra\t|| ";
     if(!m_file_open) this->OpenFiles();
     if(!m_bool_poly_grid){
-        std::cout << "SBNsinglephoton::GeneratePreScaledSpectra\t|| No grid for polynomial scaling present------------------\n"<< std::endl;
-        std::cout << "SBNsinglephoton::GeneratePreScaledSpectra\t|| Gonna generate only CV, then exiting GeneratePreScaledSpectra ..." << std::endl;
+        std::cout << otag<< "No grid for polynomial scaling present------------------\n"<< std::endl;
+        std::cout << otag<< "Gonna generate only CV, then exiting GeneratePreScaledSpectra ..." << std::endl;
         std::vector<double> empty{};
         this->PreScaleSpectrum(xmlname, empty);
     }else{
 
-	std::cerr << "SBNsinglephoton::GeneratePreScaledSpectra\t|| This is obsolete, please use LoadSpectraApplyFullScaling() funtion to generate scaled SBNspec! " << std::endl;
-	std::cerr << "Exiting... " << std::endl;
+	std::cerr << otag << "This is obsolete, please use LoadSpectraApplyFullScaling() funtion to generate scaled SBNspec! " << std::endl;
+	std::cerr << otag << "Exiting... " << std::endl;
 	exit(EXIT_FAILURE);
  
         for(int i=0; i< m_poly_total_gridpoints; i++){
@@ -339,7 +343,8 @@ int SBNsinglephoton::GeneratePreScaledSpectra(){
 // this function is safe to use when we have poly grid
 // it handles MC intrinsic error correctly
 int SBNsinglephoton::LoadSpectraOnTheFly(){
-	if(is_verbose) std::cout << "SBNsinglephoton::LoadSpectraOnTheFly\t||\tCalculate and Load scaled spectra on the fly" << std::endl;
+	otag="SBNsinglephoton::LoadSpectraOnTheFly\t|| ";
+	if(is_verbose) std::cout << otag << "Calculate and Load scaled spectra on the fly" << std::endl;
 
 	if(!m_file_open) this->OpenFiles();
 	int flat_grid_index=-1;
@@ -356,7 +361,7 @@ int SBNsinglephoton::LoadSpectraOnTheFly(){
 
 	//calculate the flat+poly part
 	int vec_index=0;
-	if(is_verbose) std::cout << "SBNsinglephoton::LoadSpectraOnTheFly\t||\tGenerating flat+poly part of the spectra"<< std::endl;
+	if(is_verbose) std::cout << otag << "Generating flat+poly part of the spectra"<< std::endl;
 	SBNspec tm(xmlname, -1, false);
 	std::vector<SBNspec> m_prescale_spec(m_poly_total_gridpoints*flat_grid_npoint, tm);	
 	for(int i=0; i<m_poly_total_gridpoints; i++){
@@ -371,7 +376,7 @@ int SBNsinglephoton::LoadSpectraOnTheFly(){
 
 	vec_index=0;
 	//get the total scaled spectra
-	if(is_verbose) std::cout << "SBNsinglephoton::LoadSpectraOnTheFly\t||\tGrab the whole scaled spectra " <<std::endl;
+	if(is_verbose) std::cout << otag << "Grab the whole scaled spectra " <<std::endl;
 	m_scaled_spec_grid.resize(m_total_gridpoints);
 	for(int i=0; i<m_poly_total_gridpoints; i++){
 	    for(int j=0; j<m_flat_total_gridpoints; j++){
@@ -405,7 +410,7 @@ int SBNsinglephoton::LoadSpectraOnTheFly(){
 
 
 int SBNsinglephoton::LoadSpectraApplyFullScaling(){
-
+    otag="SBNsinglephoton::LoadSpectraApplyFullScaling\t|| ";
     if(!m_bool_poly_grid){
 
         //SBNspec temp_cv = *m_cv_spectrum;
@@ -414,7 +419,7 @@ int SBNsinglephoton::LoadSpectraApplyFullScaling(){
         m_scaled_spec_grid.resize(m_total_gridpoints); 
 
     
-        std::cout<<"SBNsinglephoton::LoadSpectraApplyFullScaling\t|| Scale the spectra for the whole grid " << std::endl;
+        std::cout<<otag<<"Scale the spectra for the whole grid " << std::endl;
         for(int j=0; j< m_flat_total_gridpoints;++j){
             if(is_verbose && (j%1000 ==0)) std::cout << "On Point " << j <<"/"<<m_total_gridpoints << std::endl;
 
@@ -429,7 +434,7 @@ int SBNsinglephoton::LoadSpectraApplyFullScaling(){
 	    //m_scaled_spec_grid[j].Scale("NCDeltaRadOverlayLEE", 0.0); //to reproduce technote v6.0 NCpi0 fit result
         }
     }else{
-	std::cout << "SBNsinglephoton::LoadSpectraApplyFullScaling\t|| Involves poly grid, should load spectra on the fly" << std::endl;
+	std::cout << otag << "Involves poly grid, should load spectra on the fly" << std::endl;
         LoadSpectraOnTheFly(); 
     }
 
@@ -439,43 +444,10 @@ int SBNsinglephoton::LoadSpectraApplyFullScaling(){
 
 
 int SBNsinglephoton::CalcChiGridScanShapeOnlyFit(){
-    if(!m_bool_cv_spectrum_loaded){
-        std::cout << "SBNsinglephoton::CalcChiGridScanShapeOnlyFit\t|| CV spec hasn't been loaded yet, load CV..." << std::endl;
-        this->LoadCV();
-    }	
-
-    if(!m_bool_data_spectrum_loaded){
-	std::cout << "SBNsinglephoton::CalcChiGridScanShapeOnlyFit\t|| WARNING!! Data spec hasn't been loaded, will do a sensitivity study instead!" << std::endl;
-	m_data_spectrum  = new SBNspec(tag+"_CV.SBNspec.root", xmlname, false);
-	//m_data_spectrum->Scale("NCDeltaLEE", 0.0);
-	//m_data_spectrum->Scale("NCPi0Coh", 3.0);
-	//m_data_spectrum->Scale("NCPi0NotCoh", 0.8);
-	//SBNspec temp_data = *m_cv_spectrum;
-	//temp_data.Scale("NCDeltaLEE", 0.0);
-	//temp_data=*m_data_spectrum;
-	//this->PoissonFluctuation(m_data_spectrum);
-	if(m_bool_modify_cv){
-	    if(m_cv_delta_scaling>=1) m_data_spectrum->Scale("NCDeltaLEE", (m_cv_delta_scaling-1)*0.5);
-	    else if(m_cv_delta_scaling>=0){
-		m_data_spectrum->Scale("NCDeltaLEE",0.0);
-		m_data_spectrum->Scale("NCDelta",m_cv_delta_scaling);
-	    }else{
-		std::cout << "xDelta can't be negative!!" <<std::endl;
-		exit(EXIT_FAILURE);
-	    }
-	}
-	m_data_spectrum->WriteOut("ToyData_1g_2g_xDelta_"+std::to_string(m_cv_delta_scaling));
-
-    }else{
-	m_chi->DrawComparisonIndividual(*m_cv_spectrum, *m_data_spectrum, tag+"_CVvsData_NoErrorBar");
-    }    
-
-
-    if(m_scaled_spec_grid.size() != m_total_gridpoints){
-        std::cout << "SBNsinglephoton::CalcChiGridScanShapeOnlyFit\t|| ERROR!! # of scaled spectra: "<<m_scaled_spec_grid.size()<<" does NOT match grid size: " << m_total_gridpoints << " !!" <<std::endl;
-        exit(EXIT_FAILURE);
-    }
-
+    otag="SBNsinglephoton::CalcChiGridScanShapeOnlyFit\t|| ";
+    CheckCVLoad();
+    CheckDataLoad();
+    CheckNumScaledSpectra();
 
     SBNspec background_spectrum;
     SBNspec last_best_spectrum;
@@ -495,7 +467,7 @@ int SBNsinglephoton::CalcChiGridScanShapeOnlyFit(){
 
     //m_max_number_iterations = 5;
     for(int n_iter =0; n_iter < m_max_number_iterations; n_iter ++){
-        std::cout << "SBNsinglephoton::CalcChiGridScanShapeOnlyFit\t|| On fit iteration "<< n_iter << std::endl;
+        std::cout << otag << "On fit iteration "<< n_iter << std::endl;
         //reset everything at the biginning of each iteration
         best_chi = DBL_MAX;
         vec_chi.clear();
@@ -579,11 +551,11 @@ int SBNsinglephoton::CalcChiGridScanShapeOnlyFit(){
             }
         }
 
-        if(is_verbose) std::cout << "SBNsinglephoton::CalcChiGridScanShapeOnlyFit\t|| chi2 minimum :" << best_chi << " at point " << best_point << "/" << m_total_gridpoints << std::endl;
+        if(is_verbose) std::cout << otag << "chi2 minimum :" << best_chi << " at point " << best_point << "/" << m_total_gridpoints << std::endl;
 
         if(n_iter != 0){
             if(fabs(best_chi - last_best_chi) < m_chi_min_convergance_tolerance){
-                std::cout << "SBNsinglephoton::CalcChiGridScanShapeOnlyFit\t|| chi2 has converged with best chi2 value " << best_chi << " at point " << best_point << "/" << m_total_gridpoints << std::endl;
+                std::cout << otag << "chi2 has converged with best chi2 value " << best_chi << " at point " << best_point << "/" << m_total_gridpoints << std::endl;
                 break;
             }
         }
@@ -606,7 +578,7 @@ int SBNsinglephoton::CalcChiGridScanShapeOnlyFit(){
     }
 	
     m_map={{best_point, vec_chi}};
-    this->PrintOutFitInfo(m_map, "SBNsinglephoton::CalcChiGridScanShapeOnlyFit\t BF||"+tag, true);
+    this->PrintOutFitInfo(m_map, otag+"BF - "+tag, true);
     this->WriteOutInfo(m_map);
     this->CloseFiles();
     return 0;
@@ -615,39 +587,10 @@ int SBNsinglephoton::CalcChiGridScanShapeOnlyFit(){
 
 
 int SBNsinglephoton::CalcChiGridScan(){
-    if(!m_bool_cv_spectrum_loaded){
-        std::cout << "SBNsinglephoton::CalcChiGridScan\t|| CV spec hasn't been loaded yet, load CV..." << std::endl;
-        this->LoadCV();
-    }	
-
-    if(!m_bool_data_spectrum_loaded){
-	std::cout << "SBNsinglephoton::CalcChiGridScan\t|| WARNING!! Data spec hasn't been loaded, will do SAFE-MODE, aka sensitivity study instead!" << std::endl;
-	m_data_spectrum = new SBNspec(tag+"_CV.SBNspec.root", xmlname, false);
-	//*m_data_spectrum = *m_cv_spectrum;
-	//m_data_spectrum->Scale("NCPi0Coh", 3.0);
-        //m_data_spectrum->Scale("NCPi0NotCoh", 0.8);
-	m_data_spectrum->Scale("NCDelta", 1.0);
-	m_data_spectrum->CollapseVector();
-	m_data_spectrum->WriteOut("ToyData_xDelta_1");
-	//this->PoissonFluctuation(m_data_spectrum);
-	//if(m_bool_modify_cv) m_data_spectrum->Scale("NCDeltaLEE", m_cv_delta_scaling);
-	//if(m_bool_modify_cv) m_data_spectrum->Scale("NCDelta", m_cv_delta_scaling);
-	//m_data_spectrum->WriteOut("ToyData_xDelta_"+std::to_string(m_cv_delta_scaling));
-	//SBNspec temp_data = *m_cv_spectrum;
-	//temp_data.Scale("NCDeltaLEE", 0.0);
-	//temp_data.WriteOut(tag+"_CorrectedCV");
-	//temp_data.CompareSBNspecs(m_data_spectrum, tag+"_CorrectedCV_vs_Data");
-
-    }else{
-	m_chi->DrawComparisonIndividual(*m_cv_spectrum, *m_data_spectrum, tag+"_CVvsData_IntrinsicErrorOnly");
-    }    
-
-
-    if(m_scaled_spec_grid.size() != m_total_gridpoints){
-        std::cerr << "SBNsinglephoton::CalcChiGridScan\t|| ERROR!! # of scaled spectra: "<<m_scaled_spec_grid.size()<<" does NOT match grid size: " << m_total_gridpoints << " !!" <<std::endl;
-        exit(EXIT_FAILURE);
-    }
-
+    otag="SBNsinglephoton::CalcChiGridScan\t|| ";
+    CheckCVLoad();
+    CheckDataLoad();
+    CheckNumScaledSpectra();
 
     SBNspec last_best_spectrum;
     double best_chi, last_best_chi;
@@ -664,7 +607,7 @@ int SBNsinglephoton::CalcChiGridScan(){
     TMatrixT<double>* collapse_frac;
 
     for(int n_iter =0; n_iter < m_max_number_iterations; n_iter ++){
-        std::cout << "SBNsinglephoton::CalcChiGridScan\t|| On fit iteration "<< n_iter << std::endl;
+        std::cout << otag << "On fit iteration "<< n_iter << std::endl;
         //reset everything at the biginning of each iteration
         best_chi = DBL_MAX;
         vec_chi.clear();
@@ -730,11 +673,11 @@ int SBNsinglephoton::CalcChiGridScan(){
             }
         }
 
-        if(is_verbose) std::cout << "SBNsinglephoton::CalcChiGridScan\t|| chi2 minimum :" << best_chi << " at point " << best_point << "/" << m_total_gridpoints << std::endl;
+        if(is_verbose) std::cout << otag << "chi2 minimum :" << best_chi << " at point " << best_point << "/" << m_total_gridpoints << std::endl;
 
         if(n_iter != 0){
             if(fabs(best_chi - last_best_chi) < m_chi_min_convergance_tolerance){
-                std::cout << "SBNsinglephoton::CalcChiGridScan\t|| chi2 has converged with best chi2 value " << best_chi << " at point " << best_point << "/" << m_total_gridpoints << std::endl;
+                std::cout << otag << "chi2 has converged with best chi2 value " << best_chi << " at point " << best_point << "/" << m_total_gridpoints << std::endl;
                 break;
             }
         }
@@ -745,7 +688,7 @@ int SBNsinglephoton::CalcChiGridScan(){
 
 	if(n_iter ==0){
 		std::map<int, std::vector<double>> temp_map={{best_point, vec_chi}};
-		this->PrintOutFitInfo(temp_map, "SBNsinglephoton::CalcChiGridScan\t CV||"+tag, false);
+		this->PrintOutFitInfo(temp_map, otag+ "CV - "+tag, false);
 	}
     }//end loop for iteration
 
@@ -764,7 +707,77 @@ int SBNsinglephoton::CalcChiGridScan(){
         std::cout <<i << ": " << m_scaled_spec_grid[best_point].collapsed_vector[i] << "\t\t\t " << m_data_spectrum->collapsed_vector[i] << " \t\t\t " << m_cv_spectrum->collapsed_vector[i] << std::endl;
     }
     m_map={{best_point, vec_chi}};
-    this->PrintOutFitInfo(m_map, "SBNsinglephoton::CalcChiGridScan\t BF|| "+tag, true);
+    this->PrintOutFitInfo(m_map, otag+"BF - "+tag, true);
+    this->WriteOutInfo(m_map);
+    this->CloseFiles();
+    return 0;
+}
+
+
+
+int SBNsinglephoton::CalcChiGridScanVaryMatrices(){
+    CheckCVLoad();
+    CheckDataLoad();
+    CheckNumScaledSpectra();
+
+    otag="SBNsinglephoton::CalcChiGridScanVaryMatrices\t|| ";
+    std::cout << otag<<  "Start grid scan, with covariance matrix varied at each grid point" << std::endl; 
+
+    double best_chi = DBL_MAX;
+    int best_point;
+    std::vector<double> vec_chi;
+    TFile* fout = new TFile(Form("%s_fit_output.root", tag.c_str()), "recreate");  //save matrix plot etc.
+
+    m_full_fractional_covariance_matrix->Write("full_fractional_matrix");
+
+    TMatrixT<double> collapsed_full_systematic_matrix(num_bins_total_compressed, num_bins_total_compressed);
+    TMatrixT<double> total_covariance_matrix(num_bins_total_compressed, num_bins_total_compressed);
+    TMatrixT<double> inversed_total_covariance_matrix(num_bins_total_compressed, num_bins_total_compressed);
+
+    for(int i =0; i!= m_total_gridpoints; ++i){
+	if(i % 1000 == 0) std::cout << otag << "On Point " << i << "/" << m_total_gridpoints << std::endl;
+
+	//calculate the covariance matrix at grid point i
+	m_scaled_spec_grid[i].CollapseVector();
+	m_scaled_spec_grid[i].CalcErrorVector();	
+	collapsed_full_systematic_matrix = m_chi->FillSystMatrix(*m_full_fractional_covariance_matrix, m_scaled_spec_grid[i].full_vector, m_scaled_spec_grid[i].full_err_vector, true);	
+        //total_covariance_matrix = m_chi->AddStatMatrix(&collapsed_full_systematic_matrix, m_data_spectrum->collapsed_vector);	
+        total_covariance_matrix = m_chi->AddStatMatrixCNP(&collapsed_full_systematic_matrix, m_scaled_spec_grid[i].collapsed_vector, m_data_spectrum->collapsed_vector);
+	inversed_total_covariance_matrix= m_chi->InvertMatrix(total_covariance_matrix);
+
+
+	//save covariance matrix & spectra comparison at CV
+	if(i == m_cv_spec_index){
+            fout->cd();
+            collapsed_full_systematic_matrix.Write("syst_collapsed_matrix_CV");
+            total_covariance_matrix.Write("total_collapsed_matrix_CV");
+            inversed_total_covariance_matrix.Write("inversed_matrix_CV");
+
+	    //print out comparison between data and CV
+	    if(is_verbose && m_bool_data_spectrum_loaded)
+		m_chi->DrawComparisonIndividual(m_scaled_spec_grid[i], *m_data_spectrum, collapsed_full_systematic_matrix, tag+"_CVvsData", true);
+	}
+	
+        //vec_chi.push_back(m_chi->CalcChi(inversed_total_covariance_matrix, m_scaled_spec_grid[i].collapsed_vector, m_data_spectrum->collapsed_vector));
+        vec_chi.push_back(m_chi->CalcChi(inversed_total_covariance_matrix, m_scaled_spec_grid[i].collapsed_vector, m_data_spectrum->collapsed_vector) + log(abs(total_covariance_matrix.Determinant())));
+
+        if(vec_chi.back() < best_chi){
+            best_chi = vec_chi.back();
+            best_point = i;
+        }
+
+    } //loop over the grid
+    fout->Close();
+
+    std::cout << otag << "chi2 minimum value " << best_chi << " is found at point " << best_point << "/" << m_total_gridpoints << std::endl;
+    //best-fit vs data comparison	
+    if(is_verbose && m_bool_data_spectrum_loaded){
+	m_chi->DrawComparisonIndividualFracMatrix(m_scaled_spec_grid[best_point], *m_data_spectrum, *m_full_fractional_covariance_matrix, tag+"_BFvsData", true);
+    }
+
+
+    m_map={{best_point, vec_chi}};
+    this->PrintOutFitInfo(m_map,  otag + "BF - "+tag, true);
     this->WriteOutInfo(m_map);
     this->CloseFiles();
     return 0;
@@ -791,35 +804,20 @@ int SBNsinglephoton::LoadData(std::string filename){
 
 
 int SBNsinglephoton::SetFullFractionalCovarianceMatrix(std::string filename, std::string matrix_name){
-
-	if(is_verbose) std::cout << "SBNsinglephoton::SetFullFractionalCovarianceMatrix||\tOpen total frac covariance matrix file: " << filename << std::endl;
+	otag = "SBNsinglephoton::SetFullFractionalCovarianceMatrix\t|| ";
+	if(is_verbose) std::cout << otag << "Open total frac covariance matrix file: " << filename << std::endl;
 	TFile* f_syst = new TFile(filename.c_str(), "read");
 	m_full_fractional_covariance_matrix = (TMatrixT<double>*)f_syst->Get(matrix_name.c_str());
 
 	if(m_full_fractional_covariance_matrix->GetNcols() != m_full_fractional_covariance_matrix->GetNrows()){
-		std::cout << "SBNsinglephoton::SetFullFractionalCovarianceMatrix\t|| Matrix provided is not sysmetric" << std::endl;
+		std::cout << otag<<  "Matrix provided is not sysmetric" << std::endl;
 		exit(EXIT_FAILURE);		
 	}
 
 
-/*	//get submatrices from a big covariance matrix
-	TMatrixT<double> temp_matrix = *m_full_fractional_covariance_matrix;
-	m_full_fractional_covariance_matrix->ResizeTo(num_bins_total, num_bins_total);
-	
-	//for 1g1p+2g1p
-	m_full_fractional_covariance_matrix->SetSub(0, 0, temp_matrix.GetSub(0, 29, 0, 29, "S"));
-	m_full_fractional_covariance_matrix->SetSub(0, 30, temp_matrix.GetSub(0, 29, 90, 209, "S"));
-	m_full_fractional_covariance_matrix->SetSub(30, 0, temp_matrix.GetSub(90, 209, 0, 29, "S"));
-	m_full_fractional_covariance_matrix->SetSub(30, 30, temp_matrix.GetSub(90, 209, 90, 209, "S"));
-	//for 1g0p+2g0p
-	m_full_fractional_covariance_matrix->SetSub(0, 0, temp_matrix.GetSub(30, 89, 30, 89, "S"));
-	m_full_fractional_covariance_matrix->SetSub(0, 60, temp_matrix.GetSub(30, 89, 210, 329, "S"));
-	m_full_fractional_covariance_matrix->SetSub(60, 0, temp_matrix.GetSub(210, 329, 30, 89, "S"));
-	m_full_fractional_covariance_matrix->SetSub(60, 60, temp_matrix.GetSub(210, 329, 210, 329, "S"));
-*/	
 	this->RemoveNan(m_full_fractional_covariance_matrix);
 
-	if(is_verbose) std::cout << "SBNsinglephoton::SetFullFractionalCovarianceMatrix\t|| matrix size: " << m_full_fractional_covariance_matrix->GetNcols()<< std::endl;;
+	if(is_verbose) std::cout << otag << "matrix size: " << m_full_fractional_covariance_matrix->GetNcols()<< std::endl;;
 
 /*
 	TMatrixT<double>* temp_genie_XS = (TMatrixT<double>*)f_syst->Get("individualDir/All_UBGenie_frac_covariance");
@@ -979,13 +977,15 @@ int SBNsinglephoton::SetGenieFractionalCovarianceMatrix(std::string filename){
 
 
 int SBNsinglephoton::CalcFullButGenieFractionalCovarMatrix(){
+    
+    otag="SBNsinglephoton::CalcFullButGenieFractionalCovarMatrix\t|| ";
 
     if(m_full_fractional_covariance_matrix==nullptr || m_genie_fractional_covariance_matrix==nullptr){
-        std::cout<< "SBNsinglephoton::CalcFullButGenieFractionalCovarMatrix\t|| Either full fractional covar matrix or genie fractional covariance matrix has NOT been setup yet."<< std::endl;
+        std::cout<< otag<< "Either full fractional covar matrix or genie fractional covariance matrix has NOT been setup yet."<< std::endl;
         exit(EXIT_FAILURE); 
     }
 
-    if(is_verbose) std::cout << "SBNsinglephoton::CalcFullButGenieFractionalCovarMatrix\t|| as the name says.." << std::endl;
+    if(is_verbose) std::cout << otag<< "as the name says.." << std::endl;
     m_full_but_genie_fractional_covariance_matrix = new TMatrixT<double>(num_bins_total, num_bins_total);
     *m_full_but_genie_fractional_covariance_matrix  = (*m_full_fractional_covariance_matrix) - (*m_genie_fractional_covariance_matrix);
 
@@ -1028,12 +1028,13 @@ int SBNsinglephoton::AddCovarianceMatrix(const std::string &filename, const std:
 }
 
 void SBNsinglephoton::ZeroOutCorrelation(TMatrixT<double> *pmatrix, const std::string &fname){
+    otag="SBNsinglephoton::ZeroOutCorrelation\t|| ";
     if(is_verbose)
-	std::cout << "SBNsinglephoton::ZeroOutCorrelation\t|| Zero out correlation between " << fname << " and other subchannels" << std::endl;
+	std::cout << otag << "Zero out correlation between " << fname << " and other subchannels" << std::endl;
 
     // check size of the matrix
     if( (pmatrix->GetNrows() != pmatrix->GetNcols()) || (pmatrix->GetNrows() != num_bins_total )){
-	std::cerr << "SBNsinglephoton::ZeroOutCorrelation\t|| Matrix size is wrong, Nrow: " << pmatrix->GetNrows() << ", Ncol: " << pmatrix->GetNcols() << ", num_bins_total: " << num_bins_total << std::endl;
+	std::cerr << otag << "Matrix size is wrong, Nrow: " << pmatrix->GetNrows() << ", Ncol: " << pmatrix->GetNcols() << ", num_bins_total: " << num_bins_total << std::endl;
  	exit(EXIT_FAILURE);
     }
 
@@ -1089,17 +1090,18 @@ void SBNsinglephoton::ZeroOutFullCorrelation(const std::string &fname){
 }
 
 double SBNsinglephoton::ScaleFactor(double E, double factor, std::vector<double>& vec){
+    otag = "SBNsinglephoton::ScaleFactor\t|| ";
     double scale = factor;
     switch(vec.size()){
         case 0:
-            //std::cout<< "SBNsinglephoton::ScaleFactor\t|| No energy/momentum dependent scaling applied" << std::endl;
+            //std::cout<< otag << "No energy/momentum dependent scaling applied" << std::endl;
             break;
         case 1:
-            //std::cout << "SBNsinglephoton::ScaleFactor\t|| Applying Linear energy/momentum dependent scaling!";
+            //std::cout << otag << "Applying Linear energy/momentum dependent scaling!";
             scale += vec[0]*E;
             break;
         case 2:
-            //std::cout << "SBNsinglephoton::ScaleFactor\t|| Applying 2nd order polynomial energy/momentum dependent scaling!" << std::endl;
+            //std::cout << otag << "Applying 2nd order polynomial energy/momentum dependent scaling!" << std::endl;
             scale += vec[0]*E+vec[1]*E*E;
             break;
         default: scale += 0;
@@ -1150,13 +1152,13 @@ int SBNsinglephoton::SaveHistogram(bool sensitivity){
 
 
 int SBNsinglephoton::SaveHistogram(std::map<int, std::vector<double>>& inmap, bool sensitivity){
-
+    otag="SBNsinglephoton::SaveHistogram\t|| ";
 
     if(inmap.empty()){
-	std::cout << "SBNsinglephoton::SaveHistogram\t|| map is empty!!" << std::endl;
+	std::cout << otag << "map is empty!!" << std::endl;
 	exit(EXIT_FAILURE);	
     }else{
-	std::cout << "SBNsinglephoton::SaveHistogram\t|| " << std::endl;
+	std::cout << otag << std::endl;
         std::map<int, std::vector<double>>::const_iterator itmap = inmap.cbegin();
 	int best_point = itmap->first;
 	std::vector<double> vec_chi = itmap->second;
@@ -1168,7 +1170,7 @@ int SBNsinglephoton::SaveHistogram(std::map<int, std::vector<double>>& inmap, bo
 						      {"NCDeltaLEE", "Excess Scale Factor (x GENIE SM NC #Delta->N#gamma prediction)"},
 						      {"NCPi0Coh", "Flat Scaling Factor for NC 1#pi^{0} Coherent"},
 						      {"NCPi0NotCoh", "Flat Scaling Factor for NC 1#pi^{0} Non-Coherent"},
-						      {"NCPi0NotCohMom", "Momentum-dependent Term for NC 1#pi^{0} Non-Coherent"},
+						      {"NCPi0NotCohMom", "Momentum-dependent Term Coefficient for NC 1#pi^{0} Non-Coherent"},
 						      {"All", "Flat normalization factor for all"}};
 
         int m_poly_best_index = best_point/m_flat_total_gridpoints;
@@ -1178,7 +1180,7 @@ int SBNsinglephoton::SaveHistogram(std::map<int, std::vector<double>>& inmap, bo
 	if(m_grid.f_num_dimensions == 2){
 	
 	   if(!m_bool_poly_grid){
-	    	if(is_verbose) std::cout<< "SBNsinglephoton::SaveHistogram\t|| Case: NCpi0 normalization fit, no energy/momentum dependent scaling!" << std::endl;
+	    	if(is_verbose) std::cout<< otag<< "Case: NCpi0 normalization fit, no energy/momentum dependent scaling!" << std::endl;
 		auto grid_x = m_grid.f_dimensions.at(0);
 		auto grid_y = m_grid.f_dimensions.at(1);
 
@@ -1222,7 +1224,7 @@ int SBNsinglephoton::SaveHistogram(std::map<int, std::vector<double>>& inmap, bo
 
 		DrawMarginalizedChi(vec_mchi_hist, tag, sensitivity);	
 	   }else{
-		if(is_verbose) std::cout<< "SBNsinglephoton::SaveHistogram\t|| Case: NCpi0 normalization fit, with energy/momentum dependent scaling to " << m_poly_grid.f_num_dimensions << "nd order!" << std::endl;
+		if(is_verbose) std::cout<< otag<<"Case: NCpi0 normalization fit, with energy/momentum dependent scaling to " << m_poly_grid.f_num_dimensions << "nd order!" << std::endl;
 		 auto grid_1order = m_poly_grid.f_dimensions.at(0);
 
 		 //grab the flat grid associated with poly_grid
@@ -1344,7 +1346,7 @@ int SBNsinglephoton::SaveHistogram(std::map<int, std::vector<double>>& inmap, bo
 	else{
 
 	   if(!m_bool_poly_grid){
-		if(is_verbose) std::cout<< "SBNsinglephoton::SaveHistogram\t|| Case: NC delta and pi0 combined fit, no energy/momentum dependent scaling!" << std::endl;
+		if(is_verbose) std::cout<< otag << "Case: NC delta and pi0 combined fit, no energy/momentum dependent scaling!" << std::endl;
 		auto grid_x = m_grid.f_dimensions.at(0);
 		auto grid_y = m_grid.f_dimensions.at(1);
 		auto grid_z = m_grid.f_dimensions.at(2);   //assume grid_Z is the grid for NCDeltaLEE here.
@@ -1658,12 +1660,13 @@ int SBNsinglephoton::PrintOutFitInfo(const std::map<int, std::vector<double>>& i
     }
     std::cout << std::endl;
 
-    //------- Print out CV chi^2 -------------------
+/*    //------- Print out CV chi^2 -------------------
     if(intag.find("CV") != std::string::npos){
 	std::cout << intag << ": GENIE CV Chi2/ndof evaluated at CentralValue: " << vec_chi[m_cv_spec_index]<< "/" << num_bins_total_compressed << ", Pvalue: " << TMath::Prob(vec_chi[m_cv_spec_index], num_bins_total_compressed) << std::endl;
     }else{
 	std::cout << intag << ": GENIE CV Chi2 evaluated at BestFit: " << vec_chi[m_cv_spec_index] << ", Dchi: " << vec_chi[m_cv_spec_index] - chi_min << ", Fitting variable dimensions: " << m_fit_dimension << std::endl;
     }
+*/
 
     //------- Print out whole grid --------------
     if(print_all){
@@ -1749,10 +1752,7 @@ int SBNsinglephoton::ModifyCV(double infactor){
 int SBNsinglephoton::ModifyCV(double infactor, std::vector<double> param){
 
 
-    if(!m_bool_cv_spectrum_loaded){
-        this->LoadCV();
-    }
-
+    CheckCVLoad();
 
     std::cout<< "SBNsinglephoton::ModifyCV\t|| Start modifying CV spectrum" <<std::endl;
     int index = 0;
@@ -1974,6 +1974,8 @@ void SBNsinglephoton::DrawMarginalizedChi(std::vector<TH1D*> vec_hist, std::stri
 
 void SBNsinglephoton::LocateCVGlobalIndex(){
 
+    otag="SBNsinglephoton::LocateCVGlobalIndex\t|| ";
+
     std::vector<double> central_value_flat(m_grid.f_num_dimensions, 1.0);  //flat grid point for GENIE central value
     for(int i=0; i != m_grid.f_num_dimensions; ++i){
         if(m_grid.f_dimensions[i].GetName().find("NCDeltaLEE") != std::string::npos)  //for LEE component, the scale factor for CV is 0
@@ -1989,14 +1991,14 @@ void SBNsinglephoton::LocateCVGlobalIndex(){
 		for(int i=0; i<m_poly_total_gridpoints; ++i){
 		    if(m_vec_poly_grid.at(i) == central_value_poly){
 			m_cv_spec_index = i*m_flat_total_gridpoints + j;
-    			std::cout << "SBNsinglephoton::LocateCVGlobalIndex\t||\tLocate the index of GENIE CV: " << m_cv_spec_index << std::endl;
+    			std::cout << otag << "Locate the index of GENIE CV: " << m_cv_spec_index << std::endl;
 			return;
 		    }
 		}
 
 	    }else{
 		m_cv_spec_index = j;
-    		std::cout << "SBNsinglephoton::LocateCVGlobalIndex\t||\tLocate the index of GENIE CV: " << m_cv_spec_index << std::endl;
+    		std::cout << otag << "Locate the index of GENIE CV: " << m_cv_spec_index << std::endl;
 		return;
 	    }
 	}	
@@ -2004,3 +2006,70 @@ void SBNsinglephoton::LocateCVGlobalIndex(){
     
 }
 
+void SBNsinglephoton::SetupAsimovDataset(const std::string &in_string){
+    asimov_dataset = in_string;
+}
+
+void SBNsinglephoton::CheckCVLoad(){
+
+    if(!m_bool_cv_spectrum_loaded){
+        std::cout << "SBNsinglephoton::CheckCVLoad\t|| CV spec hasn't been loaded yet, load CV..." << std::endl;
+        this->LoadCV();
+    }
+}
+
+void SBNsinglephoton::CheckNumScaledSpectra(){
+    if(m_scaled_spec_grid.size() != m_total_gridpoints){
+        std::cerr << "SBNsinglephoton::CheckNumScaledSpectra\t|| ERROR!! # of scaled spectra: "<<m_scaled_spec_grid.size()<<" does NOT match grid size: " << m_total_gridpoints << " !!" <<std::endl;
+        exit(EXIT_FAILURE);
+    }
+
+}
+
+void SBNsinglephoton::CheckDataLoad(){
+
+    otag="SBNsinglephoton::CheckDataLoad\t|| ";
+    if(!m_bool_data_spectrum_loaded){
+	std::cout << otag << "WARNING!! Data spec hasn't been loaded, will do SAFE-MODE, aka sensitivity study instead!" << std::endl;
+
+	// interpret the asimov dataset configuration
+	std::vector<std::string> asimov_config_channels;
+	std::vector<double> asimov_config_scalings;
+	std::string channel_delimiter = ";", value_delimiter=",";
+	size_t pos_front=0, pos_end = asimov_dataset.find(channel_delimiter, pos_front);
+	while(1){
+	    
+	    std::string individual_channel_info;
+	    if(pos_end != std::string::npos) individual_channel_info = asimov_dataset.substr(pos_front, pos_end - pos_front);
+	    else individual_channel_info = asimov_dataset.substr(pos_front);
+
+	    size_t pos_middle = individual_channel_info.find(value_delimiter);
+	    asimov_config_channels.push_back(individual_channel_info.substr(0, pos_middle));
+	    asimov_config_scalings.push_back(std::stod(individual_channel_info.substr(pos_middle + value_delimiter.length())));
+
+	    if(pos_end == std::string::npos) break;
+	    pos_front = pos_end + channel_delimiter.length();
+	    pos_end = asimov_dataset.find(channel_delimiter, pos_front);
+	}
+
+
+	//prints out
+	std::ostringstream writeout_tag;
+	std::cout << otag << "Asimov dataset is configured as such: "; 
+	for(size_t i = 0; i != asimov_config_channels.size(); ++ i){
+	    writeout_tag << "_" << asimov_config_channels[i] << "_" << std::fixed<< std::setprecision(1) << asimov_config_scalings[i];
+	    std::cout << asimov_config_channels[i] << ": " << asimov_config_scalings[i] << " ";
+	}
+        std::cout << std::endl; 
+
+	m_data_spectrum = new SBNspec(tag+"_CV.SBNspec.root", xmlname, false);
+	for(size_t i = 0; i != asimov_config_channels.size(); ++ i)
+	    m_data_spectrum->Scale(asimov_config_channels[i], asimov_config_scalings[i]);
+	m_data_spectrum->CollapseVector();
+	//this->PoissonFluctuation(m_data_spectrum);
+	m_data_spectrum->WriteOut("ToyData"+writeout_tag.str());
+
+    }else{
+	std::cout << otag << "Data spec is loaded! Will be fitting to REAL data!" << std::endl;
+    }    
+}
