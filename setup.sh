@@ -1,4 +1,4 @@
-source /grid/fermiapp/products/uboone/setup_uboone.sh; 
+source /cvmfs/uboone.opensciencegrid.org/products/setup_uboone.sh; 
 setup git v2_15_1; 
 setup gitflow v1_11_0; 
 setup mrb v1_16_02;
