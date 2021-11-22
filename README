@@ -56,20 +56,22 @@ should have 1 output. EXAMPLE2_plots.root containing a simple TCanvas showing th
 
 
 
-For an older out of date tutorial: https://docs.google.com/presentation/d/1vLYPDaID0a4nbx5rnKTda_RzhdTavLdyrkpkGMVZLgE/edit#slide=id.g35c91f84c5_0_194
+####Steps for running on Tufts####
+Scripts for running the MicroBooNE simulation on the Tufts cluster
 
-############################################################################
-##############		TODO 	     ########################################
-############################################################################
+Production workflow wiki: https://cdcvs.fnal.gov/redmine/projects/uboone-physics-analysis/wiki/MCC9_Production_Fhicls
 
-(1) Being able to fill SBNfit histograms (subchannels) from functions of inputted variables. e.g fill "ereco" to nu_uBooNE_elike_intrinsic if "nupdg==1" or nu_uBooNE_mlike_otherwise
-(2) DONE. -- Being able to see all individual histograms and how they change for all the universes 
-(3) Being able to make covariance matrix from detetcor systematic MC files
-(4) Pull terms
-(5) Examples for oscillations
-(6) DONE. -- Example for Frequentist Studies
+Steps
 
-
+if not at Tufts, connect to Tufts VPN (using Cisco anyconnect)
+ssh into the Tufts cluster: ssh -XY [username]@login.pax.tufts.edu
+start an interactive job: srun --pty -p wongjiradlab --mem-per-cpu=4000 --cpus-per-task=2 --time 4:00:00 bash
+go to some working directory in one of your folders on the wongjiradlabnu drive
+setup to be able to use singularity: module load singularity/3.5.3
+activate cvmfs remote drives: cvmfs_config probe fermilab.opensciencegrid.org uboone.opensciencegrid.org
+can check you see them: ls /cvmfs/
+start the SL7 container: singularity shell -B /cluster:/cluster,/cvmfs:/cvmfs /cluster/tufts/wongjiradlabnu/larbys/larbys-container/sl7_uboonecodedep.sif
+start a bash shell in the container: bash
 
 
 
