@@ -1,0 +1,39 @@
+<?xml version="1.0"?>
+
+<mode name="nu"/>
+<detector name="uBooNE"/>
+
+<channel name="1mu1p" unit="MeV">
+  <bins
+      edges="250 300 350 400 450 500 550 600 650 700 750 800 850 900 950 1000 1050 1100 1150 1200"
+      />
+  <subchannel name="data_run1"/>
+  <subchannel name="data_run2"/>
+  <subchannel name="data_run3"/>
+</channel>
+
+<plotpot value=6.818153e+20/>
+
+<MultisimFile treename="recotree" filename="/uboone/app/users/dcianci/DLLEESensitivity/Thesis2020/whipping_star/data/run1data_jan26.root" scale="0.256" maxevents="100000" pot="1.746029e+20">
+  <branch
+      associated_subchannel="nu_uBooNE_1mu1p_data_run1"
+      name="recovar"
+      type="double"
+      />
+</MultisimFile>
+
+<MultisimFile treename="recotree" filename="/uboone/app/users/dcianci/DLLEESensitivity/Thesis2020/whipping_star/data/run2data_jan26.root" scale="0.388" maxevents="100000" pot="2.6426e+20">
+  <branch
+      associated_subchannel="nu_uBooNE_1mu1p_data_run2"
+      name="recovar"
+      type="double"
+      />
+</MultisimFile>
+
+<MultisimFile treename="recotree" filename="/uboone/app/users/dcianci/DLLEESensitivity/Thesis2020/whipping_star/data/run3data_jan26.root" scale="0.356" maxevents="100000" pot="2.429524e+20">
+  <branch
+      associated_subchannel="nu_uBooNE_1mu1p_data_run3"
+      name="recovar"
+      type="double"
+      />
+</MultisimFile>

@@ -1,0 +1,158 @@
+<?xml version="1.0"?>
+
+<mode name="nu"/>
+<detector name="uBooNE"/>
+
+<channel name="1mu1p" unit="MeV">
+  <bins
+      edges="250 300 350 400 450 500 550 600 650 700 750 800 850 900 950 1000 1050 1100 1150 1200"
+      />
+  <subchannel name="bnb" osc="22"/>
+  <!-- <subchannel name="nue"   /> -->
+  <!-- <subchannel name="dirt"  /> -->
+  <subchannel name="extbnb" osc="0"/>
+</channel>
+
+<plotpot value=6.818153e20/>
+
+
+<MultisimFile treename="sel_bnb_tree" filename="/uboone/data/users/yatesla/othersys_mcc9/input_to_sbnfit/input_to_sbnfit_v48_Sep24_withExtraGENIE_1mu1p_run1_Jan19.root" scale="0.256" maxevents="100000" pot="2.949e19">
+  <branch
+      name="nu_energy_reco"
+      type="double"
+      associated_subchannel="nu_uBooNE_1mu1p_bnb"
+      additional_weight="( xsec_corr_weight * ((nu_pdg==14)||(nu_pdg==-14)||(nu_interaction_ccnc==1)) )"
+      eventweight_branch_name="sys_weights"
+			oscillate = "true"
+      true_param_name = "nu_energy_true"
+      true_L_name = "nu_L_true"
+      />
+</MultisimFile>
+
+<MultisimFile treename="sel_bnb_tree" filename="/uboone/data/users/yatesla/othersys_mcc9/input_to_sbnfit/input_to_sbnfit_v48_Sep24_withExtraGENIE_1mu1p_run2_Jan19.root" scale="0.388" maxevents="100000" pot="4.090e19">
+  <branch
+      name="nu_energy_reco"
+      type="double"
+      associated_subchannel="nu_uBooNE_1mu1p_bnb"
+      additional_weight="( xsec_corr_weight * ((nu_pdg==14)||(nu_pdg==-14)||(nu_interaction_ccnc==1)) )"
+      eventweight_branch_name="sys_weights"
+			oscillate = "true"
+      true_param_name = "nu_energy_true"
+      true_L_name = "nu_L_true"
+      />
+</MultisimFile>
+
+<MultisimFile treename="sel_bnb_tree" filename="/uboone/data/users/yatesla/othersys_mcc9/input_to_sbnfit/input_to_sbnfit_v48_Sep24_withExtraGENIE_1mu1p_run3_Jan19.root" scale="0.356" maxevents="100000" pot="5.103e19">
+  <branch
+      name="nu_energy_reco"
+      type="double"
+      associated_subchannel="nu_uBooNE_1mu1p_bnb"
+      additional_weight="( xsec_corr_weight * ((nu_pdg==14)||(nu_pdg==-14)||(nu_interaction_ccnc==1)) )"
+      eventweight_branch_name="sys_weights"
+			oscillate = "true"
+      true_param_name = "nu_energy_true"
+      true_L_name = "nu_L_true"
+      />
+</MultisimFile>
+
+<MultisimFile treename="sel_nue_tree" filename="/uboone/data/users/yatesla/othersys_mcc9/input_to_sbnfit/input_to_sbnfit_v48_Sep24_withExtraGENIE_1mu1p_run1_Jan19.root" scale="0.256" maxevents="100000" pot="9.803e19">
+  <branch
+      name="nu_energy_reco"
+      type="double"
+      associated_subchannel="nu_uBooNE_1mu1p_bnb"
+      additional_weight="xsec_corr_weight"
+      eventweight_branch_name="sys_weights"
+			oscillate = "true"
+      true_param_name = "nu_energy_true"
+      true_L_name = "nu_L_true"
+      />
+</MultisimFile>
+
+<MultisimFile treename="sel_nue_tree" filename="/uboone/data/users/yatesla/othersys_mcc9/input_to_sbnfit/input_to_sbnfit_v48_Sep24_withExtraGENIE_1mu1p_run2_Jan19.root" scale="0.388" maxevents="100000" pot="9.209e21">
+  <branch
+      name="nu_energy_reco"
+      type="double"
+      associated_subchannel="nu_uBooNE_1mu1p_bnb"
+      additional_weight="xsec_corr_weight"
+      eventweight_branch_name="sys_weights"
+			oscillate = "true"
+      true_param_name = "nu_energy_true"
+      true_L_name = "nu_L_true"
+      />
+</MultisimFile>
+
+<MultisimFile treename="sel_nue_tree" filename="/uboone/data/users/yatesla/othersys_mcc9/input_to_sbnfit/input_to_sbnfit_v48_Sep24_withExtraGENIE_1mu1p_run3_Jan19.root" scale="0.356" maxevents="100000" pot="4.707e21">
+  <branch
+      name="nu_energy_reco"
+      type="double"
+      associated_subchannel="nu_uBooNE_1mu1p_bnb"
+      additional_weight="xsec_corr_weight"
+      eventweight_branch_name="sys_weights"
+			oscillate = "true"
+      true_param_name = "nu_energy_true"
+      true_L_name = "nu_L_true"
+      />
+</MultisimFile>
+
+<MultisimFile treename="sel_extbnb_tree" filename="/uboone/data/users/yatesla/othersys_mcc9/input_to_sbnfit/input_to_sbnfit_v48_Sep24_withExtraGENIE_1mu1p_run1_Jan19.root" scale="0.256" maxevents="100000" pot="1.012e19">
+  <branch
+      name="nu_energy_reco"
+      type="double"
+      associated_subchannel="nu_uBooNE_1mu1p_extbnb"
+      eventweight_branch_name="sys_weights"
+      />
+</MultisimFile>
+
+<MultisimFile treename="sel_extbnb_tree" filename="/uboone/data/users/yatesla/othersys_mcc9/input_to_sbnfit/input_to_sbnfit_v48_Sep24_withExtraGENIE_1mu1p_run3_Jan19.root" scale="0.744" maxevents="100000" pot="1.536e19">
+  <branch
+      name="nu_energy_reco"
+      type="double"
+      associated_subchannel="nu_uBooNE_1mu1p_extbnb"
+      eventweight_branch_name="sys_weights"
+      />
+</MultisimFile>
+
+
+<variation_list>
+  <whitelist>expskin_FluxUnisim</whitelist>
+  <whitelist>horncurrent_FluxUnisim</whitelist>
+  <whitelist>kminus_PrimaryHadronNormalization</whitelist>
+  <whitelist>kplus_PrimaryHadronFeynmanScaling</whitelist>
+  <whitelist>kzero_PrimaryHadronSanfordWang</whitelist>
+  <whitelist>nucleoninexsec_FluxUnisim</whitelist>
+  <whitelist>nucleonqexsec_FluxUnisim</whitelist>
+  <whitelist>nucleontotxsec_FluxUnisim</whitelist>
+  <whitelist>piminus_PrimaryHadronSWCentralSplineVariation</whitelist>
+  <whitelist>pioninexsec_FluxUnisim</whitelist>
+  <whitelist>pionqexsec_FluxUnisim</whitelist>
+  <whitelist>piontotxsec_FluxUnisim</whitelist>
+  <whitelist>piplus_PrimaryHadronSWCentralSplineVariation</whitelist>
+  <whitelist>All_UBGenie</whitelist>
+  <whitelist>XSecShape_CCMEC_UBGenie</whitelist>
+  <whitelist>RPA_CCQE_UBGenie</whitelist>
+  <whitelist>AxFFCCQEshape_UBGenie</whitelist>
+  <whitelist>VecFFCCQEshape_UBGenie</whitelist>
+  <whitelist>DecayAngMEC_UBGenie</whitelist>
+  <whitelist>xsr_scc_Fa3_SCC</whitelist>
+  <whitelist>xsr_scc_Fv3_SCC</whitelist>
+  <whitelist>NormCCCOH_UBGenie</whitelist>
+  <whitelist>NormNCCOH_UBGenie</whitelist>
+  <whitelist>ThetaDelta2NRad_UBGenie</whitelist>
+  <whitelist>Theta_Delta2Npi_UBGenie</whitelist>
+  <whitelist>reinteractions_piminus_Geant4</whitelist>
+  <whitelist>reinteractions_piplus_Geant4</whitelist>
+  <whitelist>reinteractions_proton_Geant4</whitelist>
+</variation_list>
+
+<WeightMaps>
+  <variation pattern="All_UBGenie" weight_formula="1.0/ub_tune_weight"/>
+  <variation pattern="RPA_CCQE_UBGenie" weight_formula="1.0/ub_tune_weight"/>
+  <variation pattern="NormCCCOH_UBGenie" weight_formula="1.0/ub_tune_weight"/>
+  <variation pattern="NormNCCOH_UBGenie" weight_formula="1.0/ub_tune_weight"/>
+  <variation pattern="AxFFCCQEshape_UBGenie" weight_formula="1.0/ub_tune_weight" mode="minmax"/>
+  <variation pattern="VecFFCCQEshape_UBGenie" weight_formula="1.0/ub_tune_weight" mode="minmax"/>
+  <variation pattern="DecayAngMEC_UBGenie" weight_formula="1.0/ub_tune_weight" mode="minmax"/>
+  <variation pattern="XSecShape_CCMEC_UBGenie" weight_formula="1.0/ub_tune_weight" mode="minmax"/>
+  <variation pattern="ThetaDelta2NRad_UBGenie" weight_formula="1.0/ub_tune_weight" mode="minmax"/>
+  <variation pattern="Theta_Delta2Npi_UBGenie" weight_formula="1.0/ub_tune_weight" mode="minmax"/>
+</WeightMaps>
