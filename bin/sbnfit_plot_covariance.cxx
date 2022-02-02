@@ -185,7 +185,7 @@ int main(int argc, char* argv[])
        for(int i=0; i<sig.num_bins_total;i++){ 
                 for(int j=0; j<sig.num_bins_total;j++){ 
                     double val = (*cov)(i,j);
-                    if( isinf(val) || isnan(val) || val!=val){
+                    if( std::isinf(val) || std::isnan(val) || val!=val){
                             (*cov)(i,j) = 0.0;
                             num_nans++;
                     }

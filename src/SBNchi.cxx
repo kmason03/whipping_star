@@ -1394,7 +1394,7 @@ int SBNchi::plot_one(TMatrixD matrix, std::string tag, TFile *fin, bool plot_pdf
         for(int i=0; i<matrix.GetNrows();i++){
             for(int j=0; j<matrix.GetNrows();j++){
                 double val = matrix(i,j);
-                if(val!=val || isinf(val) || std::isnan(val)){
+                if(val!=val || std::isinf(val) || std::isnan(val)){
                     matrix(i,j)=0.0;
                     matrix(i,i)=1.0;
                     matrix(j,j)=1.0;

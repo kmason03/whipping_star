@@ -1,4 +1,5 @@
 include_directories(${CMAKE_SOURCE_DIR}/inc)
+include_directories(${EIGEN3_INCLUDE_DIRS})
 
 add_executable (sbnfit_make_covariance sbnfit_make_covariance.cxx)
 target_link_libraries (sbnfit_make_covariance SBNfitlib tinyxmllib EventWeight)

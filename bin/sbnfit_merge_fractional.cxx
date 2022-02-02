@@ -148,7 +148,7 @@ int main(int argc, char* argv[])
         int mnans = 0;
         for(int i=0; i< fmats.back().GetNrows(); i++){
             for(int j=0; j< fmats.back().GetNrows(); j++){
-                if(isnan(fmats.back()(i,j)) || fmats.back()(i,j)!=fmats.back()(i,j) || isinf(fmats.back()(i,j))){
+                if(std::isnan(fmats.back()(i,j)) || fmats.back()(i,j)!=fmats.back()(i,j) || std::isinf(fmats.back()(i,j))){
 
                     if(!force){
                         std::cout<<"ERROR ERROR We have a NAN or INF , at "<<i<<" "<<j<<" "<<fmats.back()(i,j)<<std::endl;

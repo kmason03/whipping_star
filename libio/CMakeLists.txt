@@ -1,4 +1,5 @@
 include(${ROOT_USE_FILE})
+message("root use file: ${ROOT_USE_FILE}") 
 
 include_directories(${CMAKE_SOURCE_DIR}/inc)
 

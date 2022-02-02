@@ -1,4 +1,5 @@
 cmake_minimum_required (VERSION 2.6)
+#set(CMAKE_TRY_COMPILE_TARGET_TYPE "STATIC_LIBRARY")
 project (SBNfit)
 # The version number.
 set (SBNfit_VERSION_MAJOR 3)
@@ -8,8 +9,8 @@ if (CMAKE_VERSION VERSION_LESS "3.1")
     if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
           set (CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
     endif ()
-    else ()
-	    set (CMAKE_CXX_STANDARD 17)
+else ()
+	  set (CMAKE_CXX_STANDARD 11)
 endif ()
 
 message("@main CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS}")
@@ -27,7 +28,7 @@ else()
 	message("")
 endif()
 
-
+FIND_PACKAGE(Eigen3 REQUIRED)
 
 FIND_PACKAGE(ROOT COMPONENTS MathCore MathMore)# COMPONENTS Core Cint RIO Net Hist Graf Graf3d Gpad Tree Rint Postscript Matrix Physics MathCore Thread)
 
@@ -65,7 +66,7 @@ ENDIF()
 # -noswitcherror only for pgcc
 #set (CMAKE_SO_CXX_FLAGS "-noswitcherror ${ROOT_CXX_FLAGS} ${GSL_LIBS} ${CMAKE_CXX_FLAGS} -w -Wno-deprecated-declarations")
 set (CMAKE_SO_CXX_FLAGS " ${ROOT_CXX_FLAGS} ${GSL_LIBS} ${GSL_CXX_FLAGS} ${CMAKE_CXX_FLAGS} -w -Wno-deprecated-declarations")
-set (CMAKE_ACC_CXX_FLAGS "${CMAKE_GPU_CXX_FLAGS} ${CMAKE_SO_CXX_FLAGS} -g -I ${EIGEN_CONFIG}")
+set (CMAKE_ACC_CXX_FLAGS "${CMAKE_GPU_CXX_FLAGS} ${CMAKE_SO_CXX_FLAGS} -g")
 set (CMAKE_PCC_CXX_FLAGS "-ta=multicore -Minfo=accel -acc -w ${CMAKE_SO_CXX_FLAGS}")
 
 set (CMAKE_CXX_FLAGS "${CMAKE_ACC_CXX_FLAGS}")
@@ -88,7 +89,7 @@ message("@main CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS}")
 add_subdirectory(tinyxml)
 add_subdirectory(src)
 add_subdirectory(examples)
-#add_subdirectory(bin)
+add_subdirectory(bin)
 add_subdirectory(unit)
 add_subdirectory(lee)
 add_subdirectory(Appearence)

@@ -1,16 +1,17 @@
 include_directories(${CMAKE_SOURCE_DIR}/inc)
+include_directories ( ${EIGEN3_INCLUDE_DIRS} )
 
-add_executable (example1 example_1.cxx)
+add_library (example1 example_1.cxx)
 target_link_libraries (example1 SBNfitlib tinyxmllib EventWeight)
 
-add_executable (example2 example_2.cxx)
+add_library (example2 example_2.cxx)
 target_link_libraries (example2 SBNfitlib tinyxmllib EventWeight)
 
-add_executable (example3 example_3.cxx)
+add_library (example3 example_3.cxx)
 target_link_libraries (example3 SBNfitlib tinyxmllib EventWeight)
 
 add_executable (exampletest example_test.cxx)
-target_link_libraries (exampletest SBNfitlib tinyxmllib EventWeight)
+target_link_libraries (exampletest  SBNfitlib tinyxmllib EventWeight)
 
 
 #add_executable (exampleI example_i.cxx)

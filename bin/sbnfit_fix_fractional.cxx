@@ -134,7 +134,7 @@ int main(int argc, char* argv[])
     for(int i=0 ; i< core.num_bins_total; i++){
                     double val = (cov)(i,i);
 
-                    if( isinf(val) || isnan(val) || val!=val){
+                    if( std::isinf(val) || std::isnan(val) || val!=val){
                         int wh = core.GetHistNumber(i);
                         std::cout<<val<<" @ "<<i<<" in hist "<<wh<<" and subchannel "<<core.hist[wh].GetName()<<std::endl;
                         std::vector<int> bins = core.map_tag_to_covariance_index[core.hist[wh].GetName()];
@@ -143,7 +143,7 @@ int main(int argc, char* argv[])
                         double max_err = -999;
                         for(int j=bins[0]; j<=bins[1];j++){
                                double dval = cov(j,j);
-                               if(isinf(dval) || isnan(dval) || dval!=dval) continue;
+                               if(std::isinf(dval) || std::isnan(dval) || dval!=dval) continue;
                                if(dval>max_err)max_err = dval; 
                         }
 

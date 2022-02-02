@@ -1,4 +1,6 @@
 include_directories(${CMAKE_SOURCE_DIR}/inc)
+include_directories ( ${EIGEN3_INCLUDE_DIRS} )
+
 
 add_executable (DLDis DLDis.cc)
 add_executable (DLCovar DLCovariance.cc)

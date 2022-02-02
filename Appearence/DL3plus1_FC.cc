@@ -7,8 +7,6 @@
 #include <unistd.h>
 #include <getopt.h>
 #include <cstring>
-#include <ctime>
-#include <chrono>
 
 #include "TFile.h"
 #include "TTree.h"
@@ -36,7 +34,6 @@
 #include "SBNfit3pN.h"
 #include "SBNgenerate.h"
 #include "SBNcovariance.h"
-#include "SBNtuples.h"
 #include "prob.h"
 
 #define no_argument 0
@@ -58,7 +55,7 @@ void testfcn(Int_t &npar, Double_t *gin, Double_t &f, Double_t *par, Int_t iflag
 //float getoscweight(float m41, float ue4, float um4, float ev_e, float ev_L,int type);
 
 // define some global variables
-std::string xml = "/uboone/app/users/kmason/whipping_star/xml/TotalThreePlusOne.xml";
+std::string xml = "/cluster/tufts/wongjiradlabnu/kmason03/whipping_star/xml/TotalThreePlusOne_full.xml";
 bool gen = false;
 bool printbins = true;
 int mass_start = -1;
@@ -68,16 +65,16 @@ const double dm2_lowbound(0.01), dm2_hibound(100);
 const double ue4_lowbound(0.0001), ue4_hibound(0.5);
 const double umu4_lowbound(0.0001), umu4_hibound(0.5);
 // to genergate dm2_grdpts = 100
-const int dm2_grdpts(25), ue4_grdpts(25), umu4_grdpts(25);
+const int dm2_grdpts(100), ue4_grdpts(25), umu4_grdpts(25);
 const int nBins_e(10),nBins_mu(19);
 const int nBins = nBins_e+nBins_mu;
-const int nFakeExp(1000);
+const int nFakeExp(1);
 double  mnu, ue, umu;
 int count;
 std::vector<float> fakeData;
 TMatrixD cov(nBins,nBins);
 SBNspec  appSpec, innerSpec, oscSpec;
-SBNspec cvSpec("MassSpectraData/Full/"+tag+"_Bkg.SBNspec.root",xml);
+SBNspec cvSpec;
 std::array<double,nBins>  a_pred;
 std::ofstream coordfile;
 std::ofstream chifile;
@@ -89,13 +86,14 @@ std::ofstream oscspecfile;
 Float_t z[5],x[5],y[5],errorz[5];
 std::vector<std::tuple<SBNspec,double>> a_sinsqSpec;
 TMatrixD * covFracSys_collapsed;
+int specific_entry =-1;
 
 int main(int argc, char* argv[]){
 	// start time
 	int index;
 	int iarg = 0;
 	opterr=1;
-	auto time_a = std::chrono::steady_clock::now();
+//	auto time_a = std::chrono::steady_clock::now();
 	const struct option longopts[] ={
 	{"xml", 		required_argument, 	0, 'x'},
 	{"gen",	no_argument, 0, 'g'},
@@ -104,6 +102,8 @@ int main(int argc, char* argv[]){
 	};
 	// resize fakeData vector
 	fakeData.resize(nBins);
+	// gen=true;
+	// specific_entry = atoi(argv[0]);
 
 	while(iarg != -1){
 		iarg = getopt_long(argc,argv, "x:dscp:g", longopts, &index);
@@ -126,9 +126,12 @@ int main(int argc, char* argv[]){
 	}
 
 
+
 	//PART 1: precompute all of our sin and sin2 amplitudes so we don't need to later
 	if(gen){
-		generate_spectra(false, 0,13);
+
+		// std::cout<<specific_entry<<std::endl;
+		generate_spectra(false, 95,100);
 		return 1;
 	}
 
@@ -140,7 +143,7 @@ int main(int argc, char* argv[]){
 		// std::vector<std::tuple<double,double,double,int,int,int>> tuple_v = tuples.GetTupleList();
 		// // cout to test
 		// for(int i =0;i<tuple_v.size();i++){
-		// 	// if a numu bin, we add on after the 1e1p bins, so need to adjust bin number
+		// 	// if a numu bin, we add on after the 1e1p bins, so need to adjust bin numbe
 		// 	if (std::get<4>(tuple_v[i])==1 && std::get<3>(tuple_v[i])>=0) std::get<3>(tuple_v[i])=std::get<3>(tuple_v[i])+nBins_e;
 		// }
 
@@ -162,15 +165,15 @@ int main(int argc, char* argv[]){
 		cvSpec.CollapseVector();
 		// cvSpec.PrintFullVector();
 		// make a tuple of the spectra and mass term
-		for(int mi = 0; mi < dm2_grdpts; mi++){
+		for(int mi = 0; mi < 4; mi++){
 			mnu = pow(10.,((mi+.5)/float(dm2_grdpts)*TMath::Log10(sqrt(dm2_hibound)/sqrt(dm2_lowbound)) + TMath::Log10(sqrt(dm2_lowbound))));
 			std::stringstream stream;
 			stream << std::fixed << std::setprecision(4) << 2*log10(mnu);
-			std::string infile = "MassSpectraData/Full/"+tag+"_SINSQ_dm_"+stream.str()+".SBNspec.root";
+			std::string infile = tag+"_SINSQ_dm_"+stream.str()+".SBNspec.root";
 			auto inspec = SBNspec(infile,xml);
 			// inspec.Scale("ext",0.0);	// since we're subtracting this spectrum, we want to make sure we're not subtracting the background.
 			inspec.CollapseVector();
-			std::tuple<SBNspec,double> singletup = {inspec,mnu};
+			std::tuple<SBNspec,double> singletup (inspec,mnu);
 			a_sinsqSpec.push_back(singletup);
 		}
 
@@ -182,11 +185,11 @@ int main(int argc, char* argv[]){
 
 		// Stats + sys
 		// Load up cov matrix and add in detector variation component	**
-		TFile * fsys = new TFile("katieversion_total.SBNcovar.root","read");
-		// TFile * fsys = new TFile("h1_v48_total.SBNcovar.root","read");
-		// TMatrixD * covFracSys = (TMatrixD*)fsys->Get("frac_covariance");
+		// TFile * fsys = new TFile("katieversion_total.SBNcovar.root","read");
+		TFile * fsys = new TFile("h1_v48_total.SBNcovar.root","read");
+		TMatrixD * covFracSys = (TMatrixD*)fsys->Get("frac_covariance");
 		// switch to collapsed version
-		covFracSys_collapsed = (TMatrixD*)fsys->Get("frac_covariance_collapsed");
+		// covFracSys_collapsed = (TMatrixD*)fsys->Get("frac_covariance_collapsed");
 
 		// save covar for plotting purposes
 		// for(short i = 0; i < nBins; i++){
@@ -209,13 +212,14 @@ int main(int argc, char* argv[]){
 		// 		for(int umui_base = 0; umui_base < umu4_grdpts; umui_base++){
 
 		// single, central grid point for testing minimizer
-		for(int mi_base =22 ; mi_base <23; mi_base++){
+		for(int mi_base =1 ; mi_base <2; mi_base++){
 			for(int uei_base = 20; uei_base < 21; uei_base++){
-				for(int umui_base = 17; umui_base < 18; umui_base++){
+				for(int umui_base = 1; umui_base < 2; umui_base++){
 						//mnu =m41, ue4 = sqrt(.5sin^2(2theta14)), um4 = sqrt(.5sin^2(2theta24)), sin2 term = 4(ue4**2)(um4**2)
+					int mi_base_new = mi_base;
 					float ue_base = pow(10.,(uei_base/float(ue4_grdpts)*TMath::Log10(ue4_hibound/ue4_lowbound) + TMath::Log10(ue4_lowbound)));
 					float um_base = pow(10.,(umui_base/float(umu4_grdpts)*TMath::Log10(umu4_hibound/umu4_lowbound) + TMath::Log10(umu4_lowbound)));
-					float mnu_base = pow(10.,((mi_base+.5)/float(dm2_grdpts)*TMath::Log10(sqrt(dm2_hibound)/sqrt(dm2_lowbound)) + TMath::Log10(sqrt(dm2_lowbound))));
+					float mnu_base = pow(10.,((mi_base_new+.5)/float(dm2_grdpts)*TMath::Log10(sqrt(dm2_hibound)/sqrt(dm2_lowbound)) + TMath::Log10(sqrt(dm2_lowbound))));
 					// calculate scaling factors
 					float e_app = 4*pow(ue_base,2)*pow(um_base,2);
 					float e_dis = 4*pow(ue_base,2)*(1-pow(ue_base,2));
@@ -225,37 +229,39 @@ int main(int argc, char* argv[]){
 					std::cout<<"scale factors: "<<e_app<<" "<<e_dis<<" "<<m_dis<<std::endl;
 
 					// get the oscillated spectra
-					oscSpec =  GetOscillatedSpectra(cvSpec, std::get<0>(a_sinsqSpec.at(mi_base)), e_app, e_dis, m_dis);
+					oscSpec =  GetOscillatedSpectra(cvSpec, std::get<0>(a_sinsqSpec.at(mi_base_new)), e_app, e_dis, m_dis);
 
 					 // I'll be generating a new universe around the oscillated spectrum
 					// SBNchi TrueChi(cvSpec,*covFracSys);
 					// stats only for now to test the rest
-					SBNchi TrueChi(cvSpec, true);
+				  SBNchi TrueChi(cvSpec, true);
 
 					std::cout<<"made chi"<<std::endl;
 					TrueChi.ReloadCoreSpectrum(&oscSpec);
 					TrueChi.pseudo_from_collapsed = true;
-					TrueChi.GeneratePseudoExperiment();		// get the motor running with initial cholosky decomposition
+					TrueChi.GeneratePseudoExperiment();
+						// get the motor running with initial cholosky decomposition
 
 					// Across several fake experiments for this grid point:
 					for(int expi = 0; expi < nFakeExp; expi++){
 						fakeData = TrueChi.GeneratePseudoExperiment();
 
 						// do an inner loop for a traditional grid search to test:
-						float chi_min_grid = 10000000;
+						float chi_min_grid = 1000000000000;
 						float m41_grid, ue_grid, umu4_grid;
-						for(int mi_in = 0; mi_in <dm2_grdpts; mi_in++){
+						for(int mi_in = 0; mi_in <4; mi_in++){
 							for(int uei_in = 0; uei_in < ue4_grdpts; uei_in++){
 								for(int umui_in = 0; umui_in < umu4_grdpts; umui_in++){
+									int mi_in_new = mi_in;
 									float ue_val = pow(10.,(uei_in/float(ue4_grdpts)*TMath::Log10(ue4_hibound/ue4_lowbound) + TMath::Log10(ue4_lowbound)));
 									float um_val = pow(10.,(umui_in/float(umu4_grdpts)*TMath::Log10(umu4_hibound/umu4_lowbound) + TMath::Log10(umu4_lowbound)));
-									float mnu_val = pow(10.,((mi_in+.5)/float(dm2_grdpts)*TMath::Log10(sqrt(dm2_hibound)/sqrt(dm2_lowbound)) + TMath::Log10(sqrt(dm2_lowbound))));
+									float mnu_val = pow(10.,((mi_in_new+.5)/float(dm2_grdpts)*TMath::Log10(sqrt(dm2_hibound)/sqrt(dm2_lowbound)) + TMath::Log10(sqrt(dm2_lowbound))));
 									float e_app_in = 4*pow(ue_val,2)*pow(um_val,2);
 									float e_dis_in = 4*pow(ue_val,2)*(1-pow(ue_val,2));
 									float m_dis_in = 4*pow(um_val,2)*(1-pow(um_val,2));
 									// get the oscillated spectra
-									SBNspec inSpec =  GetOscillatedSpectra(cvSpec, std::get<0>(a_sinsqSpec.at(mi_in)), e_app_in, e_dis_in, m_dis_in);
-									cov = GetTotalCov(fakeData, inSpec, *covFracSys_collapsed);
+									SBNspec inSpec =  GetOscillatedSpectra(cvSpec, std::get<0>(a_sinsqSpec.at(mi_in_new)), e_app_in, e_dis_in, m_dis_in);
+									cov = GetTotalCov(fakeData, inSpec, *covFracSys);
 									float chi_test = GetChiSqFromSpectra(fakeData, inSpec, cov);
 									if (chi_test<chi_min_grid){
 										chi_min_grid = chi_test;
@@ -272,13 +278,13 @@ int main(int argc, char* argv[]){
 						// step size decided in parameter test
 						Int_t ierflg = 0;
 						Double_t dm2_step = 0.00001;
-						Double_t dm2_start = m41_grid;
+						Double_t dm2_start = mnu_base;
 						TString dm2_name = "m41";
 						Double_t ue4_step = 0.000001;
-						Double_t ue4_start = ue_grid;
+						Double_t ue4_start = ue_base;
 						TString ue4_name = "ue4";
 						Double_t umu4_step = 0.000005;
-						Double_t umu4_start = umu4_grid;
+						Double_t umu4_start = um_base;
 						TString umu4_name = "umu4";
 
 
@@ -340,9 +346,9 @@ int main(int argc, char* argv[]){
 		}//end of loop over base mass
 	}//end of not gen loop
 
-  auto time_end = std::chrono::steady_clock::now();
-	std::cout<<"TIMING INFO SECTION"<<std::endl;
-	std::cout<<"total time (minutes): "<<(time_end-time_a).count()/60.0<<std::endl;
+  //auto time_end = std::chrono::steady_clock::now();
+//	std::cout<<"TIMING INFO SECTION"<<std::endl;
+//	std::cout<<"total time (minutes): "<<(time_end-time_a).count()/60.0<<std::endl;
 	return 0;
 } // end of main function
 
@@ -391,6 +397,7 @@ int main(int argc, char* argv[]){
 		// Write them to files
 		gen->WritePrecomputedOscSpecs(tag);
 	}
+	std::cout<<minrange<<" "<<maxrange<<std::endl;
 	return;
 }//end of generate spectra function
 
@@ -508,7 +515,7 @@ void testfcn(Int_t &npar, Double_t *gin, Double_t &f, Double_t *par, Int_t iflag
 	int lowidx, highidx;
 	double prevval = 0;
 	for(int i = 1;i<a_sinsqSpec.size();i++){
-		// std::cout<<std::get<1>(a_sinsqSpec.at(i))<<" "<<par[0]<<" "<<prevval<<std::endl;
+		std::cout<<std::get<1>(a_sinsqSpec.at(i))<<" "<<par[0]<<" "<<prevval<<std::endl;
 		if (par[0]==std::get<1>(a_sinsqSpec.at(i))){
 			lowidx = i;
 			highidx =i;
