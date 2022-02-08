@@ -1,0 +1,4 @@
+Probing /cvmfs/fermilab.opensciencegrid.org... OK
+Probing /cvmfs/uboone.opensciencegrid.org... OK
+[33mWARNING:[0m Could not lookup the current user's information: user: lookup userid 30842: invalid argument
+[31mFATAL:  [0m Couldn't determine user account information: user: lookup userid 30842: invalid argument

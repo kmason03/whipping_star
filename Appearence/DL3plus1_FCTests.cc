@@ -57,26 +57,26 @@ void testfcn(Int_t &npar, Double_t *gin, Double_t &f, Double_t *par, Int_t iflag
 //float getoscweight(float m41, float ue4, float um4, float ev_e, float ev_L,int type);
 
 // define some global variables
-std::string xml = "/uboone/app/users/kmason/whipping_star/xml/TotalThreePlusOne_full.xml";
+std::string xml = "/cluster/tufts/wongjiradlabnu/kmason03/whipping_star/xml/TotalThreePlusOne_full.xml";
 bool gen = false;
 bool printbins = true;
 int mass_start = -1;
 std::string tag = "DL_full";
-// set these parameters at the very start
+// set some start parameters
 const double dm2_lowbound(0.01), dm2_hibound(100);
-const double ue4_lowbound(0.07), ue4_hibound(0.5);
-const double umu4_lowbound(0.07), umu4_hibound(0.5);
-// to genergate dm2_grdpts = 100
+const double ue4_lowbound(0.0001), ue4_hibound(0.5);
+const double umu4_lowbound(0.0001), umu4_hibound(0.5);
+// to genergate dm2_grdpts = 400
 const int dm2_grdpts(25), ue4_grdpts(25), umu4_grdpts(25);
 const int nBins_e(10),nBins_mu(19);
 const int nBins = nBins_e+nBins_mu;
-const int nFakeExp(1000);
+const int nFakeExp(1);
 double  mnu, ue, umu;
 int count;
 std::vector<float> fakeData;
 TMatrixD cov(nBins,nBins);
 SBNspec  appSpec, innerSpec, oscSpec;
-SBNspec cvSpec("MassSpectraData/Full/"+tag+"_Bkg.SBNspec.root",xml);
+SBNspec cvSpec("/cluster/tufts/wongjiradlabnu/kmason03/whipping_star/data/MassSpectra/"+tag+"_Bkg.SBNspec.root",xml);
 std::array<double,nBins>  a_pred;
 std::ofstream coordfile;
 std::ofstream chifile;
@@ -136,7 +136,7 @@ int main(int argc, char* argv[]){
 
 		// open output text files
 		coordfile.open("bins_full.txt", std::ios_base::app);
-		chifile.open("chis_full_comptest1_full.txt", std::ios_base::app);
+		chifile.open("chis_full_comptest2_full.txt", std::ios_base::app);
 		covfile.open("cov_full.txt", std::ios_base::app);
 		covtotalfile.open("covtotal_full.txt", std::ios_base::app);
 		covinvfile.open("covinv_full.txt", std::ios_base::app);
@@ -152,12 +152,12 @@ int main(int argc, char* argv[]){
 		cvSpec.CollapseVector();
 		// cvSpec.PrintFullVector();
 		// make a tuple of the spectra and mass term
-		for(int mi = 0; mi < 100; mi++){
-			mnu = pow(10.,((mi+.5)/float(100)*TMath::Log10(sqrt(dm2_hibound)/sqrt(dm2_lowbound)) + TMath::Log10(sqrt(dm2_lowbound))));
+		for(int mi = 0; mi < 400; mi++){
+			mnu = pow(10.,((mi+.5)/float(400)*TMath::Log10(sqrt(dm2_hibound)/sqrt(dm2_lowbound)) + TMath::Log10(sqrt(dm2_lowbound))));
 			std::stringstream stream;
 			stream << std::fixed << std::setprecision(4) << 2*log10(mnu);
 			std::cout<<mi<<std::endl;
-			std::string infile = "MassSpectraData/Full/"+tag+"_SINSQ_dm_"+stream.str()+".SBNspec.root";
+			std::string infile = "/cluster/tufts/wongjiradlabnu/kmason03/whipping_star/data/MassSpectra/"+tag+"_SINSQ_dm_"+stream.str()+".SBNspec.root";
 			auto inspec = SBNspec(infile,xml);
 			// inspec.Scale("ext",0.0);	// since we're subtracting this spectrum, we want to make sure we're not subtracting the background.
 			inspec.CollapseVector();
@@ -173,19 +173,19 @@ int main(int argc, char* argv[]){
 
 		// Stats + sys
 		// Load up cov matrix and add in detector variation component	**
-		TFile * fsys = new TFile("katieversion_total.SBNcovar.root","read");
-		// TFile * fsys = new TFile("h1_v48_total.SBNcovar.root","read");
-		// TMatrixD * covFracSys = (TMatrixD*)fsys->Get("frac_covariance");
+		// TFile * fsys = new TFile("katieversion_total.SBNcovar.root","read");
+		TFile * fsys = new TFile("/cluster/tufts/wongjiradlabnu/kmason03/whipping_star/data/systematics/DL_full.SBNcovar.root","read");
+		TMatrixD * covFracSys = (TMatrixD*)fsys->Get("frac_covariance");
 		// switch to collapsed version
-		covFracSys_collapsed = (TMatrixD*)fsys->Get("frac_covariance_collapsed");
+		covFracSys_collapsed = (TMatrixD*)fsys->Get("collapsed_frac_covariance");
 
 		// save covar for plotting purposes
-		// for(short i = 0; i < nBins; i++){
-		// 	for(short j = 0; j < nBins; j++){
-		// 			covfile<< (*covFracSys_collapsed)(i,j)<<" ";
-		// 	}
-		// 	covfile<<std::endl;
-		// }
+		for(short i = 0; i < nBins; i++){
+			for(short j = 0; j < nBins; j++){
+					covfile<< (*covFracSys_collapsed)(i,j)<<" ";
+			}
+			covfile<<std::endl;
+		}
 
 		cvSpec.CollapseVector();
 		cvSpec.PrintCollapsedVector();
@@ -204,11 +204,11 @@ int main(int argc, char* argv[]){
 			for(int uei_base = 10; uei_base < 11; uei_base++){
 				for(int umui_base = 10; umui_base < 11; umui_base++){
 					// there are 100 mass spectra pregenerated
-					int mi_base_new = mi_base*(100/dm2_grdpts);
+					int mi_base_new = mi_base*(400/dm2_grdpts);
 						//mnu =m41, ue4 = sqrt(.5sin^2(2theta14)), um4 = sqrt(.5sin^2(2theta24)), sin2 term = 4(ue4**2)(um4**2)
 					float ue_base = pow(10.,(uei_base/float(ue4_grdpts)*TMath::Log10(ue4_hibound/ue4_lowbound) + TMath::Log10(ue4_lowbound)));
 					float um_base = pow(10.,(umui_base/float(umu4_grdpts)*TMath::Log10(umu4_hibound/umu4_lowbound) + TMath::Log10(umu4_lowbound)));
-					float mnu_base = pow(10.,((mi_base_new+.5)/float(100)*TMath::Log10(sqrt(dm2_hibound)/sqrt(dm2_lowbound)) + TMath::Log10(sqrt(dm2_lowbound))));
+					float mnu_base = pow(10.,((mi_base_new+.5)/float(400)*TMath::Log10(sqrt(dm2_hibound)/sqrt(dm2_lowbound)) + TMath::Log10(sqrt(dm2_lowbound))));
 					// calculate scaling factors
 					float e_app = 4*pow(ue_base,2)*pow(um_base,2);
 					float e_dis = 4*pow(ue_base,2)*(1-pow(ue_base,2));
@@ -252,10 +252,10 @@ int main(int argc, char* argv[]){
 						for(int mi_in = 0; mi_in <dm2_grdpts; mi_in++){
 							for(int uei_in = 0; uei_in < ue4_grdpts; uei_in++){
 								for(int umui_in = 0; umui_in < umu4_grdpts; umui_in++){
-									int mi_in_new = mi_in*(100/dm2_grdpts);
+									int mi_in_new = mi_in*(400/dm2_grdpts);
 									float ue_val = pow(10.,(uei_in/float(ue4_grdpts)*TMath::Log10(ue4_hibound/ue4_lowbound) + TMath::Log10(ue4_lowbound)));
 									float um_val = pow(10.,(umui_in/float(umu4_grdpts)*TMath::Log10(umu4_hibound/umu4_lowbound) + TMath::Log10(umu4_lowbound)));
-									float mnu_val = pow(10.,((mi_in_new+.5)/float(100)*TMath::Log10(sqrt(dm2_hibound)/sqrt(dm2_lowbound)) + TMath::Log10(sqrt(dm2_lowbound))));
+									float mnu_val = pow(10.,((mi_in_new+.5)/float(400)*TMath::Log10(sqrt(dm2_hibound)/sqrt(dm2_lowbound)) + TMath::Log10(sqrt(dm2_lowbound))));
 									e_app_in = 4*pow(ue_val,2)*pow(um_val,2);
 									e_dis_in = 4*pow(ue_val,2)*(1-pow(ue_val,2));
 									m_dis_in = 4*pow(um_val,2)*(1-pow(um_val,2));
@@ -280,10 +280,10 @@ int main(int argc, char* argv[]){
 						for(int mi_in = 0; mi_in < 10; mi_in++){
 							for(int uei_in = 0; uei_in < 10; uei_in++){
 								for(int umui_in = 0; umui_in < 10; umui_in++){
-									int mi_in_new = mi_in*(100/dm2_grdpts);
+									int mi_in_new = mi_in*(400/dm2_grdpts);
 									float ue_val = pow(10.,(uei_in/float(ue4_grdpts)*TMath::Log10(ue4_hibound/ue4_lowbound) + TMath::Log10(ue4_lowbound)));
 									float um_val = pow(10.,(umui_in/float(umu4_grdpts)*TMath::Log10(umu4_hibound/umu4_lowbound) + TMath::Log10(umu4_lowbound)));
-									float mnu_val = pow(10.,((mi_in_new+.5)/float(100)*TMath::Log10(sqrt(dm2_hibound)/sqrt(dm2_lowbound)) + TMath::Log10(sqrt(dm2_lowbound))));
+									float mnu_val = pow(10.,((mi_in_new+.5)/float(400)*TMath::Log10(sqrt(dm2_hibound)/sqrt(dm2_lowbound)) + TMath::Log10(sqrt(dm2_lowbound))));
 									e_app_in = 4*pow(ue_val,2)*pow(um_val,2);
 									e_dis_in = 4*pow(ue_val,2)*(1-pow(ue_val,2));
 									m_dis_in = 4*pow(um_val,2)*(1-pow(um_val,2));
