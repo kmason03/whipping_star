@@ -114,9 +114,9 @@ def collapseFullCovar(full_covar, coll_list, debug=False):
 
 def getSpecList(hist_list):
 
-    ## Function that concatenates a list of TH1Ds into a python list
+    ## Function that concatenates a list of Th0Ds into a python list
     ## Inputs:
-    ##   hist_list    list of spectra to be concatenated (python list of TH1Ds)
+    ##   hist_list    list of spectra to be concatenated (python list of Th0Ds)
     ## Returns:
     ##   spec         concatenated spectrum (python list)
 
@@ -254,8 +254,8 @@ def main():
     # Declare file names for input files
     # topdir = '/uboone/app/users/yatesla/sbnfit/whipping_star/dllee/forUnblinding/'
     # in_h0_spec_fname = os.path.join(topdir, "h0_v48.SBNspec.root")
-    # in_h1_spec_fname = os.path.join(topdir, "h1_v48.SBNspec.root")
-    # in_covar_fname   = os.path.join(topdir, "h1_v48.SBNcovar.root")
+    # in_h0_spec_fname = os.path.join(topdir, "h0_v48.SBNspec.root")
+    # in_covar_fname   = os.path.join(topdir, "h0_v48.SBNcovar.root")
     topdir='/cluster/tufts/wongjiradlabnu/kmason03/whipping_star/data/systematics/'
     in_h0_spec_fname = os.path.join(topdir,"DL_full.SBNspec.root")
     in_covar_fname   = os.path.join(topdir,"DL_full.SBNcovar.root")
@@ -305,7 +305,7 @@ def main():
     # Initialize the output spectra, covariance matrix as copies of the inputs
     out_h0_spec_dict = {}
     for k in [ key.GetName() for key in in_h0_spec_f.GetListOfKeys() ]:
-        out_h0_spec_dict[k] = ROOT.TH1D( in_h0_spec_f.Get(k) )
+        out_h0_spec_dict[k] = ROOT.Th1D( in_h0_spec_f.Get(k) )
     out_covar = ROOT.TMatrixD( in_covar_f.Get("frac_covariance") )
     # Zero out any nans, so that things we add actually get added
     for i in range(out_covar.GetNrows()):
@@ -392,33 +392,33 @@ def main():
     for i in range(Nbins_e):
         # bnb
         if in_h0_spec_f.Get("nu_uBooNE_1e1p_bnb").GetBinContent(i+1) > 0.:
-            out_covar[i+offset_1e1p_bnb][i+offset_1e1p_bnb] += (in_h1_spec_f.Get("nu_uBooNE_1e1p_bnb").GetBinError(i+1) / in_h1_spec_f.Get("nu_uBooNE_1e1p_bnb").GetBinContent(i+1))**2
+            out_covar[i+offset_1e1p_bnb][i+offset_1e1p_bnb] += (in_h0_spec_f.Get("nu_uBooNE_1e1p_bnb").GetBinError(i+1) / in_h0_spec_f.Get("nu_uBooNE_1e1p_bnb").GetBinContent(i+1))**2
         out_h0_spec_dict["nu_uBooNE_1e1p_bnb"].SetBinError(i+1, 0.)
         # nue
         if in_h0_spec_f.Get("nu_uBooNE_1e1p_nue").GetBinContent(i+1) > 0.:
-            out_covar[i+offset_1e1p_nue][i+offset_1e1p_nue] += (in_h1_spec_f.Get("nu_uBooNE_1e1p_nue").GetBinError(i+1) / in_h1_spec_f.Get("nu_uBooNE_1e1p_nue").GetBinContent(i+1))**2
+            out_covar[i+offset_1e1p_nue][i+offset_1e1p_nue] += (in_h0_spec_f.Get("nu_uBooNE_1e1p_nue").GetBinError(i+1) / in_h0_spec_f.Get("nu_uBooNE_1e1p_nue").GetBinContent(i+1))**2
         out_h0_spec_dict["nu_uBooNE_1e1p_nue"].SetBinError(i+1, 0.)
         # fullosc
         if in_h0_spec_f.Get("nu_uBooNE_1e1p_fullosc").GetBinContent(i+1) > 0.:
-            out_covar[i+offset_1e1p_fullosc][i+offset_1e1p_fullosc] += (in_h1_spec_f.Get("nu_uBooNE_1e1p_fullosc").GetBinError(i+1) / in_h1_spec_f.Get("nu_uBooNE_1e1p_fullosc").GetBinContent(i+1))**2
+            out_covar[i+offset_1e1p_fullosc][i+offset_1e1p_fullosc] += (in_h0_spec_f.Get("nu_uBooNE_1e1p_fullosc").GetBinError(i+1) / in_h0_spec_f.Get("nu_uBooNE_1e1p_fullosc").GetBinContent(i+1))**2
         out_h0_spec_dict["nu_uBooNE_1e1p_fullosc"].SetBinError(i+1, 0.)
         # ext
         if in_h0_spec_f.Get("nu_uBooNE_1e1p_ext").GetBinContent(i+1) > 0.:
-            out_covar[i+offset_1e1p_ext][i+offset_1e1p_ext] += (in_h1_spec_f.Get("nu_uBooNE_1e1p_ext").GetBinError(i+1) / in_h1_spec_f.Get("nu_uBooNE_1e1p_ext").GetBinContent(i+1))**2
+            out_covar[i+offset_1e1p_ext][i+offset_1e1p_ext] += (in_h0_spec_f.Get("nu_uBooNE_1e1p_ext").GetBinError(i+1) / in_h0_spec_f.Get("nu_uBooNE_1e1p_ext").GetBinContent(i+1))**2
         out_h0_spec_dict["nu_uBooNE_1e1p_ext"].SetBinError(i+1, 0.)
     # next is the 1mu1p
     for i in range(Nbins_m):
         # bnb
         if in_h0_spec_f.Get("nu_uBooNE_1mu1p_bnb").GetBinContent(i+1) > 0.:
-            out_covar[i+offset_1m1p_bnb][i+offset_1m1p_bnb] += (in_h1_spec_f.Get("nu_uBooNE_1mu1p_bnb").GetBinError(i+1) / in_h1_spec_f.Get("nu_uBooNE_1mu1p_bnb").GetBinContent(i+1))**2
+            out_covar[i+offset_1m1p_bnb][i+offset_1m1p_bnb] += (in_h0_spec_f.Get("nu_uBooNE_1mu1p_bnb").GetBinError(i+1) / in_h0_spec_f.Get("nu_uBooNE_1mu1p_bnb").GetBinContent(i+1))**2
         out_h0_spec_dict["nu_uBooNE_1mu1p_bnb"].SetBinError(i+1, 0.)
         # nue
         if in_h0_spec_f.Get("nu_uBooNE_1mu1p_nue").GetBinContent(i+1) > 0.:
-            out_covar[i+offset_1m1p_nue][i+offset_1m1p_nue] += (in_h1_spec_f.Get("nu_uBooNE_1mu1p_nue").GetBinError(i+1) / in_h1_spec_f.Get("nu_uBooNE_1mu1p_nue").GetBinContent(i+1))**2
+            out_covar[i+offset_1m1p_nue][i+offset_1m1p_nue] += (in_h0_spec_f.Get("nu_uBooNE_1mu1p_nue").GetBinError(i+1) / in_h0_spec_f.Get("nu_uBooNE_1mu1p_nue").GetBinContent(i+1))**2
         out_h0_spec_dict["nu_uBooNE_1mu1p_nue"].SetBinError(i+1, 0.)
         # ext
         if in_h0_spec_f.Get("nu_uBooNE_1mu1p_ext").GetBinContent(i+1) > 0.:
-            out_covar[i+offset_1m1p_ext][i+offset_1m1p_ext] += (in_h1_spec_f.Get("nu_uBooNE_1mu1p_ext").GetBinError(i+1) / in_h1_spec_f.Get("nu_uBooNE_1mu1p_ext").GetBinContent(i+1))**2
+            out_covar[i+offset_1m1p_ext][i+offset_1m1p_ext] += (in_h0_spec_f.Get("nu_uBooNE_1mu1p_ext").GetBinError(i+1) / in_h0_spec_f.Get("nu_uBooNE_1mu1p_ext").GetBinContent(i+1))**2
         out_h0_spec_dict["nu_uBooNE_1mu1p_ext"].SetBinError(i+1, 0.)
 
     # ... done adding mc stat errors for 1e1p nue, 1e1p lee, and 1mu1p
