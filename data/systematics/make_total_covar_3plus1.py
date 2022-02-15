@@ -305,7 +305,7 @@ def main():
     # Initialize the output spectra, covariance matrix as copies of the inputs
     out_h0_spec_dict = {}
     for k in [ key.GetName() for key in in_h0_spec_f.GetListOfKeys() ]:
-        out_h0_spec_dict[k] = ROOT.Th1D( in_h0_spec_f.Get(k) )
+        out_h0_spec_dict[k] = ROOT.TH1D( in_h0_spec_f.Get(k) )
     out_covar = ROOT.TMatrixD( in_covar_f.Get("frac_covariance") )
     # Zero out any nans, so that things we add actually get added
     for i in range(out_covar.GetNrows()):
