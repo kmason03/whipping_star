@@ -32,6 +32,7 @@ cp ${WORK_DIR}/DL3plus1_FCTests .
 ./DL3plus1_FCTests  > ${WORK_DIR}/logs/${arrayid}_log.txt
 
 # move outputs to dedicated directory
+rm ${WORK_DIR}/textfiles/chis_${arrayid}.txt 
 mv chis_full*txt  ${WORK_DIR}/textfiles/chis_${arrayid}.txt
 # remove temporary job directory
 cd ${WORK_DIR}

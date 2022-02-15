@@ -10,8 +10,6 @@
       />
   <subchannel name="bnb" osc="22"/>
   <subchannel name="nue" osc="11"/>
-  <subchannel name="ccpi0" osc="22"/>
-  <subchannel name="ncpi0" osc="22"/>
   <subchannel name="fullosc" osc="21"/>
   <subchannel name="ext" osc="0"/>
 </channel>
@@ -22,8 +20,6 @@
       />
   <subchannel name="bnb" osc="22"/>
   <subchannel name="nue" osc="11"/>
-  <subchannel name="ccpi0" osc="22"/>
-  <subchannel name="ncpi0" osc="22"/>
   <subchannel name="ext" osc="0"/>
 </channel>
 
@@ -113,7 +109,7 @@
   <branch
       name="nu_energy_reco"
       type="double"
-      associated_subchannel="nu_uBooNE_1e1p_ccpi0"
+      associated_subchannel="nu_uBooNE_1e1p_bnb"
       additional_weight="xsec_corr_weight*dllee_pi0_weight* (nu_energy_reco>=200.)*(nu_energy_reco<2400.)*(dllee_bdt_score_avg>=0.95)"
       eventweight_branch_name="sys_weights"
       oscillate = "true"
@@ -126,7 +122,7 @@
   <branch
       name="nu_energy_reco"
       type="double"
-      associated_subchannel="nu_uBooNE_1e1p_ccpi0"
+      associated_subchannel="nu_uBooNE_1e1p_bnb"
       additional_weight="xsec_corr_weight*dllee_pi0_weight* (nu_energy_reco>=200.)*(nu_energy_reco<2400.)*(dllee_bdt_score_avg>=0.95)"
       eventweight_branch_name="sys_weights"
       oscillate = "true"
@@ -139,7 +135,7 @@
   <branch
       name="nu_energy_reco"
       type="double"
-      associated_subchannel="nu_uBooNE_1e1p_ncpi0"
+      associated_subchannel="nu_uBooNE_1e1p_bnb"
       additional_weight="xsec_corr_weight*dllee_pi0_weight* (nu_energy_reco>=200.)*(nu_energy_reco<2400.)*(dllee_bdt_score_avg>=0.95)"
       eventweight_branch_name="sys_weights"
       oscillate = "true"
@@ -152,7 +148,7 @@
   <branch
       name="nu_energy_reco"
       type="double"
-      associated_subchannel="nu_uBooNE_1e1p_ncpi0"
+      associated_subchannel="nu_uBooNE_1e1p_bnb"
       additional_weight="xsec_corr_weight*dllee_pi0_weight* (nu_energy_reco>=200.)*(nu_energy_reco<2400.)*(dllee_bdt_score_avg>=0.95)"
       eventweight_branch_name="sys_weights"
       oscillate = "true"
@@ -302,7 +298,7 @@
   <branch
       name="nu_energy_reco"
       type="double"
-      associated_subchannel="nu_uBooNE_1mu1p_ccpi0"
+      associated_subchannel="nu_uBooNE_1mu1p_bnb"
       eventweight_branch_name="sys_weights"
       additional_weight="xsec_corr_weight*dllee_pi0_weight* (dllee_bdt_score_avg>=0.5)"
       oscillate = "true"
@@ -315,7 +311,7 @@
   <branch
       name="nu_energy_reco"
       type="double"
-      associated_subchannel="nu_uBooNE_1mu1p_ccpi0"
+      associated_subchannel="nu_uBooNE_1mu1p_bnb"
       additional_weight="xsec_corr_weight*dllee_pi0_weight* (dllee_bdt_score_avg>=0.5)"
       eventweight_branch_name="sys_weights"
       oscillate = "true"
@@ -328,7 +324,7 @@
   <branch
       name="nu_energy_reco"
       type="double"
-      associated_subchannel="nu_uBooNE_1mu1p_ncpi0"
+      associated_subchannel="nu_uBooNE_1mu1p_bnb"
       additional_weight="xsec_corr_weight*dllee_pi0_weight* (dllee_bdt_score_avg>=0.5)"
       eventweight_branch_name="sys_weights"
       oscillate = "true"
@@ -341,7 +337,7 @@
   <branch
       name="nu_energy_reco"
       type="double"
-      associated_subchannel="nu_uBooNE_1mu1p_ncpi0"
+      associated_subchannel="nu_uBooNE_1mu1p_bnb"
       additional_weight="xsec_corr_weight*dllee_pi0_weight* (dllee_bdt_score_avg>=0.5)"
       eventweight_branch_name="sys_weights"
       oscillate = "true"

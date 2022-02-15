@@ -1,0 +1,38 @@
+Probing /cvmfs/fermilab.opensciencegrid.org... OK
+Probing /cvmfs/uboone.opensciencegrid.org... OK
+43
+
+/cluster/tufts/wongjiradlabnu/kmason03/whipping_star/gridscripts
+
+/cluster/tufts/wongjiradlabnu/kmason03/whipping_star/build/Appearence/job_43
+slurmstepd: error: *** JOB 8664508 ON p1cmp075 CANCELLED AT 2022-02-14T10:13:45 ***
+slurmstepd: error: *** JOB 8664564 ON p1cmp075 CANCELLED AT 2022-02-14T10:13:45 ***
+slurmstepd: error: *** JOB 8664571 ON p1cmp075 CANCELLED AT 2022-02-14T10:13:45 ***
+slurmstepd: error: *** JOB 8664570 ON p1cmp075 CANCELLED AT 2022-02-14T10:13:45 ***
+slurmstepd: error: *** JOB 8664563 ON p1cmp075 CANCELLED AT 2022-02-14T10:13:45 ***
+slurmstepd: error: *** JOB 8664499 ON p1cmp075 CANCELLED AT 2022-02-14T10:13:45 ***
+slurmstepd: error: *** JOB 8664595 ON p1cmp075 CANCELLED AT 2022-02-14T10:13:45 ***
+slurmstepd: error: *** JOB 8664414 ON p1cmp075 CANCELLED AT 2022-02-14T10:13:45 ***
+slurmstepd: error: *** JOB 8664415 ON p1cmp075 CANCELLED AT 2022-02-14T10:13:45 ***
+slurmstepd: error: *** JOB 8664440 ON p1cmp075 CANCELLED AT 2022-02-14T10:13:45 ***
+slurmstepd: error: *** JOB 8664408 ON p1cmp075 CANCELLED AT 2022-02-14T10:13:45 ***
+slurmstepd: error: *** JOB 8664442 ON p1cmp075 CANCELLED AT 2022-02-14T10:13:45 ***
+slurmstepd: error: *** JOB 8664416 ON p1cmp075 CANCELLED AT 2022-02-14T10:13:45 ***
+slurmstepd: error: *** JOB 8663400 ON p1cmp075 CANCELLED AT 2022-02-14T10:13:45 ***
+slurmstepd: error: *** JOB 8663399 ON p1cmp075 CANCELLED AT 2022-02-14T10:13:45 ***
+slurmstepd: error: *** JOB 8663401 ON p1cmp075 CANCELLED AT 2022-02-14T10:13:45 ***
+slurmstepd: error: *** JOB 8663398 ON p1cmp075 CANCELLED AT 2022-02-14T10:13:45 ***
+slurmstepd: error: *** JOB 8663427 ON p1cmp075 CANCELLED AT 2022-02-14T10:13:45 ***
+slurmstepd: error: *** JOB 8663397 ON p1cmp075 CANCELLED AT 2022-02-14T10:13:45 ***
+slurmstepd: error: *** JOB 8663388 ON p1cmp075 CANCELLED AT 2022-02-14T10:13:45 ***
+slurmstepd: error: *** JOB 8663390 ON p1cmp075 CANCELLED AT 2022-02-14T10:13:45 ***
+slurmstepd: error: *** JOB 8663387 ON p1cmp075 CANCELLED AT 2022-02-14T10:13:45 ***
+slurmstepd: error: *** JOB 8663389 ON p1cmp075 CANCELLED AT 2022-02-14T10:13:45 ***
+slurmstepd: error: *** JOB 8663384 ON p1cmp075 CANCELLED AT 2022-02-14T10:13:45 ***
+slurmstepd: error: *** JOB 8663381 ON p1cmp075 CANCELLED AT 2022-02-14T10:13:45 ***
+slurmstepd: error: *** JOB 8663382 ON p1cmp075 CANCELLED AT 2022-02-14T10:13:45 ***
+slurmstepd: error: *** JOB 8663383 ON p1cmp075 CANCELLED AT 2022-02-14T10:13:45 ***
+slurmstepd: error: *** JOB 8663374 ON p1cmp075 CANCELLED AT 2022-02-14T10:13:45 ***
+slurmstepd: error: *** JOB 8663376 ON p1cmp075 CANCELLED AT 2022-02-14T10:13:45 ***
+slurmstepd: error: *** JOB 8663375 ON p1cmp075 CANCELLED AT 2022-02-14T10:13:45 ***
+slurmstepd: error: *** JOB 8663373 ON p1cmp075 CANCELLED AT 2022-02-14T10:13:45 ***

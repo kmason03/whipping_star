@@ -51,7 +51,7 @@ std::string xml = "/cluster/tufts/wongjiradlabnu/kmason03/whipping_star/xml/Tota
 std::string tag = "DL_full";
 // set these parameters at the very start
 const double dm2_lowbound(0.01), dm2_hibound(100);
-const int dm2_grdpts(400);
+const int dm2_grdpts(100);
 double  mnu;
 
 
@@ -61,7 +61,7 @@ int main(int argc, char* argv[]){
   std::cout<<specific_entry<<std::endl;
 	generate_spectra(specific_entry);
 	return 0;
-  // * note you only need tag_SINSQ.root files. Can delete the others when done 
+  // * note you only need tag_SINSQ.root files. Can delete the others when done
 } // end of main function
 
 

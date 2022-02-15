@@ -5,7 +5,7 @@
 #SBATCH --partition batch
 #SBATCH --time=0-2:00:00
 #SBATCH --mem-per-cpu=4000
-#SBATCH --array=0-399
+#SBATCH --array=1
 
 CONTAINER=/cluster/tufts/wongjiradlab/larbys/larbys-containers/ubdl_depsonly_py3.6.11_u16.04_cu11_pytorch1.7.1.simg
 TOP_DIR=/cluster/tufts/wongjiradlabnu/kmason03/whipping_star/

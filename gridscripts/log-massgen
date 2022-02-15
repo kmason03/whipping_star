@@ -1,4 +1,10 @@
 Probing /cvmfs/fermilab.opensciencegrid.org... OK
 Probing /cvmfs/uboone.opensciencegrid.org... OK
-[33mWARNING:[0m Could not lookup the current user's information: user: lookup userid 30842: invalid argument
-[31mFATAL:  [0m Couldn't determine user account information: user: lookup userid 30842: invalid argument
+1
+
+/cluster/tufts/wongjiradlabnu/kmason03/whipping_star/gridscripts
+
+/cluster/tufts/wongjiradlabnu/kmason03/whipping_star/build/Appearence/job_1
+Warning in <TCanvas::Constructor>: Deleting canvas with same name: nu_uBooNE_1e1p
+Warning in <TCanvas::Constructor>: Deleting canvas with same name: nu_uBooNE_1mu1p
+Finished
