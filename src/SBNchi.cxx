@@ -204,9 +204,9 @@ int SBNchi::ReloadCoreSpectrum(SBNspec *bkgin){
 
     if(is_verbose)std::cout<<otag<<"Go from fracCovariance to fullCovariance. matrix_systematics.GetNcols(): "<<matrix_systematics.GetNcols()<<" matrix_systematics.GetNrows(): "<<matrix_systematics.GetNrows()<<" core->fullvec.size(): "<<core_spectrum.full_vector.size()<<std::endl;
     // systematics per scaled event
+    // std::cout<<"bin, cov[i,i], full_error[i], full_error[i]^2"<<std::endl;
     for(int i =0; i<matrix_systematics.GetNcols(); i++)
     {
-        //std::cout<<"KRAK: "<<core_spectrum.full_vector.at(i)<<std::endl;
         for(int j =0; j<matrix_systematics.GetNrows(); j++)
         {
             if(is_fractional){
@@ -215,7 +215,10 @@ int SBNchi::ReloadCoreSpectrum(SBNspec *bkgin){
                 }else{
                     matrix_systematics(i,j) = matrix_systematics(i,j)*core_spectrum.full_vector.at(i)*core_spectrum.full_vector.at(j);
                 }
-                if(i==j) matrix_systematics(i,j) += pow(core_spectrum.full_error[i],2);
+                if(i==j){
+                  // std::cout<<i<<" "<<matrix_systematics(i,j)<<" "<<core_spectrum.full_error[i]<<" "<<pow(core_spectrum.full_error[i],2)<<" "<< core_spectrum.full_vector.at(i)<<std::endl;
+                  matrix_systematics(i,j) += pow(core_spectrum.full_error[i],2);
+                }
             }
         }
     }
@@ -303,7 +306,7 @@ int SBNchi::ReloadCoreSpectrum(SBNspec *bkgin){
             }
         }
 
-        if(is_verbose) std::cout<<otag<<"WARNING: Biggest Relative Deviation from symmetry is i:"<<bi<<" j: "<<bj<<" of order "<<biggest_deviation<<" M(j,i)"<<Mtotal(bj,bi)<<" M(i,j)"<<Mtotal(bi,bj)<<std::endl;
+       // std::cout<<otag<<"WARNING: Biggest Relative Deviation from symmetry is i:"<<bi<<" j: "<<bj<<" of order "<<biggest_deviation<<" M(j,i)"<<Mtotal(bj,bi)<<" M(i,j)"<<Mtotal(bi,bj)<<std::endl;
 
         if(biggest_deviation >tol){
 
@@ -337,7 +340,7 @@ int SBNchi::ReloadCoreSpectrum(SBNspec *bkgin){
 
         for(int i=0; i< num_bins_total_compressed; i++){
             for(int j=0; j< num_bins_total_compressed; j++){
-                std::cout<<i<<" "<<j<<" "<<Mctotal(i,j)<<std::endl;
+                // std::cout<<i<<" "<<j<<" "<<Mctotal(i,j)<<std::endl;
             }
         }
 
@@ -771,15 +774,15 @@ TMatrixT<double> SBNchi::CalcCovarianceMatrix(TMatrixT<double>*M, std::vector<do
 TMatrixT<double> SBNchi::CalcCovarianceMatrixCNP(TMatrixT<double> M, std::vector<double>& spec, std::vector<double>& spec_collapse, const std::vector<double>& datavec ){
 
     if(M.GetNcols() != spec.size()){
-        std::cout << "ERROR: your input vector does not have the right dimenstion  " << std::endl; 
-        std::cout << "Fractional Matrix size :"<< M.GetNcols() << " || Input Full Vector size "<< spec.size() << std::endl;  
+        std::cout << "ERROR: your input vector does not have the right dimenstion  " << std::endl;
+        std::cout << "Fractional Matrix size :"<< M.GetNcols() << " || Input Full Vector size "<< spec.size() << std::endl;
         exit(EXIT_FAILURE);
     }
 
     TMatrixT<double> M_temp(M.GetNcols(), M.GetNcols() );
     TMatrixT<double> Mout(spec_collapse.size(), spec_collapse.size()); //collapsed covariance matrix
 
-    //systematic apart 
+    //systematic apart
     for(int i =0; i<M.GetNcols(); i++)
     {
         for(int j =0; j<M.GetNrows(); j++)
@@ -794,10 +797,10 @@ TMatrixT<double> SBNchi::CalcCovarianceMatrixCNP(TMatrixT<double> M, std::vector
     }
 
     CollapseModes(M_temp, Mout);
-    //add stats part	
+    //add stats part
     for(int i=0; i< spec_collapse.size(); i++){
-        Mout(i,i) +=   ( datavec[i] >0.001 ? 3.0/(1.0/datavec[i] +  2.0/spec_collapse[i])  : spec_collapse[i]/2.0 ); 
-        //Mout(i,i) +=   spec_collapse[i];//( datavec[i] >0.001 ? 3.0/(1.0/datavec[i] +  2.0/spec_collapse[i])  : spec_collapse[i]/2.0 ); 
+        Mout(i,i) +=   ( datavec[i] >0.001 ? 3.0/(1.0/datavec[i] +  2.0/spec_collapse[i])  : spec_collapse[i]/2.0 );
+        //Mout(i,i) +=   spec_collapse[i];//( datavec[i] >0.001 ? 3.0/(1.0/datavec[i] +  2.0/spec_collapse[i])  : spec_collapse[i]/2.0 );
     }
     return Mout;
 }
@@ -807,15 +810,15 @@ TMatrixT<double> SBNchi::CalcCovarianceMatrixCNP(TMatrixT<double> M, std::vector
 TMatrixT<double> SBNchi::CalcCovarianceMatrixCNP(TMatrixT<double> *M, std::vector<double>& spec, std::vector<double>& spec_collapse, std::vector<double>& spec_mcerr, const std::vector<float>& datavec ){
 
     if(M->GetNcols() != spec.size()){
-        std::cout << "ERROR: your input vector does not have the right dimenstion  " << std::endl; 
-        std::cout << "Fractional Matrix size :"<< M->GetNcols() << " || Input Full Vector size "<< spec.size() << std::endl;  
+        std::cout << "ERROR: your input vector does not have the right dimenstion  " << std::endl;
+        std::cout << "Fractional Matrix size :"<< M->GetNcols() << " || Input Full Vector size "<< spec.size() << std::endl;
         exit(EXIT_FAILURE);
     }
 
     TMatrixT<double> M_temp(M->GetNcols(), M->GetNcols() );
     TMatrixT<double> Mout(spec_collapse.size(), spec_collapse.size()); //collapsed covariance matrix
 
-    //systematic apart 
+    //systematic apart
     for(int i =0; i<M->GetNcols(); i++)
     {
         for(int j =0; j<M->GetNrows(); j++)
@@ -831,10 +834,10 @@ TMatrixT<double> SBNchi::CalcCovarianceMatrixCNP(TMatrixT<double> *M, std::vecto
     }
 
     CollapseModes(M_temp, Mout);
-    //add stats part	
+    //add stats part
     for(int i=0; i< spec_collapse.size(); i++){
-        Mout(i,i) +=   ( datavec[i] >0.001 ? 3.0/(1.0/datavec[i] +  2.0/spec_collapse[i])  : spec_collapse[i]/2.0 ); 
-        //Mout(i,i) +=   spec_collapse[i];//( datavec[i] >0.001 ? 3.0/(1.0/datavec[i] +  2.0/spec_collapse[i])  : spec_collapse[i]/2.0 ); 
+        Mout(i,i) +=   ( datavec[i] >0.001 ? 3.0/(1.0/datavec[i] +  2.0/spec_collapse[i])  : spec_collapse[i]/2.0 );
+        //Mout(i,i) +=   spec_collapse[i];//( datavec[i] >0.001 ? 3.0/(1.0/datavec[i] +  2.0/spec_collapse[i])  : spec_collapse[i]/2.0 );
     }
     return Mout;
 }
@@ -869,7 +872,7 @@ float SBNchi::CalcChi_Pearson(float * pred, float* data){
     {
         inverse_collapsed(j,j) +=  pred[j];
     }
-    inverse_collapsed = this->InvertMatrix(inverse_collapsed);   
+    inverse_collapsed = this->InvertMatrix(inverse_collapsed);
 
     float tchi = 0.0;
     for(int i =0; i<num_bins_total_compressed; i++){
@@ -891,7 +894,7 @@ float SBNchi::CalcChi_CNP(float * pred, float* data){
         inverse_collapsed(j,j) +=  ( data[j] >0.001 ? 3.0/(1.0/data[j] +  2.0/pred[j])  : pred[j]/2.0 );
     }
 
-    inverse_collapsed = this->InvertMatrix(inverse_collapsed);   
+    inverse_collapsed = this->InvertMatrix(inverse_collapsed);
 
     float tchi = 0.0;
     for(int i =0; i<num_bins_total_compressed; i++){
@@ -1036,8 +1039,8 @@ int SBNchi::FillCorrelationMatrix(TMatrixT<double>*in){
     for(int i=0; i<num_bins_total;i++){
         for(int j=0; j<num_bins_total;j++){
             double val = matrix_systematics(i,j);
-            double p1 = sqrt(matrix_systematics(j,j)); 
-            double p2 = sqrt(matrix_systematics(i,i)); 
+            double p1 = sqrt(matrix_systematics(j,j));
+            double p2 = sqrt(matrix_systematics(i,i));
             (*in)(i,j) = val/(p1*p2);
         }
     }
@@ -1048,9 +1051,9 @@ int SBNchi::FillCollapsedCorrelationMatrix(TMatrixT<double>*in){
     in->ResizeTo(num_bins_total_compressed,num_bins_total_compressed) ;
     for(int i=0; i<num_bins_total_compressed;i++){
         for(int j=0; j<num_bins_total_compressed;j++){
-            double val = vec_matrix_collapsed.at(i).at(j) - (i==j? core_spectrum.collapsed_vector.at(i) : 0.0 ); 
-            double p1 = sqrt(vec_matrix_collapsed.at(j).at(j)- core_spectrum.collapsed_vector.at(j)); 
-            double p2 = sqrt(vec_matrix_collapsed.at(i).at(i)- core_spectrum.collapsed_vector.at(i)); 
+            double val = vec_matrix_collapsed.at(i).at(j) - (i==j? core_spectrum.collapsed_vector.at(i) : 0.0 );
+            double p1 = sqrt(vec_matrix_collapsed.at(j).at(j)- core_spectrum.collapsed_vector.at(j));
+            double p2 = sqrt(vec_matrix_collapsed.at(i).at(i)- core_spectrum.collapsed_vector.at(i));
             (*in)(i,j) = val/(p1*p2);
         }
     }
@@ -1075,6 +1078,7 @@ int SBNchi::FillCollapsedFractionalMatrix(TMatrixT<double>*in){
     in->ResizeTo(num_bins_total_compressed,num_bins_total_compressed) ;
     for(int i=0; i<num_bins_total_compressed;i++){
         for(int j=0; j<num_bins_total_compressed;j++){
+            // std::cout<<vec_matrix_collapsed.at(i).at(j)<<" "<<core_spectrum.collapsed_vector.at(i)<<" "<<core_spectrum.collapsed_vector.at(j)<<std::endl;
             (*in)(i,j) = ( vec_matrix_collapsed.at(i).at(j) - (i==j? core_spectrum.collapsed_vector.at(i) : 0.0 ) )/(core_spectrum.collapsed_vector.at(i)*core_spectrum.collapsed_vector.at(j));
         }
     }
@@ -1380,11 +1384,11 @@ int SBNchi::PrintMatricies(std::string tag){
 int SBNchi::plot_one(TMatrixD matrix, std::string tag, TFile *fin, bool plot_pdf, bool indiv, bool is_corr){
     fin->cd();
     if(indiv){
-        TDirectory *individualDir = fin->GetDirectory("individualDir"); 
-        if (!individualDir) { 
-            individualDir = fin->mkdir("individualDir");       
+        TDirectory *individualDir = fin->GetDirectory("individualDir");
+        if (!individualDir) {
+            individualDir = fin->mkdir("individualDir");
         }
-        fin->cd(); 
+        fin->cd();
         individualDir->cd();
     }
     if(is_corr) gStyle->SetPalette(kLightTemperature);
@@ -1420,7 +1424,7 @@ int SBNchi::plot_one(TMatrixD matrix, std::string tag, TFile *fin, bool plot_pdf
     }
     else{
         h2_full.GetZaxis()->SetRangeUser(-0.25,0.25);
-    }    
+    }
 
     c_full->SetFrameFillColor(kWhite);
     c_full->SetFillColor(kWhite);
@@ -1535,7 +1539,7 @@ int SBNchi::PerformCholoskyDecomposition(SBNspec *specin){
                 U(i,j)= U(i,j)*specin->full_vector.at(i)*specin->full_vector.at(j);
             }
             if(i==j)
-            {   
+            {
                 U(i,j) += pow(specin->full_error[i],2);
             }
         }
@@ -1563,8 +1567,8 @@ int SBNchi::PerformCholoskyDecomposition(SBNspec *specin){
     bool was_modified = false;
 
     //Get a Determinant, check things.
-    double det = U_use.Determinant(); 
-    std::cout<<"SBNchi::CholeskyDecomposition\t||\t Checking determinant of Covariance Matrix: U "<<det<<std::endl; 
+    double det = U_use.Determinant();
+    std::cout<<"SBNchi::CholeskyDecomposition\t||\t Checking determinant of Covariance Matrix: U "<<det<<std::endl;
 
     if(det < tol){
         std::cout<<"SBNchi::CholeskyDecomposition\t||\t This determinant is below tolerance of : "<<m_tolerance<<std::endl;
@@ -1573,7 +1577,7 @@ int SBNchi::PerformCholoskyDecomposition(SBNspec *specin){
             U_use(a,a) += tol;
             was_modified = true;
         }
-        det = U_use.Determinant(); 
+        det = U_use.Determinant();
         std::cout<<"SBNchi::CholeskyDecomposition\t||\t The modified determinant is now: "<<det<<std::endl;
     }
 
@@ -1671,20 +1675,20 @@ int SBNchi::PerformCholoskyDecomposition(SBNspec *specin){
 
 
 
-    cholosky_performed = true;	
+    cholosky_performed = true;
     delete chol;
     return 0;
 }
 
 
-TH1D SBNchi::SampleCovarianceVaryInput(SBNspec *specin, int num_MC, double maxchi){ 
+TH1D SBNchi::SampleCovarianceVaryInput(SBNspec *specin, int num_MC, double maxchi){
     max_sample_chi_val = maxchi;
     std::vector<double>  tmp;
     return SampleCovarianceVaryInput(specin,num_MC,&tmp);
 }
 
 TH1D SBNchi::SampleCovarianceVaryInput(SBNspec *specin, int num_MC, std::vector<double> * chival){
-    if(!cholosky_performed) this->PerformCholoskyDecomposition(specin); 
+    if(!cholosky_performed) this->PerformCholoskyDecomposition(specin);
 
     float** a_vec_matrix_lower_triangular = new float*[num_bins_total];
     float** a_vec_matrix_inverted = new float*[num_bins_total_compressed];
@@ -1699,13 +1703,13 @@ TH1D SBNchi::SampleCovarianceVaryInput(SBNspec *specin, int num_MC, std::vector<
 
     for(int i=0; i < num_bins_total; i++){
         for(int j=0; j < num_bins_total; j++){
-            a_vec_matrix_lower_triangular[i][j] = vec_matrix_lower_triangular[i][j]; 
+            a_vec_matrix_lower_triangular[i][j] = vec_matrix_lower_triangular[i][j];
         }
     }
 
     for(int i=0; i< num_bins_total_compressed; i++){
         for(int j=0; j< num_bins_total_compressed; j++){
-            a_vec_matrix_inverted[i][j] = vec_matrix_inverted[i][j]; 
+            a_vec_matrix_inverted[i][j] = vec_matrix_inverted[i][j];
         }
     }
 
@@ -1732,7 +1736,7 @@ TH1D SBNchi::SampleCovarianceVaryInput(SBNspec *specin, int num_MC, std::vector<
 
     int *nlower = new int[num_chival];
     for(int i=0; i< num_chival; i++){
-        nlower[i]=0; 
+        nlower[i]=0;
         a_chival[i] = chival->at(i);
     }
 
@@ -1766,13 +1770,13 @@ TH1D SBNchi::SampleCovarianceVaryInput(SBNspec *specin, int num_MC, std::vector<
 #pragma acc parallel loop  private(gaus_sample[:54],sampled_fullvector[:54],collapsed[:36],state) \
     copyin(this[0:1],							\
             a_specin[:num_bins_total],					\
-            a_vec_matrix_lower_triangular[:num_bins_total][:num_bins_total],\ 
+            a_vec_matrix_lower_triangular[:num_bins_total][:num_bins_total],\
             a_corein[:num_bins_total_compressed],				\
             a_vec_matrix_inverted[:num_bins_total_compressed][:num_bins_total_compressed],	\
             seed[0:num_MC],						\
             a_chival[:num_chival],						\
             this->a_num_bins[:num_channels],				\
-            this->a_num_subchannels[:num_channels])			\    
+            this->a_num_subchannels[:num_channels])			\
         copyout(a_vec_chis[:num_MC]) \
         copy(nlower[:num_chival])
 #endif
@@ -1789,7 +1793,7 @@ TH1D SBNchi::SampleCovarianceVaryInput(SBNspec *specin, int num_MC, std::vector<
 #else
             for(int a=0; a<num_bins_total; a++) {
                 gaus_sample[a]= dist_normal(*rangen_twister);
-            }      
+            }
 #endif
 
             for(int j = 0; j < num_bins_total; j++){
@@ -1821,7 +1825,7 @@ TH1D SBNchi::SampleCovarianceVaryInput(SBNspec *specin, int num_MC, std::vector<
 
 
     for(int i=0; i<num_MC; i++){
-        //       if (i<(int)1e3) 
+        //       if (i<(int)1e3)
         //         std::cout << "@i=" << a_vec_chis[i] << std::endl;
         ans.Fill(a_vec_chis[i]);
     }
@@ -1840,7 +1844,7 @@ TH1D SBNchi::SampleCovarianceVaryInput(SBNspec *specin, int num_MC, std::vector<
     }
 
     for(int i=0; i < num_bins_total_compressed; i++){
-        delete[] a_vec_matrix_inverted[i];  
+        delete[] a_vec_matrix_inverted[i];
     }
 
     delete[] a_vec_matrix_lower_triangular;
@@ -1960,21 +1964,21 @@ int SBNchi::CollapseVectorStandAlone(double* full_vector, double *collapsed_vect
 std::vector<float> SBNchi::GeneratePseudoExperiment(){
 
     core_spectrum.CollapseVector();
-    if(!cholosky_performed || is_stat_only) PerformCholoskyDecomposition(&core_spectrum); 
+    if(!cholosky_performed || is_stat_only) PerformCholoskyDecomposition(&core_spectrum);
 
-    int n_t =  (pseudo_from_collapsed ? num_bins_total_compressed : num_bins_total); 
+    int n_t =  (pseudo_from_collapsed ? num_bins_total_compressed : num_bins_total);
     std::vector<float> sampled(n_t);
     is_verbose = false;
 
     std::vector<double> v_gaus(n_t, 0.0);
     for(int i=0; i< n_t; ++i){
         //v_gaus[i] = rangen->Gaus(0,1);
-        //v_gaus[i] = rangen->Uniform(-1,1); 
-        v_gaus[i] = (*m_dist_normal)(*rangen_twister); 
+        //v_gaus[i] = rangen->Uniform(-1,1);
+        v_gaus[i] = (*m_dist_normal)(*rangen_twister);
     }
 
     for(int i=0; i< n_t; ++i){
-        sampled[i] = (pseudo_from_collapsed ? core_spectrum.collapsed_vector[i] : core_spectrum.full_vector[i]); 
+        sampled[i] = (pseudo_from_collapsed ? core_spectrum.collapsed_vector[i] : core_spectrum.full_vector[i]);
         if(!is_stat_only){
             for(int j=0; j<n_t; ++j){
                 sampled[i] += vec_matrix_lower_triangular[i][j]*v_gaus[j];
@@ -1988,7 +1992,7 @@ std::vector<float> SBNchi::GeneratePseudoExperiment(){
     }
 
     std::vector<float> collapsed(num_bins_total_compressed,0.0);
-   
+
     if(pseudo_from_collapsed){
         collapsed = sampled;
     }else{
@@ -1999,7 +2003,7 @@ std::vector<float> SBNchi::GeneratePseudoExperiment(){
 
 
 std::vector<float> SBNchi::SampleCovariance(SBNspec *specin){
-    if(!cholosky_performed) this->PerformCholoskyDecomposition(specin); 
+    if(!cholosky_performed) this->PerformCholoskyDecomposition(specin);
 
     int n_t = specin->full_vector.size();
 
@@ -2014,7 +2018,7 @@ std::vector<float> SBNchi::SampleCovariance(SBNspec *specin){
     TVectorT<float> gaus_sample(n_t);
     TVectorT<float> multi_sample(n_t);
     for(int a=0; a<n_t; a++){
-        gaus_sample(a) = dist_normal(*rangen_twister);	
+        gaus_sample(a) = dist_normal(*rangen_twister);
     }
 
     multi_sample = u + matrix_lower_triangular*gaus_sample;
@@ -2031,7 +2035,7 @@ std::vector<float> SBNchi::SampleCovariance(SBNspec *specin){
 }
 
 
-TH1D SBNchi::SamplePoissonVaryInput(SBNspec *specin, int num_MC, double maxchi){ 
+TH1D SBNchi::SamplePoissonVaryInput(SBNspec *specin, int num_MC, double maxchi){
     max_sample_chi_val = maxchi;
     std::vector<double>  tmp = {};
     return SamplePoissonVaryInput(specin,num_MC,&tmp);
@@ -2048,7 +2052,7 @@ TH1D SBNchi::SamplePoissonVaryInput(SBNspec *specin, int num_MC, std::vector<dou
     }
     for(int i=0; i< num_bins_total_compressed; i++){
         for(int j=0; j< num_bins_total_compressed; j++){
-            a_vec_matrix_inverted[i][j] = vec_matrix_inverted[i][j]; 
+            a_vec_matrix_inverted[i][j] = vec_matrix_inverted[i][j];
         }
     }
 
@@ -2071,8 +2075,8 @@ TH1D SBNchi::SamplePoissonVaryInput(SBNspec *specin, int num_MC, std::vector<dou
 
     int *nlower = new int[num_chival];
     for(int i=0; i< num_chival; i++){
-        nlower[i]=0; 
-        a_chival[i]=chival->at(i); 
+        nlower[i]=0;
+        a_chival[i]=chival->at(i);
     }
     float* sampled_fullvector = new float[num_bins_total] ;
     float* collapsed = new float[num_bins_total_compressed];
@@ -2085,7 +2089,7 @@ TH1D SBNchi::SamplePoissonVaryInput(SBNspec *specin, int num_MC, std::vector<dou
     //std::vector< std::normal_distribution<float>> dist_pois;
     for(int j = 0; j < num_bins_total; j++){
         //for tesing purposes
-        dist_pois.push_back(std::poisson_distribution<int>(a_specin[j])); 
+        dist_pois.push_back(std::poisson_distribution<int>(a_specin[j]));
         //dist_pois.push_back(std::normal_distribution<float>(a_specin[j],sqrt(a_specin[j])));
     }
 
@@ -2093,8 +2097,8 @@ TH1D SBNchi::SamplePoissonVaryInput(SBNspec *specin, int num_MC, std::vector<dou
 
         for(int j = 0; j < num_bins_total; j++){
 
-            //float p = dist_pois[j](*rangen_twister); 
-            int p = dist_pois[j](*rangen_twister); 
+            //float p = dist_pois[j](*rangen_twister);
+            int p = dist_pois[j](*rangen_twister);
 
             sampled_fullvector[j] =  (float)p;
             //std::cout<<"P: "<<a_specin[j]<<" "<<sampled_fullvector[j]<<" "<<p<<std::endl;
@@ -2127,7 +2131,7 @@ TH1D SBNchi::SamplePoissonVaryInput(SBNspec *specin, int num_MC, std::vector<dou
     delete[] nlower;
 
     for(int i=0; i < num_bins_total_compressed; i++){
-        delete[] a_vec_matrix_inverted[i];  
+        delete[] a_vec_matrix_inverted[i];
     }
 
     delete[] a_vec_matrix_inverted;
@@ -2140,7 +2144,7 @@ TH1D SBNchi::SamplePoissonVaryInput(SBNspec *specin, int num_MC, std::vector<dou
 
 }
 
-TH1D SBNchi::SamplePoisson_NP(SBNspec *specin, SBNchi &chi_h0, SBNchi & chi_h1, int num_MC, double maxchi,int which_sample){ 
+TH1D SBNchi::SamplePoisson_NP(SBNspec *specin, SBNchi &chi_h0, SBNchi & chi_h1, int num_MC, double maxchi,int which_sample){
     max_sample_chi_val = maxchi;
     std::vector<double>  tmp = {};
     return SamplePoisson_NP(specin,chi_h0,chi_h1,num_MC,&tmp, which_sample);
@@ -2158,8 +2162,8 @@ TH1D SBNchi::SamplePoisson_NP(SBNspec *specin, SBNchi &chi_h0, SBNchi & chi_h1, 
     }
     for(int i=0; i< num_bins_total_compressed; i++){
         for(int j=0; j< num_bins_total_compressed; j++){
-            h0_vec_matrix_inverted[i][j] = chi_h0.vec_matrix_inverted[i][j]; 
-            h1_vec_matrix_inverted[i][j] = chi_h1.vec_matrix_inverted[i][j]; 
+            h0_vec_matrix_inverted[i][j] = chi_h0.vec_matrix_inverted[i][j];
+            h1_vec_matrix_inverted[i][j] = chi_h1.vec_matrix_inverted[i][j];
         }
     }
 
@@ -2186,8 +2190,8 @@ TH1D SBNchi::SamplePoisson_NP(SBNspec *specin, SBNchi &chi_h0, SBNchi & chi_h1, 
 
     int *nlower = new int[num_chival];
     for(int i=0; i< num_chival; i++){
-        nlower[i]=0; 
-        a_chival[i]=chival->at(i); 
+        nlower[i]=0;
+        a_chival[i]=chival->at(i);
     }
     float* sampled_fullvector = new float[num_bins_total] ;
     float* collapsed = new float[num_bins_total_compressed];
@@ -2202,7 +2206,7 @@ TH1D SBNchi::SamplePoisson_NP(SBNspec *specin, SBNchi &chi_h0, SBNchi & chi_h1, 
     //std::vector< std::normal_distribution<float>> dist_pois;
     for(int j = 0; j < num_bins_total; j++){
         //for tesing purposes
-        dist_pois.push_back(std::poisson_distribution<int>(a_specin[j])); 
+        dist_pois.push_back(std::poisson_distribution<int>(a_specin[j]));
         //dist_pois.push_back(std::normal_distribution<float>(a_specin[j],sqrt(a_specin[j])));
     }
 
@@ -2211,8 +2215,8 @@ TH1D SBNchi::SamplePoisson_NP(SBNspec *specin, SBNchi &chi_h0, SBNchi & chi_h1, 
 
         if(which_sample==0){//Poisson Mode
             for(int j = 0; j < num_bins_total; j++){
-                //float p = dist_pois[j](*rangen_twister); 
-                int p = dist_pois[j](*rangen_twister); 
+                //float p = dist_pois[j](*rangen_twister);
+                int p = dist_pois[j](*rangen_twister);
                 sampled_fullvector[j] =  (float)p;
                 //std::cout<<"P: "<<a_specin[j]<<" "<<sampled_fullvector[j]<<" "<<p<<std::endl;
             }
@@ -2280,8 +2284,8 @@ TH1D SBNchi::SamplePoisson_NP(SBNspec *specin, SBNchi &chi_h0, SBNchi & chi_h1, 
     delete[] nlower;
 
     for(int i=0; i < num_bins_total_compressed; i++){
-        delete[] h1_vec_matrix_inverted[i];  
-        delete[] h0_vec_matrix_inverted[i];  
+        delete[] h1_vec_matrix_inverted[i];
+        delete[] h0_vec_matrix_inverted[i];
     }
 
     delete[] h1_vec_matrix_inverted;
@@ -2309,8 +2313,8 @@ std::vector<CLSresult> SBNchi::Mike_NP(SBNspec *specin, SBNchi &chi_h0, SBNchi &
     }
     for(int i=0; i< num_bins_total_compressed; i++){
         for(int j=0; j< num_bins_total_compressed; j++){
-            h0_vec_matrix_inverted[i][j] = chi_h0.vec_matrix_inverted[i][j]; 
-            h1_vec_matrix_inverted[i][j] = chi_h1.vec_matrix_inverted[i][j]; 
+            h0_vec_matrix_inverted[i][j] = chi_h0.vec_matrix_inverted[i][j];
+            h1_vec_matrix_inverted[i][j] = chi_h1.vec_matrix_inverted[i][j];
         }
     }
 
@@ -2436,8 +2440,8 @@ std::vector<CLSresult> SBNchi::Mike_NP(SBNspec *specin, SBNchi &chi_h0, SBNchi &
     delete[] a_specin;
 
     for(int i=0; i < num_bins_total_compressed; i++){
-        delete[] h1_vec_matrix_inverted[i];  
-        delete[] h0_vec_matrix_inverted[i];  
+        delete[] h1_vec_matrix_inverted[i];
+        delete[] h0_vec_matrix_inverted[i];
     }
 
     delete[] h1_vec_matrix_inverted;
@@ -2455,7 +2459,7 @@ std::vector<CLSresult> SBNchi::Mike_NP(SBNspec *specin, SBNchi &chi_h0, SBNchi &
 
 /*
    std::vector<double> SBNchi::SampleCovarianceVaryInput_getpval(SBNspec *specin, int num_MC, std::vector<double> chival){
-   if(!cholosky_performed) this->PerformCholoskyDecomposition(specin); 
+   if(!cholosky_performed) this->PerformCholoskyDecomposition(specin);
 
    int n_t = specin->full_vector.size();
    std::vector<int> nlower(chival.size(),0);
@@ -2476,7 +2480,7 @@ std::vector<CLSresult> SBNchi::Mike_NP(SBNspec *specin, SBNchi &chi_h0, SBNchi &
    TVectorT<double> gaus_sample(n_t);
    TVectorT<double> multi_sample(n_t);
    for(int a=0; a<n_t; a++){
-   gaus_sample(a) = rangen->Gaus(0,1);	
+   gaus_sample(a) = rangen->Gaus(0,1);
    }
 
    multi_sample = u + matrix_lower_triangular*gaus_sample;
@@ -2579,6 +2583,3 @@ TH1D SBNchi::SamplePoissonVaryCore(SBNspec *specin, int num_MC){
     is_verbose = true;
     return ans;
 }
-
-
-

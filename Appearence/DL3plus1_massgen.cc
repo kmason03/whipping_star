@@ -51,7 +51,7 @@ std::string xml = "/cluster/tufts/wongjiradlabnu/kmason03/whipping_star/xml/Tota
 std::string tag = "DL_full";
 // set these parameters at the very start
 const double dm2_lowbound(0.01), dm2_hibound(100);
-const int dm2_grdpts(100);
+const int dm2_grdpts(400);
 double  mnu;
 
 

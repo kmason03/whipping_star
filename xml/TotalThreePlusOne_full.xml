@@ -4,8 +4,13 @@
 <detector name="uBooNE"/>
 <!-- one channel for nue selection -->
 <channel name="1e1p" unit="MeV">
-  <bins
+ <!-- <bins
       edges="200 300 400 500 600 700 800 900 1000 1100 1200 1300 1400 1500 1600 1700 1800 1900 2000 2100 2200 2300 2400"
+
+      /> -->
+
+<bins
+      edges="200 300 400 500 600 700 800 900 1000 1100 1200 1600 2400"
 
       />
   <subchannel name="bnb" osc="22"/>
@@ -27,12 +32,12 @@
 
 <!-- first do all the nue subchannels -->
 
-<MultisimFile treename="sel_bnb_tree" filename="/cluster/tufts/wongjiradlabnu/kmason03/whipping_star/data/inputs/input_to_sbnfit_v55_Oct15_withExtraGENIE_1e1p_FinalSelection_run1.root" scale="0.24" maxevents="100000" pot="1.34e21">
+<MultisimFile treename="sel_bnb_tree" filename="/cluster/tufts/wongjiradlabnu/kmason03/whipping_star/data/inputs/input_to_sbnfit_v48_Sep24_withExtraGENIE_1e1p_FinalSelection_run1_Jul08.root" scale="1.0" maxevents="100000">
   <branch
       name="nu_energy_reco"
       type="double"
       associated_subchannel="nu_uBooNE_1e1p_bnb"
-      additional_weight="xsec_corr_weight*dllee_pi0_weight*(nu_energy_reco>=200.)*(nu_energy_reco<2400.)*(dllee_bdt_score_avg>=0.95)"
+      additional_weight="( xsec_corr_weight*dllee_pi0_weight * ((nu_pdg==14)||(nu_pdg==-14)||(nu_interaction_ccnc==1)) * ((1.631e+20)/dllee_pot_weight) * (dllee_bdt_score_avg>=0.95) )"
       eventweight_branch_name="sys_weights"
       oscillate = "true"
       true_param_name = "nu_energy_true"
@@ -40,12 +45,12 @@
       />
 </MultisimFile>
 
-<MultisimFile treename="sel_bnb_tree" filename="/cluster/tufts/wongjiradlabnu/kmason03/whipping_star/data/inputs/input_to_sbnfit_v55_Oct15_withExtraGENIE_1e1p_FinalSelection_run2.root" scale="0.41" maxevents="100000" pot="1.30e21">
+<MultisimFile treename="sel_bnb_tree" filename="/cluster/tufts/wongjiradlabnu/kmason03/whipping_star/data/inputs/input_to_sbnfit_v48_Sep24_withExtraGENIE_1e1p_FinalSelection_run2_Jul08.root" scale="1.0" maxevents="100000">
   <branch
       name="nu_energy_reco"
       type="double"
       associated_subchannel="nu_uBooNE_1e1p_bnb"
-      additional_weight="xsec_corr_weight*dllee_pi0_weight* (nu_energy_reco>=200.)*(nu_energy_reco<2400.)*(dllee_bdt_score_avg>=0.95)"
+      additional_weight="( xsec_corr_weight*dllee_pi0_weight * ((nu_pdg==14)||(nu_pdg==-14)||(nu_interaction_ccnc==1)) * ((2.749e+20)/dllee_pot_weight) * (dllee_bdt_score_avg>=0.95) )"
       eventweight_branch_name="sys_weights"
       oscillate = "true"
       true_param_name = "nu_energy_true"
@@ -53,12 +58,12 @@
       />
 </MultisimFile>
 
-<MultisimFile treename="sel_bnb_tree" filename="/cluster/tufts/wongjiradlabnu/kmason03/whipping_star/data/inputs/input_to_sbnfit_v55_Oct15_withExtraGENIE_1e1p_FinalSelection_run3.root" scale="0.34" maxevents="100000" pot="8.88e20">
+<MultisimFile treename="sel_bnb_tree" filename="/cluster/tufts/wongjiradlabnu/kmason03/whipping_star/data/inputs/input_to_sbnfit_v48_Sep24_withExtraGENIE_1e1p_FinalSelection_run3_Jul08.root" scale="1.0" maxevents="100000">
   <branch
       name="nu_energy_reco"
       type="double"
       associated_subchannel="nu_uBooNE_1e1p_bnb"
-      additional_weight="xsec_corr_weight*dllee_pi0_weight* (nu_energy_reco>=200.)*(nu_energy_reco<2400.)*(dllee_bdt_score_avg>=0.95)"
+      additional_weight="( xsec_corr_weight*dllee_pi0_weight * ((nu_pdg==14)||(nu_pdg==-14)||(nu_interaction_ccnc==1)) * ((2.291e+20)/dllee_pot_weight) * (dllee_bdt_score_avg>=0.95) )"
       eventweight_branch_name="sys_weights"
       oscillate = "true"
       true_param_name = "nu_energy_true"
@@ -66,12 +71,13 @@
       />
 </MultisimFile>
 
-<MultisimFile treename="sel_nue_tree" filename="/cluster/tufts/wongjiradlabnu/kmason03/whipping_star/data/inputs/input_to_sbnfit_v55_Oct15_withExtraGENIE_1e1p_FinalSelection_run1.root" scale="0.24" maxevents="100000" pot="1.16e23">
+
+<MultisimFile treename="sel_nue_tree" filename="/cluster/tufts/wongjiradlabnu/kmason03/whipping_star/data/inputs/input_to_sbnfit_v48_Sep24_withExtraGENIE_1e1p_FinalSelection_run1_Jul08.root" scale="1.0" maxevents="100000">
   <branch
       name="nu_energy_reco"
       type="double"
       associated_subchannel="nu_uBooNE_1e1p_nue"
-      additional_weight="xsec_corr_weight*dllee_pi0_weight* (nu_energy_reco>=200.)*(nu_energy_reco<2400.)*(dllee_bdt_score_avg>=0.95)"
+      additional_weight="( xsec_corr_weight*dllee_pi0_weight * ((1.631e+20)/dllee_pot_weight) * (dllee_bdt_score_avg>=0.95) )"
       eventweight_branch_name="sys_weights"
       oscillate = "true"
       true_param_name = "nu_energy_true"
@@ -79,12 +85,12 @@
       />
 </MultisimFile>
 
-<MultisimFile treename="sel_nue_tree" filename="/cluster/tufts/wongjiradlabnu/kmason03/whipping_star/data/inputs/input_to_sbnfit_v55_Oct15_withExtraGENIE_1e1p_FinalSelection_run2.root" scale="0.41" maxevents="100000" pot="9.209e22">
+<MultisimFile treename="sel_nue_tree" filename="/cluster/tufts/wongjiradlabnu/kmason03/whipping_star/data/inputs/input_to_sbnfit_v48_Sep24_withExtraGENIE_1e1p_FinalSelection_run2_Jul08.root" scale="1.0" maxevents="100000">
   <branch
       name="nu_energy_reco"
       type="double"
       associated_subchannel="nu_uBooNE_1e1p_nue"
-      additional_weight="xsec_corr_weight*dllee_pi0_weight* (nu_energy_reco>=200.)*(nu_energy_reco<2400.)*(dllee_bdt_score_avg>=0.95)"
+      additional_weight="( xsec_corr_weight*dllee_pi0_weight * ((2.749e+20)/dllee_pot_weight) * (dllee_bdt_score_avg>=0.95) )"
       eventweight_branch_name="sys_weights"
       oscillate = "true"
       true_param_name = "nu_energy_true"
@@ -92,12 +98,12 @@
       />
 </MultisimFile>
 
-<MultisimFile treename="sel_nue_tree" filename="/cluster/tufts/wongjiradlabnu/kmason03/whipping_star/data/inputs/input_to_sbnfit_v55_Oct15_withExtraGENIE_1e1p_FinalSelection_run3.root" scale="0.34" maxevents="100000" pot="4.707e22">
+<MultisimFile treename="sel_nue_tree" filename="/cluster/tufts/wongjiradlabnu/kmason03/whipping_star/data/inputs/input_to_sbnfit_v48_Sep24_withExtraGENIE_1e1p_FinalSelection_run3_Jul08.root" scale="1.0" maxevents="100000">
   <branch
       name="nu_energy_reco"
       type="double"
       associated_subchannel="nu_uBooNE_1e1p_nue"
-      additional_weight="xsec_corr_weight*dllee_pi0_weight* (nu_energy_reco>=200.)*(nu_energy_reco<2400.)*(dllee_bdt_score_avg>=0.95)"
+      additional_weight="( xsec_corr_weight*dllee_pi0_weight * ((2.291e+20)/dllee_pot_weight) * (dllee_bdt_score_avg>=0.95) )"
       eventweight_branch_name="sys_weights"
       oscillate = "true"
       true_param_name = "nu_energy_true"
@@ -105,12 +111,12 @@
       />
 </MultisimFile>
 
-<MultisimFile treename="sel_ccpi0_tree" filename="/cluster/tufts/wongjiradlabnu/kmason03/whipping_star/data/inputs/input_to_sbnfit_v55_Oct15_withExtraGENIE_1e1p_FinalSelection_run1.root" scale="0.24" maxevents="100000" pot="6.953e20">
+<MultisimFile treename="sel_ncpi0_tree" filename="/cluster/tufts/wongjiradlabnu/kmason03/whipping_star/data/inputs/input_to_sbnfit_v48_Sep24_withExtraGENIE_1e1p_FinalSelection_run1_Jul08.root" scale="1.0" maxevents="100000">
   <branch
       name="nu_energy_reco"
       type="double"
       associated_subchannel="nu_uBooNE_1e1p_bnb"
-      additional_weight="xsec_corr_weight*dllee_pi0_weight* (nu_energy_reco>=200.)*(nu_energy_reco<2400.)*(dllee_bdt_score_avg>=0.95)"
+      additional_weight="( xsec_corr_weight*dllee_pi0_weight * ((1.631e+20)/dllee_pot_weight) * (dllee_bdt_score_avg>=0.95) )"
       eventweight_branch_name="sys_weights"
       oscillate = "true"
       true_param_name = "nu_energy_true"
@@ -118,12 +124,12 @@
       />
 </MultisimFile>
 
-<MultisimFile treename="sel_ccpi0_tree" filename="/cluster/tufts/wongjiradlabnu/kmason03/whipping_star/data/inputs/input_to_sbnfit_v55_Oct15_withExtraGENIE_1e1p_FinalSelection_run3.root" scale="0.76" maxevents="100000" pot="5.922e20">
+<MultisimFile treename="sel_ncpi0_tree" filename="/cluster/tufts/wongjiradlabnu/kmason03/whipping_star/data/inputs/input_to_sbnfit_v48_Sep24_withExtraGENIE_1e1p_FinalSelection_run3_Jul08.root" scale="1.0" maxevents="100000">
   <branch
       name="nu_energy_reco"
       type="double"
       associated_subchannel="nu_uBooNE_1e1p_bnb"
-      additional_weight="xsec_corr_weight*dllee_pi0_weight* (nu_energy_reco>=200.)*(nu_energy_reco<2400.)*(dllee_bdt_score_avg>=0.95)"
+      additional_weight="( xsec_corr_weight*dllee_pi0_weight * ((2.291e+20)/dllee_pot_weight) * (dllee_bdt_score_avg>=0.95) )"
       eventweight_branch_name="sys_weights"
       oscillate = "true"
       true_param_name = "nu_energy_true"
@@ -131,12 +137,12 @@
       />
 </MultisimFile>
 
-<MultisimFile treename="sel_ncpi0_tree" filename="/cluster/tufts/wongjiradlabnu/kmason03/whipping_star/data/inputs/input_to_sbnfit_v55_Oct15_withExtraGENIE_1e1p_FinalSelection_run1.root" scale="0.24" maxevents="100000" pot="2.904e21">
+<MultisimFile treename="sel_ccpi0_tree" filename="/cluster/tufts/wongjiradlabnu/kmason03/whipping_star/data/inputs/input_to_sbnfit_v48_Sep24_withExtraGENIE_1e1p_FinalSelection_run1_Jul08.root" scale="1.0" maxevents="100000">
   <branch
       name="nu_energy_reco"
       type="double"
       associated_subchannel="nu_uBooNE_1e1p_bnb"
-      additional_weight="xsec_corr_weight*dllee_pi0_weight* (nu_energy_reco>=200.)*(nu_energy_reco<2400.)*(dllee_bdt_score_avg>=0.95)"
+      additional_weight="( xsec_corr_weight*dllee_pi0_weight * ((1.631e+20)/dllee_pot_weight) * (dllee_bdt_score_avg>=0.95) )"
       eventweight_branch_name="sys_weights"
       oscillate = "true"
       true_param_name = "nu_energy_true"
@@ -144,12 +150,12 @@
       />
 </MultisimFile>
 
-<MultisimFile treename="sel_ncpi0_tree" filename="/cluster/tufts/wongjiradlabnu/kmason03/whipping_star/data/inputs/input_to_sbnfit_v55_Oct15_withExtraGENIE_1e1p_FinalSelection_run3.root" scale="0.76" maxevents="100000" pot="2.487e21">
+<MultisimFile treename="sel_ccpi0_tree" filename="/cluster/tufts/wongjiradlabnu/kmason03/whipping_star/data/inputs/input_to_sbnfit_v48_Sep24_withExtraGENIE_1e1p_FinalSelection_run3_Jul08.root" scale="1.0" maxevents="100000">
   <branch
       name="nu_energy_reco"
       type="double"
       associated_subchannel="nu_uBooNE_1e1p_bnb"
-      additional_weight="xsec_corr_weight*dllee_pi0_weight* (nu_energy_reco>=200.)*(nu_energy_reco<2400.)*(dllee_bdt_score_avg>=0.95)"
+      additional_weight="( xsec_corr_weight*dllee_pi0_weight * ((2.291e+20)/dllee_pot_weight) * (dllee_bdt_score_avg>=0.95) )"
       eventweight_branch_name="sys_weights"
       oscillate = "true"
       true_param_name = "nu_energy_true"
@@ -157,7 +163,7 @@
       />
 </MultisimFile>
 
-<MultisimFile treename="sel_fullosc_tree" filename="/cluster/tufts/wongjiradlabnu/kmason03/whipping_star/data/inputs/input_to_sbnfit_v55_Oct15_withExtraGENIE_1e1p_FinalSelection_run1.root" scale="0.24" maxevents="100000" pot="2.716e20">
+<MultisimFile treename="sel_fullosc_tree" filename="/cluster/tufts/wongjiradlabnu/kmason03/whipping_star/data/inputs/input_to_sbnfit_v55_Oct15_withExtraGENIE_1e1p_FinalSelection_run1.root" scale="0.256" maxevents="100000" pot="2.716e20">
   <branch
       name="nu_energy_reco"
       type="double"
@@ -170,7 +176,7 @@
       />
 </MultisimFile>
 
-<MultisimFile treename="sel_fullosc_tree" filename="/cluster/tufts/wongjiradlabnu/kmason03/whipping_star/data/inputs/input_to_sbnfit_v55_Oct15_withExtraGENIE_1e1p_FinalSelection_run2.root" scale="0.41" maxevents="100000" pot="3.340e20">
+<MultisimFile treename="sel_fullosc_tree" filename="/cluster/tufts/wongjiradlabnu/kmason03/whipping_star/data/inputs/input_to_sbnfit_v55_Oct15_withExtraGENIE_1e1p_FinalSelection_run2.root" scale="0.388" maxevents="100000" pot="3.340e20">
   <branch
       name="nu_energy_reco"
       type="double"
@@ -183,7 +189,7 @@
       />
 </MultisimFile>
 
-<MultisimFile treename="sel_fullosc_tree" filename="/cluster/tufts/wongjiradlabnu/kmason03/whipping_star/data/inputs/input_to_sbnfit_v55_Oct15_withExtraGENIE_1e1p_FinalSelection_run3.root" scale="0.34" maxevents="100000" pot="2.742e20">
+<MultisimFile treename="sel_fullosc_tree" filename="/cluster/tufts/wongjiradlabnu/kmason03/whipping_star/data/inputs/input_to_sbnfit_v55_Oct15_withExtraGENIE_1e1p_FinalSelection_run3.root" scale="0.356" maxevents="100000" pot="2.742e20">
   <branch
       name="nu_energy_reco"
       type="double"
@@ -221,7 +227,7 @@
       name="nu_energy_reco"
       type="double"
       associated_subchannel="nu_uBooNE_1mu1p_bnb"
-      additional_weight="xsec_corr_weight*dllee_pi0_weight*((nu_pdg==14)||(nu_pdg==-14)||(nu_interaction_ccnc==1))* (dllee_bdt_score_avg>=0.5)*(dllee_pi0_flag ==0)"
+      additional_weight="xsec_corr_weight*dllee_pi0_weight*((nu_pdg==14)||(nu_pdg==-14)||(nu_interaction_ccnc==1))* (dllee_bdt_score_avg>=0.5)"
       eventweight_branch_name="sys_weights"
       oscillate = "true"
       true_param_name = "nu_energy_true"
@@ -234,7 +240,7 @@
       name="nu_energy_reco"
       type="double"
       associated_subchannel="nu_uBooNE_1mu1p_bnb"
-      additional_weight="xsec_corr_weight*dllee_pi0_weight*((nu_pdg==14)||(nu_pdg==-14)||(nu_interaction_ccnc==1))* (dllee_bdt_score_avg>=0.5)*(dllee_pi0_flag ==0)"
+      additional_weight="xsec_corr_weight*dllee_pi0_weight*((nu_pdg==14)||(nu_pdg==-14)||(nu_interaction_ccnc==1))* (dllee_bdt_score_avg>=0.5)"
       eventweight_branch_name="sys_weights"
       oscillate = "true"
       true_param_name = "nu_energy_true"
@@ -247,7 +253,7 @@
       name="nu_energy_reco"
       type="double"
       associated_subchannel="nu_uBooNE_1mu1p_bnb"
-      additional_weight="xsec_corr_weight*dllee_pi0_weight*((nu_pdg==14)||(nu_pdg==-14)||(nu_interaction_ccnc==1))* (dllee_bdt_score_avg>=0.5)*(dllee_pi0_flag ==0)"
+      additional_weight="xsec_corr_weight*dllee_pi0_weight*((nu_pdg==14)||(nu_pdg==-14)||(nu_interaction_ccnc==1))* (dllee_bdt_score_avg>=0.5)"
       eventweight_branch_name="sys_weights"
       oscillate = "true"
       true_param_name = "nu_energy_true"
@@ -378,6 +384,7 @@
   <whitelist>pionqexsec_FluxUnisim</whitelist>
   <whitelist>piontotxsec_FluxUnisim</whitelist>
   <whitelist>piplus_PrimaryHadronSWCentralSplineVariation</whitelist>
+
   <whitelist>All_UBGenie</whitelist>
   <whitelist>XSecShape_CCMEC_UBGenie</whitelist>
   <whitelist>RPA_CCQE_UBGenie</whitelist>
@@ -390,6 +397,7 @@
   <whitelist>NormNCCOH_UBGenie</whitelist>
   <whitelist>ThetaDelta2NRad_UBGenie</whitelist>
   <whitelist>Theta_Delta2Npi_UBGenie</whitelist>
+
   <whitelist>reinteractions_piminus_Geant4</whitelist>
   <whitelist>reinteractions_piplus_Geant4</whitelist>
   <whitelist>reinteractions_proton_Geant4</whitelist>

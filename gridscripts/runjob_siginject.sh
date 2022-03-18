@@ -26,13 +26,29 @@ ls
 pwd
 #copy your script to temp directory
 # this assumes you already made your cxx code
-cp ${WORK_DIR}/DL3plus1_FCTests .
+cp ${WORK_DIR}/DL3plus1_siginject .
 
 # run your command
 ./DL3plus1_siginject 0  >${WORK_DIR}/logs/log_${arrayid}.txt
-ls
 mv chis_*txt  ${WORK_DIR}/textfiles/chis_${arrayid}.txt
 mv best_*txt  ${WORK_DIR}/textfiles/best_${arrayid}.txt
+
+./DL3plus1_siginject 2605  >${WORK_DIR}/logs/log_${arrayid}.txt
+mv chis_*txt  ${WORK_DIR}/textfiles2/chis_${arrayid}.txt
+mv best_*txt  ${WORK_DIR}/textfiles2/best_${arrayid}.txt
+
+./DL3plus1_siginject 5860  >${WORK_DIR}/logs/log_${arrayid}.txt
+mv chis_*txt  ${WORK_DIR}/textfiles3/chis_${arrayid}.txt
+mv best_*txt  ${WORK_DIR}/textfiles3/best_${arrayid}.txt
+
+./DL3plus1_siginject 12370  >${WORK_DIR}/logs/log_${arrayid}.txt
+mv chis_*txt  ${WORK_DIR}/textfiles4/chis_${arrayid}.txt
+mv best_*txt  ${WORK_DIR}/textfiles4/best_${arrayid}.txt
+
+./DL3plus1_siginject 15624  >${WORK_DIR}/logs/log_${arrayid}.txt
+mv chis_*txt  ${WORK_DIR}/textfiles5/chis_${arrayid}.txt
+mv best_*txt  ${WORK_DIR}/textfiles5/best_${arrayid}.txt
+
 # remove temporary job directory
 cd ${WORK_DIR}
 rm -r job_${arrayid}

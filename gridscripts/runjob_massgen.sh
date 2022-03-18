@@ -29,10 +29,10 @@ pwd
 cp ${WORK_DIR}/DL3plus1_massgen .
 
 # run your command
-./DL3plus1_massgen ${arrayid} .  > ${WORK_DIR}/logs/${arrayid}_log.txt
+./DL3plus1_massgen ${arrayid}  > ${WORK_DIR}/logs/${arrayid}_log.txt
 
 # move outputs to dedicated directory
-mv *root  ${TOP_DIR}/data/MassSpectra_100/.
+mv *root  ${TOP_DIR}/data/MassSpectraBigBins/.
 # remove temporary job directory
 cd ${WORK_DIR}
 rm -r job_${arrayid}
