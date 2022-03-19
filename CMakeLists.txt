@@ -9,9 +9,7 @@ if (CMAKE_VERSION VERSION_LESS "3.1")
     if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
           set (CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
     endif ()
-else ()
-	  set (CMAKE_CXX_STANDARD 11)
-endif ()
+endif()
 
 message("@main CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS}")
 unset (CMAKE_CXX_FLAGS)
@@ -42,6 +40,22 @@ ELSE()
 	EXEC_PROGRAM(${ROOT_CONFIG} ARGS --cflags --glibs OUTPUT_VARIABLE ROOT_CXX_FLAGS)
 	message("ROOT cxx flags set to: ${ROOT_CXX_FLAGS}")
 ENDIF()
+
+# we set the compiler version based on the one used for ROOT
+execute_process(
+    COMMAND bash "-c" "root-config --features | awk '{print $1}'"
+    OUTPUT_VARIABLE ROOT_CXX_STANDARD )
+if (${ROOT_CXX_STANDARD} MATCHES "cxx17")
+  message( STATUS "using cxx17")
+  set(CMAKE_CXX_STANDARD 17)
+elseif (${ROOT_CXX_STANDARD} MATCHES "cxx14")
+  message(STATUS "using cxx14")
+  set(CMAKE_CXX_STANDARD 14)
+else ()
+  message( STATUS "using cxx11")  
+  set(CMAKE_CXX_STANDARD 11)
+endif()
+
 
 #Get our GSL libraries
 FIND_PROGRAM(GSL_CONFIG gsl-config)
