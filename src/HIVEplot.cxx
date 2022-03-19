@@ -1,4 +1,5 @@
 #include "HIVEplot.h"
+#include <fstream>
 using namespace sbn;
 
 
