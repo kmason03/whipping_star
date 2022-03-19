@@ -1,22 +1,24 @@
 #include "SBNgenerate.h"
 //#include "MCEventWeight.h"
+#include <chrono>
 
 using namespace sbn;
 
 
 
-SBNgenerate::SBNgenerate(std::string xmlname) {
+SBNgenerate::SBNgenerate(std::string xmlname, bool cache_the_data ) {
     NeutrinoModel nullModel(0,0,0);
-    SBNgenerate(xmlname, nullModel);
+    SBNgenerate(xmlname, nullModel, cache_the_data );
 }
 
-SBNgenerate::SBNgenerate(std::string xmlname, NeutrinoModel inModel ) : SBNconfig(xmlname), nu_model(inModel) {
+SBNgenerate::SBNgenerate(std::string xmlname, NeutrinoModel inModel, bool cache_the_data )
+  : SBNconfig(xmlname),
+    nu_model(inModel),
+    _cache_event_data(cache_the_data)
+{
 
-
-
-
-    TRandom3 *rangen = new TRandom3(0);
-    
+    std::clock_t startfill = std::clock();
+	
     bool m_use_eventweight = false;
 
 
@@ -42,7 +44,7 @@ SBNgenerate::SBNgenerate(std::string xmlname, NeutrinoModel inModel ) : SBNconfi
     spec_osc_sin  = tm;
     spec_osc_sinsq = tm;
 
-    int num_files = montecarlo_file.size();
+    num_files = montecarlo_file.size();
     montecarlo_additional_weight.resize(num_files,1.0);
     montecarlo_additional_weight_formulas.resize(num_files);   
 
@@ -94,6 +96,7 @@ SBNgenerate::SBNgenerate(std::string xmlname, NeutrinoModel inModel ) : SBNconfi
     }
 
     f_weights.resize(num_files,nullptr);
+    
 
     for(int i=0; i< num_files; i++){
 
@@ -109,7 +112,7 @@ SBNgenerate::SBNgenerate(std::string xmlname, NeutrinoModel inModel ) : SBNconfi
 
 
         //if(m_use_eventweight)  trees[i]->SetBranchAddress("eventweights", &(f_weights[i]) );
-	    if(m_use_eventweight)  trees.at(i)->SetBranchAddress(montecarlo_eventweight_branch_names[i].c_str(), &(f_weights[i]));
+	if(m_use_eventweight)  trees.at(i)->SetBranchAddress(montecarlo_eventweight_branch_names[i].c_str(), &(f_weights[i]));
         //delete f_weights->at(i);	f_weights->at(i) = 0;
         
         for(int k=0; k<branch_variables.at(i).size(); k++){
@@ -139,86 +142,121 @@ SBNgenerate::SBNgenerate(std::string xmlname, NeutrinoModel inModel ) : SBNconfi
 
     std::cout<<"SBNgenerate::SBNgenerate\t|| -------------------------------------------------------------\n";
     std::cout<<"SBNgenerate::SBNgenerate\t|| -------------------------------------------------------------\n";
+    if ( _cache_event_data )
+      std::cout<<"SBNgenerate::SBNgenerate\t|| will cache event data \n";
     std::vector<double> base_vec (spec_central_value.num_bins_total,0.0);
 
     for(int j=0;j<num_files;j++){
 
+      // setup the cache if we're saving it
+      EventCache_t cache;      
+      if ( _cache_event_data ) {
+	cache.num_var_types = branch_variables[j].size();
+	cache.num_events    = std::min(  montecarlo_maxevents.at(j)  ,nentries.at(j));
+	cache.data.resize( 2 ); // two input variables for osc (which this code is very-much tailored to): L, E
+	for ( int b=0; b<2; b++)
+	  cache.data[b].resize( cache.num_events, 0.0 );
+	cache.recovar.resize( cache.num_events, 0.0 );
+	cache.weight.resize( cache.num_events, 0.0 );	
+      }
+      
+      for(int i=0; i< std::min(  montecarlo_maxevents.at(j)  ,nentries.at(j)); i++){
+	trees.at(j)->GetEntry(i);
+	std::map<std::string,std::vector<eweight_type>>* thisfWeight;
+	if(m_use_eventweight) thisfWeight = f_weights[j];
 
-        for(int i=0; i< std::min(  montecarlo_maxevents.at(j)  ,nentries.at(j)); i++){
-            trees.at(j)->GetEntry(i);
-            std::map<std::string,std::vector<eweight_type>>* thisfWeight;
-            if(m_use_eventweight) thisfWeight = f_weights[j];
-
-            if(i%100==0) std::cout<<"SBNgenerate::SBNgenerate\t|| On event: "<<i<<" of "<<nentries[j]<<" from File: "<<montecarlo_file[j]<<std::endl;
-
-            double global_weight = 1.0;
-	    if( montecarlo_additional_weight_bool[j]){
-		    montecarlo_additional_weight_formulas[j]->GetNdata();
-		    global_weight = montecarlo_additional_weight_formulas[j]->EvalInstance();
-            };//this will be 1.0 unless specified
-            global_weight = global_weight*montecarlo_scale[j];
-
-            if(m_use_eventweight){
-                if(thisfWeight->count("bnbcorrection_FluxHist")>0){
-                     global_weight = global_weight*thisfWeight->at("bnbcorrection_FluxHist").front();
-                }
-            }
-
-
-            if(std::isinf(global_weight) || global_weight != global_weight){
-                std::cout<<"SBNgenerate::SBNgenerate\t|| ERROR  error @ "<<i<<" in File "<<montecarlo_file.at(j)<<" as its either inf/nan: "<<global_weight<<std::endl;
-                exit(EXIT_FAILURE);
-            }
+	if(i%100==0) std::cout<<"SBNgenerate::SBNgenerate\t|| On event: "<<i<<" of "<<nentries[j]<<" from File: "<<montecarlo_file[j]<<std::endl;
 	
+	double global_weight = 1.0;
+	if( montecarlo_additional_weight_bool[j]){
+	  montecarlo_additional_weight_formulas[j]->GetNdata();
+	  global_weight = montecarlo_additional_weight_formulas[j]->EvalInstance();
+	};//this will be 1.0 unless specified
+	global_weight = global_weight*montecarlo_scale[j];
 
-            if( this->EventSelection(j) ){
+	if(m_use_eventweight){
+	  if(thisfWeight->count("bnbcorrection_FluxHist")>0){
+	    global_weight = global_weight*thisfWeight->at("bnbcorrection_FluxHist").front();
+	  }
+	}
+
+
+	if(std::isinf(global_weight) || global_weight != global_weight){
+	  std::cout<<"SBNgenerate::SBNgenerate\t|| ERROR  error @ "<<i<<" in File "<<montecarlo_file.at(j)<<" as its either inf/nan: "<<global_weight<<std::endl;
+	  exit(EXIT_FAILURE);
+	}
+	
+	
+	if( this->EventSelection(j) ){
                 
-                for(int t=0; t<branch_variables[j].size();t++){
-                    //std::cout<<"Starting branch : "<<branch_variables.at(j).at(t)->name<<" "<<branch_variables.at(j).at(t)->associated_hist<<std::endl;
-                    //Need the histogram index, the value, the global bin...
+	  for(int t=0; t<branch_variables[j].size();t++){
+	    //std::cout<<"Starting branch : "<<branch_variables.at(j).at(t)->name<<" "<<branch_variables.at(j).at(t)->associated_hist<<std::endl;
+	    //Need the histogram index, the value, the global bin...
+	    
+	    const auto branch_variable = branch_variables[j][t];
+	    int ih = spec_central_value.map_hist.at(branch_variable->associated_hist);
+	    branch_variable->GetFormula()->GetNdata();
+	    double reco_var = branch_variable->GetFormula()->EvalInstance();
 
-		            const auto branch_variable = branch_variables[j][t];
-                    int ih = spec_central_value.map_hist.at(branch_variable->associated_hist);
-		            branch_variable->GetFormula()->GetNdata();
-		            double reco_var = branch_variable->GetFormula()->EvalInstance();
-                    
-                    //double reco_var = *(static_cast<double*>(branch_variables[j][t]->GetValue()));
-                    int reco_bin = spec_central_value.GetGlobalBinNumber(reco_var,ih);
+	    //double reco_var = *(static_cast<double*>(branch_variables[j][t]->GetValue()));
+	    int reco_bin = spec_central_value.GetGlobalBinNumber(reco_var,ih);
 
-                    //std::cout<<ih<<" "<<reco_var<<" "<<reco_bin<<" JJ"<<std::endl;
-                    //Find if this event should be oscillated
-                    if(branch_variables[j][t]->GetOscillate()){
-                        //Working
-                        double true_var = *(static_cast<double*>(branch_variables[j][t]->GetTrueValue()));
-                        double true_L = *(static_cast<double*>(branch_variables[j][t]->GetTrueL()));
+	    if ( _cache_event_data && t==0 ) {
+	      cache.recovar[i] = reco_var;
+	      cache.weight[i]  = global_weight;
+	    }
 
-                        double osc_Probability_sin = nu_model.oscProbSin(true_var, true_L);
-                        double osc_Probability_sinsq = nu_model.oscProbSinSq(true_var, true_L);
+	    //std::cout<<ih<<" "<<reco_var<<" "<<reco_bin<<" JJ"<<std::endl;
+	    //Find if this event should be oscillated
+	    if(branch_variables[j][t]->GetOscillate()){
+	      //Working
+	      double true_var = *(static_cast<double*>(branch_variables[j][t]->GetTrueValue()));
+	      double true_L = *(static_cast<double*>(branch_variables[j][t]->GetTrueL()));
 
-                        std::cout<<ih<<" YARP "<<spec_osc_sin.hist[ih].GetName()<<" "<<true_var<<" "<<true_L<<" "<<osc_Probability_sin<<" "<<osc_Probability_sinsq<<" gWei "<<global_weight<<std::endl;
+	      if ( _cache_event_data && t==0 ) {
+		cache.data[0][i] = true_var;
+		cache.data[1][i] = true_L;
+	      }
+	      
+	      double osc_Probability_sin = nu_model.oscProbSin(true_var, true_L);
+	      double osc_Probability_sinsq = nu_model.oscProbSinSq(true_var, true_L);
 
-                        spec_osc_sinsq.hist[ih].Fill(reco_var, global_weight*osc_Probability_sinsq);
-                        spec_osc_sin.hist[ih].Fill(reco_var, global_weight*osc_Probability_sin);
-                        spec_central_value.hist[ih].Fill(reco_var,global_weight);
-                        
-                        std::cout<<"Reco: "<<reco_var<<" True: "<<true_var<<" L: "<<true_L<<" "<<osc_Probability_sin<<" "<<osc_Probability_sinsq<<" glob: "<<global_weight<<std::endl;
-                    }else{
-                        spec_central_value.hist[ih].Fill(reco_var,global_weight);
-                        spec_osc_sinsq.hist[ih].Fill(reco_var, global_weight);
-                        spec_osc_sin.hist[ih].Fill(reco_var, global_weight);
-                        
-                        //	std::cout<<reco_var<<" "<<std::endl;
-                    }
-                }
-            }
-        } //end of entry loop
+	      // std::cout<<ih<<" YARP "<<spec_osc_sin.hist[ih].GetName()
+	      // 	       <<" "<<true_var
+	      // 	       <<" "<<true_L
+	      // 	       <<" "<<osc_Probability_sin
+	      // 	       <<" "<<osc_Probability_sinsq
+	      // 	       <<" gWei "<<global_weight<<std::endl;
+
+	      spec_osc_sinsq.hist[ih].Fill(reco_var, global_weight*osc_Probability_sinsq);
+	      spec_osc_sin.hist[ih].Fill(reco_var, global_weight*osc_Probability_sin);
+	      spec_central_value.hist[ih].Fill(reco_var,global_weight);
+	      
+	      //std::cout<<"Reco: "<<reco_var<<" True: "<<true_var<<" L: "<<true_L<<" "<<osc_Probability_sin<<" "<<osc_Probability_sinsq<<" glob: "<<global_weight<<std::endl;
+	    }else{
+	      spec_central_value.hist[ih].Fill(reco_var,global_weight);
+	      spec_osc_sinsq.hist[ih].Fill(reco_var, global_weight);
+	      spec_osc_sin.hist[ih].Fill(reco_var, global_weight);
+              
+	      //	std::cout<<reco_var<<" "<<std::endl;
+	    }
+	  }
+	}
+      } //end of entry loop
+
+      if ( _cache_event_data ) {
+	event_cache_v.emplace_back( std::move(cache) );
+      }
     }//end of file loop
+    
+    std::clock_t endfill = std::clock();
 
-
+    float dt = ((float)endfill - startfill)/CLOCKS_PER_SEC;
+    std::cout<<"SBNgenerate::SBNgenerate\t|| seconds to fill initial spectra: " << dt << " secs" << std::endl;
     /***************************************************************
      *		Now some clean-up and Writing
      * ************************************************************/
-
+    
 }
 
 SBNgenerate::~SBNgenerate(){
@@ -226,6 +264,54 @@ SBNgenerate::~SBNgenerate(){
     for(auto &f: files){
         f->Close();
     }
+    event_cache_v.clear();
+}
+
+int SBNgenerate::regenerate_osc( const NeutrinoModel& model )
+{
+  
+  std::clock_t start = std::clock();
+  
+  // update model
+  nu_model = model;
+  
+  // clear spectrum histograms
+  for(int f=0;f<num_files;f++){
+    for(int t=0; t<branch_variables[f].size();t++){
+      const auto branch_variable = branch_variables[f][t];
+      int ih = spec_central_value.map_hist.at(branch_variable->associated_hist);
+      
+      spec_osc_sinsq.hist[ih].Reset();
+      spec_osc_sin.hist[ih].Reset();
+      spec_central_value.hist[ih].Reset();
+    }
+  }
+      
+  // regen
+  for(int f=0;f<num_files;f++){
+    auto& cache = event_cache_v.at(f);
+    for(int t=0; t<branch_variables[f].size();t++){
+      const auto branch_variable = branch_variables[f][t];
+      int ih = spec_central_value.map_hist.at(branch_variable->associated_hist);
+      
+      for (int i=0; i<cache.num_events; i++) {
+	
+	double osc_Probability_sin = nu_model.oscProbSin( cache.data[0][i], cache.data[1][i] );
+	double osc_Probability_sinsq = nu_model.oscProbSinSq( cache.data[0][i], cache.data[1][i] );
+	
+	spec_central_value.hist[ih].Fill( cache.recovar[i], cache.weight[i] );	
+	spec_osc_sin.hist[ih].Fill( cache.recovar[i], cache.weight[i]*osc_Probability_sin );
+	spec_osc_sinsq.hist[ih].Fill( cache.recovar[i], cache.weight[i]*osc_Probability_sinsq );
+      }//end of event loop
+    } //end of branch var loop
+  }//end of file sample loop
+  
+  std::clock_t end = std::clock();
+  
+  float dt = ((float)end - start)/CLOCKS_PER_SEC;
+  std::cout << "[SBNgenerate::regenerate_osc] seconds to regen: " << dt << " secs" << std::endl;
+
+  return 0;
 }
 
 
