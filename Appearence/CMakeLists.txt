@@ -12,6 +12,7 @@ add_executable (DL3plus1_massgen DL3plus1_massgen.cc)
 add_executable (DL3plus1_siginject DL3plus1_siginject.cc)
 add_executable (covplotter covplotter.cc)
 add_executable (DL3plus1_testregen DL3plus1_testregen.cc)
+add_executable (DL3plus1_FCwregen DL3plus1_FCwregen.cc)
 
 #message("root libs: ${ROOT_LIBRARY_DIR}")
 #message("root libs: ${ROOT_LIBRARIES}")
@@ -27,3 +28,4 @@ target_link_libraries (DL3plus1_siginject SBNfitlib tinyxmllib EventWeight ${ROO
 target_link_libraries (DL3plus1_massgen SBNfitlib tinyxmllib EventWeight)
 target_link_libraries (covplotter SBNfitlib tinyxmllib EventWeight)
 target_link_libraries (DL3plus1_testregen SBNfitlib tinyxmllib EventWeight )
+target_link_libraries (DL3plus1_FCwregen SBNfitlib tinyxmllib EventWeight ${ROOT_LIBRARIES} ${ROOT_LIBRARY_DIR}/libMinuit.so )
