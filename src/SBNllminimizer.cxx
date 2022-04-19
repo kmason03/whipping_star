@@ -187,5 +187,25 @@ namespace sbn {
 
     return chisqTest;
   }//end of GetLLHFromSpectra
+
+  SBNspec SBNllminimizer::getOscSpectra( float dm4x, float Ue4, float Um4 )
+  {
+    _osc_model = NeutrinoModel( dm4x, Ue4, Um4 );
+    _gen.regenerate_osc( _osc_model ); ///< regenerates spectrum with new dm4x
+
+    float e_app = 4*pow(Ue4,2)*pow(Um4,2);     // sin^2(2theta_mue)
+    float e_dis = 4*pow(Ue4,2)*(1-pow(Ue4,2)); // sin^2(2theta_ee)
+    float m_dis = 4*pow(Um4,2)*(1-pow(Um4,2)); // sin^2(2theta_mumu)
+    
+    // now we scale the different components
+    _gen.spec_osc_sinsq.Scale("fullosc",0.0);
+    _gen.spec_osc_sinsq.Scale("bnb",-1*m_dis);    
+    _gen.spec_osc_sinsq.Scale("nue",-1*e_dis);
+    _gen.spec_osc_sinsq.Scale("ext",0.0);
+    _gen.spec_central_value.Scale("fullosc",0.0);    
+    _gen.spec_central_value.Add(&(_gen.spec_osc_sinsq));
+    
+    return _gen.spec_central_value;
+  }
   
 }

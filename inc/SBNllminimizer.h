@@ -2,6 +2,7 @@
 #define _SBN_LL_MINIMIZER_H__
 
 #include "SBNgenerate.h"
+#include "SBNspec.h"
 #include "prob.h"
 
 namespace sbn {
@@ -43,7 +44,8 @@ namespace sbn {
     std::vector<float> _observed_bins;
     void setObservedBinValues( std::vector<float>& obs ) { _observed_bins = obs; };
     
-
+    SBNspec getOscSpectra( float dm41, float ue4, float um4 );
+    
   protected:
 
     static SBNllminimizer* _active_copy;
