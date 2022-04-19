@@ -78,26 +78,30 @@ std::vector<std::tuple<SBNspec,double>> a_sinsqSpec;
 TMatrixD * covFracSys_collapsed;
 
 int main(){
-
+	// double scalefactor =(6.67+4.6)/6.67;
+	double scalefactor=10000.0;
 	// open output text files
-	coordfile.open("bins_sens_bigbin.txt", std::ios_base::app);
-	chifile.open("chis_sens_bigbin.txt", std::ios_base::app);
+	coordfile.open("bins_test.txt", std::ios_base::app);
+	chifile.open("chis_sens_highstat.txt", std::ios_base::app);
 	// Print binedges for easier plotting
 	if(printbins) printbinedges();
 
 	// Load up the necesary bits and store them in vectors on the stack **
+	cvSpec.ScaleAll(scalefactor);
 	cvSpec.Scale("fullosc",0.0);
 	cvSpec.CollapseVector();
 	cvSpec.RemoveMCError();
 	// cvSpec.PrintFullVector();
 	// make a tuple of the spectra and mass term
 	for(int mi = 0; mi < 400; mi++){
+		std::cout<<mi<<std::endl;
 		mnu = pow(10.,((mi+.5)/float(400)*TMath::Log10(sqrt(dm2_hibound)/sqrt(dm2_lowbound)) + TMath::Log10(sqrt(dm2_lowbound))));
 		std::stringstream stream;
 		stream << std::fixed << std::setprecision(4) << 2*log10(mnu);
 		std::string infile = "/cluster/tufts/wongjiradlabnu/kmason03/whipping_star/data/MassSpectraBigBins/"+tag+"_SINSQ_dm_"+stream.str()+".SBNspec.root";
 		auto inspec = SBNspec(infile,xml);
 		// inspec.Scale("ext",0.0);	// since we're subtracting this spectrum, we want to make sure we're not subtracting the background.
+		inspec.ScaleAll(scalefactor);
 		inspec.CollapseVector();
 		inspec.RemoveMCError();
 		std::tuple<SBNspec,double> singletup (inspec,mnu);
@@ -116,9 +120,9 @@ int main(){
 
 	// first get the central grid point we are throwing universes around
 	int idx=0;
-	for(int mi_base = 18; mi_base <19; mi_base++){
-		for(int uei_base = 0; uei_base < 1; uei_base++){
-			for(int umui_base = 24; umui_base < 25; umui_base++){
+	for(int mi_base = 0; mi_base <25; mi_base++){
+		for(int uei_base = 0; uei_base < 25; uei_base++){
+			for(int umui_base = 0; umui_base < 25; umui_base++){
 				std::cout<<idx<<std::endl;
 				idx+=1;
 					//mnu =m41, ue4 = sqrt(.5sin^2(2theta14)), um4 = sqrt(.5sin^2(2theta24)), sin2 term = 4(ue4**2)(um4**2)

@@ -33,7 +33,8 @@ int main(int argc, char* argv[]){
   NeutrinoModel testModel(dm_eV, sqrt(.5), sqrt(.5));
 
   // on construction it makes 3 SBNspecs, 1 sin amp, 1 sin2 amp, 1 CV oscilatted
-  SBNgenerate * gen = new SBNgenerate(xml,testModel, true);
+  bool cache_the_data = true;
+  SBNgenerate * gen = new SBNgenerate(xml,testModel,cache_the_data);
 
   // save the initial spectrum
   auto const& branch_variable = gen->branch_variables[0][0];

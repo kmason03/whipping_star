@@ -103,7 +103,7 @@ int main(int argc, char* argv[]){
 
 	// open output files
 	std::string textid = ZeroPadNumber(specific_entry, 5);
-	chifile.open("chis_sig_"+textid+".txt", std::ios_base::app);
+	chifile.open("chis_sig_"+textid+"_5.txt", std::ios_base::app);
 	bestfile.open("best_sig_"+textid+".txt", std::ios_base::app);
 
 
@@ -207,7 +207,7 @@ int main(int argc, char* argv[]){
 	          m_min = mnu_base;
 	        }
 
-					if(mi_base==0 && uei_base==0 && umui_base==0) chifile<<llh_osc<<std::endl;
+					chifile<<llh_osc<<std::endl;
 				}// end of loop over base umu
 			}//end of loop over base ue
 		}//end of loop over base mass
@@ -259,6 +259,7 @@ int main(int argc, char* argv[]){
 	  // std::cout<<"pt, fmin, coarse grid, fine grid"<<std::endl;
 	  std::cout<<fmin<<" "<<dm2_val<<" "<<ue4_val<<" "<<umu4_val<<std::endl;
 	  bestfile<<fmin<<" "<<dm2_val<<" "<<ue4_val<<" "<<umu4_val<<std::endl;
+		chifile<<fmin<<" "<<dm2_val<<" "<<ue4_val<<" "<<umu4_val<<std::endl;
 
 	} // end of fake universe loop
 

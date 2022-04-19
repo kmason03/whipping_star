@@ -111,7 +111,7 @@ int main(int argc, char* argv[]){
 	chifile.open("chis_"+textid+".txt", std::ios_base::app);
 	covfile.open("cov_tot_big_220314.txt", std::ios_base::app);
 	spacefile.open("space.txt", std::ios_base::app);
-	specfile.open("spec_bigbin.txt", std::ios_base::app);
+	specfile.open("spec_FC.txt", std::ios_base::app);
 	TFile *fout=new TFile("DLFCTests_hists.root","RECREATE");
 
 	// Print binedges for easier plotting
@@ -122,20 +122,7 @@ int main(int argc, char* argv[]){
 	// cvSpec.Scale("1e1p_nue",0.0);
 	cvSpec.RemoveMCError();
 	std::vector<double> cv_v = cvSpec.collapsed_vector;
-	for(int i=0;i<nBins;i++){
-		specfile<<cv_v[i]<<" ";
-	}
-	specfile<<std::endl;
-	// if(draw){
-	// 	TH1D * cvSpec_1e1p_h = new TH1D("cvspec_1e1p","cvspec_1e1p ",nBins_e,0,nBins_e);
-	// 	TH1D * cvSpec_1mu1p_h = new TH1D("cvspec_1mu1p","cvspec_1mu1p",nBins_mu,0,nBins_mu);
-	// 	std::vector<double> cvspec_v=cvSpec.collapsed_vector;
-	// 	for(int i=0;i<nBins;i++){
-	// 		if (i<nBins_e) cvSpec_1e1p_h->SetBinContent(i,cvspec_v[i]);
-	// 		else cvSpec_1mu1p_h->SetBinContent(i-nBins_e,cvspec_v[i]);
-	// 	}
-	// }
-	//
+
 	// make a tuple of the spectra and mass term
 	for(int mi = 0; mi < 400; mi++){
 		mnu = pow(10.,((mi+.5)/float(400)*TMath::Log10(sqrt(dm2_hibound)/sqrt(dm2_lowbound)) + TMath::Log10(sqrt(dm2_lowbound))));
@@ -182,10 +169,10 @@ int main(int argc, char* argv[]){
 	// get the oscillated spectra
 	oscSpec =  GetOscillatedSpectra(cvSpec, std::get<0>(a_sinsqSpec.at(mi_base_new)), e_app, e_dis, m_dis);
 	std::vector<double> osc_v = oscSpec.collapsed_vector;
-	for(int i=0;i<nBins;i++){
-		specfile<<osc_v[i]<<" ";
-	}
-	specfile<<std::endl;
+	// for(int i=0;i<nBins;i++){
+	// 	specfile<<osc_v[i]<<" ";
+	// }
+	// specfile<<std::endl;
 
 	if(draw){
 		fout->cd();
@@ -216,193 +203,183 @@ int main(int argc, char* argv[]){
 	oscSpec.PrintFullVector();
 
 
+	TrueChi.pseudo_from_collapsed = true;
+	TrueChi.GeneratePseudoExperiment();		// get the motor running with initial cholosky decomposition
 
-	// TrueChi.pseudo_from_collapsed = true;
-	// TrueChi.GeneratePseudoExperiment();		// get the motor running with initial cholosky decomposition
-	//
-	// // Across several fake experiments for this grid point:
-	// for(int expi = 0; expi < nFakeExp; expi++){
-	// 	fakeData = TrueChi.GeneratePseudoExperiment();
-	// 	if(draw){
-	// 		fout->cd();
-	// 		TH1D * fakeSpec_1e1p_h = new TH1D("fakespec_1e1p","fakespec_1e1p ",nBins_e,0,nBins_e);
-	// 		TH1D * fakeSpec_1mu1p_h = new TH1D("fakespec_1mu1p","fakespec_1mu1p",nBins_mu,0,nBins_mu);
-	// 		for(int i=0;i<nBins;i++){
-	// 			if (i<nBins_e) fakeSpec_1e1p_h->SetBinContent(i,fakeData[i]);
-	// 			else fakeSpec_1mu1p_h->SetBinContent(i-nBins_e,fakeData[i]);
-	// 		}
-	// 	}
-	//
-	//
-	// 	// start of comptest
-	// 	// 1 get chi2pt
-	// 	float e_app_in = 4*pow(ue_base,2)*pow(um_base,2);
-	// 	float e_dis_in = 4*pow(ue_base,2)*(1-pow(ue_base,2));
-	// 	float m_dis_in = 4*pow(um_base,2)*(1-pow(um_base,2));
-	// 	TMatrixD cov_pT= GetTotalCov(fakeData, oscSpec, *oscFracSys_collapsed);
-	// 	float chi_pT = GetLLHFromVector(fakeData, oscSpec, cov_pT,true);
-	// 	chifile<<chi_pT<<" "<<mnu_base<<" "<<ue_base<<" "<<um_base<<std::endl;
-	//
-	// 	//2 get classic grid search
-	// 	float chi_min_grid =1000000;
-	// 	float m41_grid,ue_grid,umu4_grid;
-	// 	for(int mi_in = 0; mi_in <dm2_grdpts; mi_in++){
-	// 		std::cout<<mi_in<<std::endl;
-	// 		for(int uei_in = 0; uei_in < ue4_grdpts; uei_in++){
-	// 			for(int umui_in = 0; umui_in < umu4_grdpts; umui_in++){
-	// 				int mi_in_new = mi_in*(400/dm2_grdpts);
-	// 				float ue_val = pow(10.,(uei_in/float(ue4_grdpts)*TMath::Log10(ue4_hibound/ue4_lowbound) + TMath::Log10(ue4_lowbound)));
-	// 				float um_val = pow(10.,(umui_in/float(umu4_grdpts)*TMath::Log10(umu4_hibound/umu4_lowbound) + TMath::Log10(umu4_lowbound)));
-	// 				float mnu_val = pow(10.,((mi_in_new+.5)/float(400)*TMath::Log10(sqrt(dm2_hibound)/sqrt(dm2_lowbound)) + TMath::Log10(sqrt(dm2_lowbound))));
-	// 				e_app_in = 4*pow(ue_val,2)*pow(um_val,2);
-	// 				e_dis_in = 4*pow(ue_val,2)*(1-pow(ue_val,2));
-	// 				m_dis_in = 4*pow(um_val,2)*(1-pow(um_val,2));
-	// 				// get the oscillated spectra
-	// 				SBNspec inSpec =  GetOscillatedSpectra(cvSpec, std::get<0>(a_sinsqSpec.at(mi_in_new)), e_app_in, e_dis_in, m_dis_in);
-	// 				SBNchi innerChi(inSpec, *covFracSys);
-	// 				TMatrixD * inFracSys_collapsed =(TMatrixD*)fsys->Get("frac_covariance");
-	// 				int c = innerChi.FillCollapsedFractionalMatrix(inFracSys_collapsed);
-	// 				TMatrixD cov_grid = GetTotalCov(fakeData, inSpec, *inFracSys_collapsed);
-	// 				float chi_test = GetLLHFromVector(fakeData, inSpec, cov_grid, false);
-	// 				delete inFracSys_collapsed;
-	// 				spacefile<<chi_test<<std::endl;
-	//
-	// 				if (chi_test<chi_min_grid){
-	// 					chi_min_grid = chi_test;
-	// 					m41_grid = mnu_val;
-	// 					ue_grid = ue_val;
-	// 					umu4_grid = um_val;
-	// 				}
-	// 			}
-	// 		}
-	// 	}//end of trad grid inner loops
-	// 	chifile<<chi_min_grid<<" "<<m41_grid<<" "<<ue_grid<<" "<<umu4_grid<<std::endl;
-	//
-	// 	// if(draw){
-	// 	// 	float e_app_g = 4*pow(ue_grid,2)*pow(umu4_grid,2);
-	// 	// 	float e_dis_g = 4*pow(ue_grid,2)*(1-pow(ue_grid,2));
-	// 	// 	float m_dis_g = 4*pow(umu4_grid,2)*(1-pow(umu4_grid,2));
-	// 	//
-	// 	// 	// get the oscillated spectra
-	// 	// 	SBNspec bestSpec =  GetOscillatedSpectra(cvSpec, std::get<0>(a_sinsqSpec.at(m41_grid)), e_app_g, e_dis_g, m_dis_g);
-	// 	// 	std::vector<double> bestspec_v = bestSpec.collapsed_vector;
-	// 	// 	TH1D * bestSpec_1e1p_h = new TH1D("bestspec_1e1p","bestspec_1e1p ",nBins_e,0,nBins_e);
-	// 	// 	TH1D * bestSpec_1mu1p_h = new TH1D("bestspec_1mu1p","bestspec_1mu1p",nBins_mu,0,nBins_mu);
-	// 	// 	for(int i=0;i<nBins;i++){
-	// 	// 		if (i<nBins_e-2) bestSpec_1e1p_h->SetBinContent(i,bestspec_v[i]);
-	// 	// 		else bestSpec_1mu1p_h->SetBinContent(i-nBins_e,bestspec_v[i]);
-	// 	// 	}
-	// 	// 	fout->Write();
-	// 	// }
-	//
-	// 	//3. just the minimizer from throw point
-	// 	// first some common variables
-	// 	Int_t ierflg = 0;
-	// 	Double_t dm2_step = .01;
-	// 	TString dm2_name = "m41";
-	// 	Double_t ue4_step = 0.001;
-	// 	TString ue4_name = "ue4";
-	// 	Double_t umu4_step = 0.001;
-	// 	TString umu4_name = "umu4";
-	// 	Double_t arglist[2];
-	// 	Double_t dm2_val,dm2_err,dm_low,dm_high;
-	// 	Int_t dm2_num;
-	// 	Double_t ue4_val,ue4_err,ue4_low,ue4_high;
-	// 	Int_t ue4_num;
-	// 	Double_t umu4_val,umu4_err,umu4_low,umu4_high;
-	// 	Int_t umu4_num;
-	// 	Int_t npari,nparx,istat;
-	// 	// Now ready for minimization step 0 = max steps, 1=tolerance
-	// 	// give a large maximum number of steps (tends to take ~125 calls)
-	// 	arglist[0] = 500;
-	// 	arglist[1] = 3;
-	//
-	// 	// next initialize the minimizer
-	// 	TMinuit * gMinuit_simple= new TMinuit(3);
-	// 	gMinuit_simple->SetFCN(testfcn);
-	// 	Double_t dm2_start = m41_grid;
-	// 	Double_t ue4_start = ue_grid;
-	// 	Double_t umu4_start = umu4_grid;
-	// 	// start values near lower bound, but some wiggle room
-	// 	// initialize the parameters
-	// 	gMinuit_simple->mnparm(0,dm2_name,dm2_start,dm2_step,sqrt(dm2_lowbound),sqrt(dm2_hibound),ierflg);
-	// 	gMinuit_simple->mnparm(1,ue4_name,ue4_start,ue4_step,ue4_lowbound,ue4_hibound,ierflg);
-	// 	gMinuit_simple->mnparm(2,umu4_name,umu4_start,umu4_step,umu4_lowbound,umu4_hibound,ierflg);
-	// 	// run the minimizer
-	// 	gMinuit_simple->mnexcm("SEEk", arglist ,2,ierflg);
-	// 	// get the parameter outputs
-	// 	Double_t fmin,fedm,errdef;
-	// 	gMinuit_simple->mnpout(0,dm2_name,dm2_val,dm2_err,dm_low,dm_high,dm2_num);
-	// 	gMinuit_simple->mnpout(1,ue4_name,ue4_val,ue4_err,ue4_low,ue4_high,ue4_num);
-	// 	gMinuit_simple->mnpout(2,umu4_name,umu4_val,umu4_err,umu4_low,umu4_high,umu4_num);
-	// 	gMinuit_simple->mnstat(fmin,fedm,errdef,npari,nparx,istat);
-	// 	// std::cout<<"pt, fmin, coarse grid, fine grid"<<std::endl;
-	// 	// std::cout<<chi_pT<<" "<<fmin<<" "<<mnu_base<<" "<<ue_base<<" "<<um_base<<std::endl;
-	// 	chifile<<fmin<<" "<<dm2_val<<" "<<ue4_val<<" "<<umu4_val<<std::endl;
-	//
-	// 	if(draw){
-	// 		float e_app_m = 4*pow(ue4_val,2)*pow(umu4_val,2);
-	// 		float e_dis_m = 4*pow(ue4_val,2)*(1-pow(ue4_val,2));
-	// 		float m_dis_m = 4*pow(umu4_val,2)*(1-pow(umu4_val,2));
-	//
-	// 		// find the closest mass spectra
-	// 		int lowidx, highidx;
-	// 		double prevval = 0;
-	// 		for(int i = 1;i<a_sinsqSpec.size();i++){
-	// 			// std::cout<<std::get<1>(a_sinsqSpec.at(i))<<" "<<par[0]<<" "<<prevval<<std::endl;
-	// 			if (dm2_val==std::get<1>(a_sinsqSpec.at(i))){
-	// 				lowidx = i;
-	// 				highidx =i;
-	// 				break;
-	// 			}
-	// 			else if (dm2_val <std::get<1>(a_sinsqSpec.at(i)) && dm2_val >prevval ){
-	// 				lowidx = i-1;
-	// 				highidx =i;
-	// 				break;
-	// 			}
-	// 			else if( i == a_sinsqSpec.size()-1){
-	// 				lowidx = i;
-	// 				highidx =i;
-	// 			}
-	// 			else prevval = std::get<1>(a_sinsqSpec.at(i));
-	// 		}
-	//
-	// 		int closeidx = lowidx;
-	// 		if (lowidx <0) lowidx =0;
-	// 		if (lowidx<a_sinsqSpec.size()-2){
-	// 			double diff1 = dm2_val - std::get<1>(a_sinsqSpec.at(lowidx));
-	// 			double diff2 = std::get<1>(a_sinsqSpec.at(highidx)) - dm2_val;
-	// 			if (diff2 <diff1) closeidx =highidx;
-	// 		}
-	// 		// get spectra and covar
-	// 		SBNspec inspec = std::get<0>(a_sinsqSpec.at(closeidx));
-	// 		SBNspec newSpec = GetOscillatedSpectra(cvSpec, inspec,e_app_m,e_dis_m, m_dis_m);
-	// 		fout->cd();
-	// 		TH1D * bestSpec_1e1p_h = new TH1D("bestspec_1e1p","bestspec_1e1p ",nBins_e,0,nBins_e);
-	// 		TH1D * bestSpec_1mu1p_h = new TH1D("bestspec_1mu1p","bestspec_1mu1p",nBins_mu,0,nBins_mu);
-	// 		std::vector<double> bestspec_v=newSpec.collapsed_vector;
-	// 		for(int i=0;i<nBins;i++){
-	// 			if (i<nBins_e) bestSpec_1e1p_h->SetBinContent(i,bestspec_v[i]);
-	// 			else bestSpec_1mu1p_h->SetBinContent(i-nBins_e,bestspec_v[i]);
-	// 		}
-	// 		SBNchi tmpChi(newSpec, *covFracSys);
-	// 		TMatrixD * tmpFracSys_collapsed =(TMatrixD*)fsys->Get("frac_covariance");
-	// 		int b = tmpChi.FillCollapsedFractionalMatrix(tmpFracSys_collapsed);
-	// 		TMatrixD tmpcov = GetTotalCov(fakeData, newSpec, *tmpFracSys_collapsed);
-	// 		// calculate -2LLH
-	// 		float testchi=  GetLLHFromVector(fakeData, newSpec, tmpcov, true);
-	// 		delete tmpFracSys_collapsed;
-	// 	}
-	//
-	// 	delete gMinuit_simple;
-	//
-	//
-	//
-	// } //end of universeloop
-	// std::cout<<mnu_base<<" "<<ue_base<<" "<<um_base<<std::endl;
-	// fout->Write();
-	// fout->Close();
-	// delete oscFracSys_collapsed;
+	// Across several fake experiments for this grid point:
+	for(int expi = 0; expi < nFakeExp; expi++){
+		fakeData = TrueChi.GeneratePseudoExperiment();
+		if(draw){
+			fout->cd();
+			TH1D * fakeSpec_1e1p_h = new TH1D("fakespec_1e1p","fakespec_1e1p ",nBins_e,0,nBins_e);
+			TH1D * fakeSpec_1mu1p_h = new TH1D("fakespec_1mu1p","fakespec_1mu1p",nBins_mu,0,nBins_mu);
+			for(int i=0;i<nBins;i++){
+				if (i<nBins_e) fakeSpec_1e1p_h->SetBinContent(i,fakeData[i]);
+				else fakeSpec_1mu1p_h->SetBinContent(i-nBins_e,fakeData[i]);
+			}
+		}
+
+
+		// start of comptest
+		// 1 get chi2pt
+		float e_app_in = 4*pow(ue_base,2)*pow(um_base,2);
+		float e_dis_in = 4*pow(ue_base,2)*(1-pow(ue_base,2));
+		float m_dis_in = 4*pow(um_base,2)*(1-pow(um_base,2));
+		TMatrixD cov_pT= GetTotalCov(fakeData, oscSpec, *oscFracSys_collapsed);
+		float chi_pT = GetLLHFromVector(fakeData, oscSpec, cov_pT,true);
+		chifile<<chi_pT<<" "<<mnu_base<<" "<<ue_base<<" "<<um_base<<std::endl;
+
+		//2 get classic grid search
+		float chi_min_grid =1000000;
+		float m41_grid,ue_grid,umu4_grid;
+
+		for(int mi_in = 0; mi_in <dm2_grdpts; mi_in++){
+			std::cout<<mi_in<<std::endl;
+			for(int uei_in = 0; uei_in < ue4_grdpts; uei_in++){
+				for(int umui_in = 0; umui_in < umu4_grdpts; umui_in++){
+					int mi_in_new = mi_in*(400/dm2_grdpts);
+					float ue_val = pow(10.,(uei_in/float(ue4_grdpts)*TMath::Log10(ue4_hibound/ue4_lowbound) + TMath::Log10(ue4_lowbound)));
+					float um_val = pow(10.,(umui_in/float(umu4_grdpts)*TMath::Log10(umu4_hibound/umu4_lowbound) + TMath::Log10(umu4_lowbound)));
+					float mnu_val = pow(10.,((mi_in_new+.5)/float(400)*TMath::Log10(sqrt(dm2_hibound)/sqrt(dm2_lowbound)) + TMath::Log10(sqrt(dm2_lowbound))));
+					e_app_in = 4*pow(ue_val,2)*pow(um_val,2);
+					e_dis_in = 4*pow(ue_val,2)*(1-pow(ue_val,2));
+					m_dis_in = 4*pow(um_val,2)*(1-pow(um_val,2));
+					// get the oscillated spectra
+					SBNspec inSpec =  GetOscillatedSpectra(cvSpec, std::get<0>(a_sinsqSpec.at(mi_in_new)), e_app_in, e_dis_in, m_dis_in);
+					SBNchi innerChi(inSpec, *covFracSys);
+					TMatrixD * inFracSys_collapsed =(TMatrixD*)fsys->Get("frac_covariance");
+					int c = innerChi.FillCollapsedFractionalMatrix(inFracSys_collapsed);
+					TMatrixD cov_grid = GetTotalCov(fakeData, inSpec, *inFracSys_collapsed);
+					float chi_test = GetLLHFromVector(fakeData, inSpec, cov_grid, false);
+					delete inFracSys_collapsed;
+					spacefile<<chi_test<<std::endl;
+					if(mi_in ==0 && uei_in==0 && umui_in==0){
+						for(int bin=0;bin<nBins;bin++){
+							specfile<<fakeData[bin]<<" ";
+						}
+						specfile<<std::endl;
+					}
+					if (chi_test<chi_min_grid){
+						chi_min_grid = chi_test;
+						m41_grid = mnu_val;
+						ue_grid = ue_val;
+						umu4_grid = um_val;
+					}
+				}
+			}
+		}//end of trad grid inner loops
+		chifile<<chi_min_grid<<" "<<m41_grid<<" "<<ue_grid<<" "<<umu4_grid<<std::endl;
+
+
+
+		//3. just the minimizer from throw point
+		// first some common variables
+		Int_t ierflg = 0;
+		Double_t dm2_step = .01;
+		TString dm2_name = "m41";
+		Double_t ue4_step = 0.001;
+		TString ue4_name = "ue4";
+		Double_t umu4_step = 0.001;
+		TString umu4_name = "umu4";
+		Double_t arglist[2];
+		Double_t dm2_val,dm2_err,dm_low,dm_high;
+		Int_t dm2_num;
+		Double_t ue4_val,ue4_err,ue4_low,ue4_high;
+		Int_t ue4_num;
+		Double_t umu4_val,umu4_err,umu4_low,umu4_high;
+		Int_t umu4_num;
+		Int_t npari,nparx,istat;
+		// Now ready for minimization step 0 = max steps, 1=tolerance
+		// give a large maximum number of steps (tends to take ~125 calls)
+		arglist[0] = 500;
+		arglist[1] = 3;
+
+		// next initialize the minimizer
+		TMinuit * gMinuit_simple= new TMinuit(3);
+		gMinuit_simple->SetFCN(testfcn);
+		Double_t dm2_start = m41_grid;
+		Double_t ue4_start = ue_grid;
+		Double_t umu4_start = umu4_grid;
+		// start values near lower bound, but some wiggle room
+		// initialize the parameters
+		gMinuit_simple->mnparm(0,dm2_name,dm2_start,dm2_step,sqrt(dm2_lowbound),sqrt(dm2_hibound),ierflg);
+		gMinuit_simple->mnparm(1,ue4_name,ue4_start,ue4_step,ue4_lowbound,ue4_hibound,ierflg);
+		gMinuit_simple->mnparm(2,umu4_name,umu4_start,umu4_step,umu4_lowbound,umu4_hibound,ierflg);
+		// run the minimizer
+		gMinuit_simple->mnexcm("SEEk", arglist ,2,ierflg);
+		// get the parameter outputs
+		Double_t fmin,fedm,errdef;
+		gMinuit_simple->mnpout(0,dm2_name,dm2_val,dm2_err,dm_low,dm_high,dm2_num);
+		gMinuit_simple->mnpout(1,ue4_name,ue4_val,ue4_err,ue4_low,ue4_high,ue4_num);
+		gMinuit_simple->mnpout(2,umu4_name,umu4_val,umu4_err,umu4_low,umu4_high,umu4_num);
+		gMinuit_simple->mnstat(fmin,fedm,errdef,npari,nparx,istat);
+		// std::cout<<"pt, fmin, coarse grid, fine grid"<<std::endl;
+		// std::cout<<chi_pT<<" "<<fmin<<" "<<mnu_base<<" "<<ue_base<<" "<<um_base<<std::endl;
+		chifile<<fmin<<" "<<dm2_val<<" "<<ue4_val<<" "<<umu4_val<<std::endl;
+
+		if(draw){
+			float e_app_m = 4*pow(ue4_val,2)*pow(umu4_val,2);
+			float e_dis_m = 4*pow(ue4_val,2)*(1-pow(ue4_val,2));
+			float m_dis_m = 4*pow(umu4_val,2)*(1-pow(umu4_val,2));
+
+			// find the closest mass spectra
+			int lowidx, highidx;
+			double prevval = 0;
+			for(int i = 1;i<a_sinsqSpec.size();i++){
+				// std::cout<<std::get<1>(a_sinsqSpec.at(i))<<" "<<par[0]<<" "<<prevval<<std::endl;
+				if (dm2_val==std::get<1>(a_sinsqSpec.at(i))){
+					lowidx = i;
+					highidx =i;
+					break;
+				}
+				else if (dm2_val <std::get<1>(a_sinsqSpec.at(i)) && dm2_val >prevval ){
+					lowidx = i-1;
+					highidx =i;
+					break;
+				}
+				else if( i == a_sinsqSpec.size()-1){
+					lowidx = i;
+					highidx =i;
+				}
+				else prevval = std::get<1>(a_sinsqSpec.at(i));
+			}
+
+			int closeidx = lowidx;
+			if (lowidx <0) lowidx =0;
+			if (lowidx<a_sinsqSpec.size()-2){
+				double diff1 = dm2_val - std::get<1>(a_sinsqSpec.at(lowidx));
+				double diff2 = std::get<1>(a_sinsqSpec.at(highidx)) - dm2_val;
+				if (diff2 <diff1) closeidx =highidx;
+			}
+			// get spectra and covar
+			SBNspec inspec = std::get<0>(a_sinsqSpec.at(closeidx));
+			SBNspec newSpec = GetOscillatedSpectra(cvSpec, inspec,e_app_m,e_dis_m, m_dis_m);
+			fout->cd();
+			TH1D * bestSpec_1e1p_h = new TH1D("bestspec_1e1p","bestspec_1e1p ",nBins_e,0,nBins_e);
+			TH1D * bestSpec_1mu1p_h = new TH1D("bestspec_1mu1p","bestspec_1mu1p",nBins_mu,0,nBins_mu);
+			std::vector<double> bestspec_v=newSpec.collapsed_vector;
+			for(int i=0;i<nBins;i++){
+				if (i<nBins_e) bestSpec_1e1p_h->SetBinContent(i,bestspec_v[i]);
+				else bestSpec_1mu1p_h->SetBinContent(i-nBins_e,bestspec_v[i]);
+			}
+			SBNchi tmpChi(newSpec, *covFracSys);
+			TMatrixD * tmpFracSys_collapsed =(TMatrixD*)fsys->Get("frac_covariance");
+			int b = tmpChi.FillCollapsedFractionalMatrix(tmpFracSys_collapsed);
+			TMatrixD tmpcov = GetTotalCov(fakeData, newSpec, *tmpFracSys_collapsed);
+			// calculate -2LLH
+			float testchi=  GetLLHFromVector(fakeData, newSpec, tmpcov, true);
+			delete tmpFracSys_collapsed;
+		}
+
+		delete gMinuit_simple;
+
+
+
+	} //end of universeloop
+	std::cout<<mnu_base<<" "<<ue_base<<" "<<um_base<<std::endl;
+	fout->Write();
+	fout->Close();
+	delete oscFracSys_collapsed;
 // chifile<< std::endl;
 	return 0;
 } // end of main function
