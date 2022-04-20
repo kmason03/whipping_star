@@ -65,6 +65,7 @@ namespace sbn {
     }//end of preloaded xml element
 
     _chi = new SBNchi( _gen.spec_central_value, covFracSys );
+    _chi->is_verbose = false;
     
   }
   
@@ -78,7 +79,7 @@ namespace sbn {
   
   double SBNllminimizer::negative_likelihood_ratio( const double* par )
   {
-    std::cout << _active_copy << std::endl;
+    //std::cout << _active_copy << std::endl;
 
     // function to calculate the chi2 between fake universe and the mc events with osc weights
     float logdm2 = par[0];
@@ -89,7 +90,7 @@ namespace sbn {
     float e_dis  = 4*pow(Ue4,2)*(1-pow(Ue4,2)); // sin^2(2theta_ee)
     float m_dis  = 4*pow(Um4,2)*(1-pow(Um4,2)); // sin^2(2theta_mumu)
 
-    std::cout << "dm=" << dm << " logdm^2=" << logdm2 << " Ue4=" << Ue4 << " Um4=" << Um4 << std::endl;
+    //std::cout << "dm=" << dm << " logdm^2=" << logdm2 << " Ue4=" << Ue4 << " Um4=" << Um4 << std::endl;
 
     // update the osc model
     _active_copy->_osc_model = NeutrinoModel( dm, Ue4, Um4 );
@@ -102,14 +103,14 @@ namespace sbn {
     _active_copy->_gen.spec_osc_sinsq.Scale("ext",0.0);
     _active_copy->_gen.spec_central_value.Scale("fullosc",0.0);
 
-    std::cout << "pre-osc full central value -------- " << std::endl;
-    _active_copy->_gen.spec_central_value.PrintFullVector(true);
-    std::cout << "pre-scale oscillated value -------- " << std::endl;
-    _active_copy->_gen.spec_osc_sinsq.PrintFullVector(true);
-    std::cout << "----------------------------------- " << std::endl;    
+    // std::cout << "pre-osc full central value -------- " << std::endl;
+    // _active_copy->_gen.spec_central_value.PrintFullVector(true);
+    // std::cout << "pre-scale oscillated value -------- " << std::endl;
+    // _active_copy->_gen.spec_osc_sinsq.PrintFullVector(true);
+    // std::cout << "----------------------------------- " << std::endl;    
     
     _active_copy->_gen.spec_central_value.Add(&(_active_copy->_gen.spec_osc_sinsq));
-    _active_copy->_gen.spec_central_value.PrintFullVector(true);
+    //_active_copy->_gen.spec_central_value.PrintFullVector(true);
 
     // pass oscillated spectrum prediction to SBNchi instance
     // this will store bin values and also build covariance matrix for this prediction
@@ -127,7 +128,14 @@ namespace sbn {
     double f = SBNllminimizer::GetLLHFromVector(_active_copy->_observed_bins,
 						_active_copy->_gen.spec_central_value,
 						tmpcov, false);
-    
+
+    if ( std::isnan(f) || std::isinf(f) ) {
+      std::cout << "SBNllminimizer::negative_likelihood_ratio NLLR is bad = " << f << std::endl;
+      throw std::runtime_error("bad likelihood calculated");
+    }
+    if ( _active_copy->_niters%100==0 )
+      std::cout << "SBNllminimizer::negative_likelihood_ratio iter=" << _active_copy->_niters << " NLLR=" << f << std::endl;
+    _active_copy->_niters++;
     return f;
   }
   
@@ -168,10 +176,12 @@ namespace sbn {
     min->SetTolerance(0.001);
     min->SetPrintLevel(1);
 
+    _active_copy->_niters = 0;
     min->Minimize();
     const double* results = min->X();
     std::cout << "RESULTS:" << std::endl;
     std::cout << "  dm^2 = " << exp(results[0]) << " eV^2" << std::endl;
+    std::cout << "  dm   = " << sqrt(exp(results[0])) << " eV" << std::endl;    
     std::cout << "  Ue4 = "  << results[1] << std::endl;
     std::cout << "  Um4 = "  << results[2] << std::endl;
     

@@ -229,6 +229,11 @@ int main(int argc, char* argv[]){
 	// Across several fake experiments for this grid point:
 	for(int expi = 0; expi < nFakeExp; expi++){
 		fakeData = TrueChi.GeneratePseudoExperiment();
+		std::cout << "FAKE DATA [experiment " << expi << "] ======================" << std::endl;
+		for (int i=0; i<(int)fakeData.size(); i++) {
+		  std::cout << "fakeData[" << i << "] = " << fakeData[i] << ";" << std::endl;
+		}
+		std::cout << "============================================" << std::endl;
 		if(draw){
 			fout->cd();
 			TH1D * fakeSpec_1e1p_h = new TH1D("fakespec_1e1p","fakespec_1e1p ",nBins_e,0,nBins_e);

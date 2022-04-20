@@ -293,16 +293,28 @@ int SBNgenerate::regenerate_osc( const NeutrinoModel& model )
     for(int t=0; t<branch_variables[f].size();t++){
       const auto branch_variable = branch_variables[f][t];
       int ih = spec_central_value.map_hist.at(branch_variable->associated_hist);
-      
-      for (int i=0; i<cache.num_events; i++) {
+
+      if(branch_variable->GetOscillate()){
 	
-	//double osc_Probability_sin = nu_model.oscProbSin( cache.data[0][i], cache.data[1][i] );
-	double osc_Probability_sinsq = nu_model.oscProbSinSq( cache.data[0][i], cache.data[1][i] );
+	for (int i=0; i<cache.num_events; i++) {
 	
-	spec_central_value.hist[ih].Fill( cache.recovar[i], cache.weight[i] );	
-	//spec_osc_sin.hist[ih].Fill( cache.recovar[i], cache.weight[i]*osc_Probability_sin );
-	spec_osc_sinsq.hist[ih].Fill( cache.recovar[i], cache.weight[i]*osc_Probability_sinsq );
-      }//end of event loop
+	  //double osc_Probability_sin = nu_model.oscProbSin( cache.data[0][i], cache.data[1][i] );
+	  double osc_Probability_sinsq = nu_model.oscProbSinSq( cache.data[0][i], cache.data[1][i] );	
+	  spec_central_value.hist[ih].Fill( cache.recovar[i], cache.weight[i] );
+	  //spec_osc_sin.hist[ih].Fill( cache.recovar[i], cache.weight[i]*osc_Probability_sin );
+	  spec_osc_sinsq.hist[ih].Fill( cache.recovar[i], cache.weight[i]*osc_Probability_sinsq );
+	}//end of event loop
+	
+      }
+      else {
+	
+	for (int i=0; i<cache.num_events; i++) {
+	  spec_central_value.hist[ih].Fill( cache.recovar[i], cache.weight[i] );
+	  //spec_osc_sin.hist[ih].Fill( cache.recovar[i], cache.weight[i] );
+	  spec_osc_sinsq.hist[ih].Fill( cache.recovar[i], cache.weight[i] );
+	}//end of event loop
+	
+      }//end if not oscillating branch
     } //end of branch var loop
   }//end of file sample loop
 

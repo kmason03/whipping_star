@@ -236,6 +236,39 @@ int main(int argc, char* argv[]){
   // Across several fake experiments for this grid point:
   for(int expi = 0; expi < nFakeExp; expi++){
     std::vector<float> fakeData = TrueChi.GeneratePseudoExperiment();
+
+    fakeData[0] = 1;
+    fakeData[1] = 6;
+    fakeData[2] = 3;
+    fakeData[3] = 3;
+    fakeData[4] = 4;
+    fakeData[5] = 2;
+    fakeData[6] = 2;
+    fakeData[7] = 2;
+    fakeData[8] = 1;
+    fakeData[9] = 2;
+    fakeData[10] = 4;
+    fakeData[11] = 3;
+    fakeData[12] = 31;
+    fakeData[13] = 164;
+    fakeData[14] = 272;
+    fakeData[15] = 406;
+    fakeData[16] = 334;
+    fakeData[17] = 404;
+    fakeData[18] = 443;
+    fakeData[19] = 362;
+    fakeData[20] = 337;
+    fakeData[21] = 287;
+    fakeData[22] = 282;
+    fakeData[23] = 229;
+    fakeData[24] = 178;
+    fakeData[25] = 163;
+    fakeData[26] = 127;
+    fakeData[27] = 91;
+    fakeData[28] = 71;
+    fakeData[29] = 51;
+    fakeData[30] = 39;
+    
     if(draw){
       fout->cd();
       char h1e1p_name[100];
