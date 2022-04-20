@@ -9,6 +9,7 @@
 #include <cstring>
 #include <ctime>
 #include <chrono>
+#include <gperftools/profiler.h>
 
 #include "TFile.h"
 #include "TTree.h"
@@ -54,7 +55,10 @@ void testfcn(Int_t &npar, Double_t *gin, Double_t &f, Double_t *par, Int_t iflag
 std::string ZeroPadNumber(int num, int digits=3);
 
 // define some global variables
-std::string xml = "/cluster/tufts/wongjiradlabnu/kmason03/whipping_star/xml/TotalThreePlusOne_full.xml";
+std::string SBNHOME="/home/twongjirad/working/larbys/sbnfit/";
+//std::string SBNHOME="/cluster/tufts/wongjiradlabnu/kmason03/whipping_star/";
+//std::string xml = "/cluster/tufts/wongjiradlabnu/kmason03/whipping_star/xml/TotalThreePlusOne_full.xml";
+std::string xml = SBNHOME+"/xml/TotalThreePlusOne_full_tmw.xml";  
 bool draw = true;
 bool printbins = true;
 int mass_start = -1;
@@ -74,7 +78,8 @@ std::vector<float> fakeData;
 TMatrixD cov(nBins,nBins);
 SBNspec  appSpec, innerSpec, oscSpec;
 // SBNspec cvSpec("/cluster/tufts/wongjiradlabnu/kmason03/whipping_star/data/systematics/"+tag+".SBNspec.root",xml);
-SBNspec cvSpec("/cluster/tufts/wongjiradlabnu/kmason03/whipping_star/data/MassSpectraBigBins/"+tag+"_Bkg.SBNspec.root",xml);
+//SBNspec cvSpec("/cluster/tufts/wongjiradlabnu/kmason03/whipping_star/data/MassSpectraBigBins/"+tag+"_Bkg.SBNspec.root",xml);
+SBNspec cvSpec(SBNHOME+"/data/MassSpectraBigBins/"+tag+"_Bkg.SBNspec.root",xml);
 std::array<double,nBins>  a_pred;
 std::ofstream coordfile;
 std::ofstream chifile;
@@ -84,11 +89,15 @@ std::ofstream specfile;
 std::vector<std::tuple<SBNspec,double>> a_sinsqSpec;
 // TFile * fsys = new TFile("/cluster/tufts/wongjiradlabnu/kmason03/whipping_star/build/Appearence/DL_full.SBNcovar_bigbin.root","read");
 // TFile * fsys = new TFile("/cluster/tufts/wongjiradlabnu/kmason03/whipping_star/data/systematics/katieversion_bigbins.SBNcovar.root","read");
-TFile * fsys = new TFile("/cluster/tufts/wongjiradlabnu/kmason03/whipping_star/data/systematics/katieversion_bigbins_tot.SBNcovar.root","read");
+//TFile * fsys = new TFile("/cluster/tufts/wongjiradlabnu/kmason03/whipping_star/data/systematics/katieversion_bigbins_tot.SBNcovar.root","read");
+TFile * fsys = new TFile((SBNHOME+"/data/systematics/katieversion_bigbins_tot.SBNcovar.root").c_str(),"read");
 
 TMatrixD * covFracSys = (TMatrixD*)fsys->Get("frac_covariance");
 
 int main(int argc, char* argv[]){
+
+    ProfilerStart("DL3plus1_FCTests.prof");
+    
   // get the input integer: require 1
   int specific_entry = atoi(argv[1]);
 	// make array to  get the parameters
@@ -128,8 +137,9 @@ int main(int argc, char* argv[]){
 		mnu = pow(10.,((mi+.5)/float(400)*TMath::Log10(sqrt(dm2_hibound)/sqrt(dm2_lowbound)) + TMath::Log10(sqrt(dm2_lowbound))));
 		std::stringstream stream;
 		stream << std::fixed << std::setprecision(4) << 2*log10(mnu);
-		std::cout<<mi<<std::endl;
-		std::string infile = "/cluster/tufts/wongjiradlabnu/kmason03/whipping_star/data/MassSpectraBigBins/"+tag+"_SINSQ_dm_"+stream.str()+".SBNspec.root";
+		//std::string infile = "/cluster/tufts/wongjiradlabnu/kmason03/whipping_star/data/MassSpectraBigBins/"+tag+"_SINSQ_dm_"+stream.str()+".SBNspec.root";
+		std::string infile = SBNHOME+"/data/MassSpectraBigBins/"+tag+"_SINSQ_dm_"+stream.str()+".SBNspec.root";
+		std::cout<<"pre-calc dm2[" << mi << "]: " << infile << std::endl;		
 		auto inspec = SBNspec(infile,xml);
 		inspec.CollapseVector();
 		inspec.RemoveMCError();
@@ -168,6 +178,13 @@ int main(int argc, char* argv[]){
 
 	// get the oscillated spectra
 	oscSpec =  GetOscillatedSpectra(cvSpec, std::get<0>(a_sinsqSpec.at(mi_base_new)), e_app, e_dis, m_dis);
+	std::cout << "Full Vector of CV spectrum =========================" << std::endl;
+	cvSpec.PrintFullVector(true);
+	std::cout << "======================================================" << std::endl;	
+	std::cout << "Matching dm2 parameter: " << std::get<1>(a_sinsqSpec.at(mi_base_new)) << std::endl;
+	std::cout << "Full Vector of this spectrum =========================" << std::endl;
+	std::get<0>(a_sinsqSpec.at(mi_base_new)).PrintFullVector(true);
+	std::cout << "======================================================" << std::endl;
 	std::vector<double> osc_v = oscSpec.collapsed_vector;
 	// for(int i=0;i<nBins;i++){
 	// 	specfile<<osc_v[i]<<" ";
@@ -200,9 +217,12 @@ int main(int argc, char* argv[]){
 	}
 	cvSpec.PrintCollapsedVector();
 
-	oscSpec.PrintFullVector();
+	oscSpec.PrintFullVector(true);
 
-
+	// if ( true ) {
+	//   return 0;
+	// }
+	
 	TrueChi.pseudo_from_collapsed = true;
 	TrueChi.GeneratePseudoExperiment();		// get the motor running with initial cholosky decomposition
 
@@ -252,13 +272,13 @@ int main(int argc, char* argv[]){
 					TMatrixD cov_grid = GetTotalCov(fakeData, inSpec, *inFracSys_collapsed);
 					float chi_test = GetLLHFromVector(fakeData, inSpec, cov_grid, false);
 					delete inFracSys_collapsed;
-					spacefile<<chi_test<<std::endl;
-					if(mi_in ==0 && uei_in==0 && umui_in==0){
-						for(int bin=0;bin<nBins;bin++){
-							specfile<<fakeData[bin]<<" ";
-						}
-						specfile<<std::endl;
-					}
+					// spacefile<<chi_test<<std::endl;
+					// if(mi_in ==0 && uei_in==0 && umui_in==0){
+					// 	for(int bin=0;bin<nBins;bin++){
+					// 		specfile<<fakeData[bin]<<" ";
+					// 	}
+					// 	specfile<<std::endl;
+					// }
 					if (chi_test<chi_min_grid){
 						chi_min_grid = chi_test;
 						m41_grid = mnu_val;
@@ -380,6 +400,9 @@ int main(int argc, char* argv[]){
 	fout->Write();
 	fout->Close();
 	delete oscFracSys_collapsed;
+
+	ProfilerStop();
+	
 // chifile<< std::endl;
 	return 0;
 } // end of main function

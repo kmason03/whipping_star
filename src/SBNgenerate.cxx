@@ -282,7 +282,7 @@ int SBNgenerate::regenerate_osc( const NeutrinoModel& model )
       int ih = spec_central_value.map_hist.at(branch_variable->associated_hist);
       
       spec_osc_sinsq.hist[ih].Reset();
-      spec_osc_sin.hist[ih].Reset();
+      //spec_osc_sin.hist[ih].Reset();
       spec_central_value.hist[ih].Reset();
     }
   }
@@ -296,20 +296,24 @@ int SBNgenerate::regenerate_osc( const NeutrinoModel& model )
       
       for (int i=0; i<cache.num_events; i++) {
 	
-	double osc_Probability_sin = nu_model.oscProbSin( cache.data[0][i], cache.data[1][i] );
+	//double osc_Probability_sin = nu_model.oscProbSin( cache.data[0][i], cache.data[1][i] );
 	double osc_Probability_sinsq = nu_model.oscProbSinSq( cache.data[0][i], cache.data[1][i] );
 	
 	spec_central_value.hist[ih].Fill( cache.recovar[i], cache.weight[i] );	
-	spec_osc_sin.hist[ih].Fill( cache.recovar[i], cache.weight[i]*osc_Probability_sin );
+	//spec_osc_sin.hist[ih].Fill( cache.recovar[i], cache.weight[i]*osc_Probability_sin );
 	spec_osc_sinsq.hist[ih].Fill( cache.recovar[i], cache.weight[i]*osc_Probability_sinsq );
       }//end of event loop
     } //end of branch var loop
   }//end of file sample loop
+
+  spec_central_value.CollapseVector();
+  //spec_osc_sin.CollapseVector();
+  spec_osc_sinsq.CollapseVector();
   
   std::clock_t end = std::clock();
   
   float dt = ((float)end - start)/CLOCKS_PER_SEC;
-  std::cout << "[SBNgenerate::regenerate_osc] seconds to regen: " << dt << " secs" << std::endl;
+  //std::cout << "[SBNgenerate::regenerate_osc] seconds to regen: " << dt << " secs" << std::endl;
 
   return 0;
 }

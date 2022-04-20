@@ -24,6 +24,7 @@ namespace sbn {
 
     NeutrinoModel _osc_model; // stores the oscillation parameters
     SBNgenerate _gen;     // makes predicted spectra
+    SBNchi* _chi;         // makes covariance matrix, calculates chi-2, generates pseudo-experiments
     int nBins_e; // want to not hard code this info
     int nBins_mu; // want to not hard code this info
     int nBins; // want to not hard code this info

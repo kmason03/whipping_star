@@ -12,22 +12,68 @@ namespace sbn {
   SBNllminimizer::SBNllminimizer( std::string xml_config )
     : _osc_model(0.01,0.707,0.707), // these values are arbitrary
       _gen( xml_config, _osc_model, true ),
+      _chi( NULL ),
       nBins_e(12), // this needs to be not hard-coded
       nBins_mu(19),
       nBins(31),
       covFracSys(NULL)
   {
-    
-    TFile _fsys("/cluster/tufts/wongjiradlabnu/kmason03/whipping_star/data/systematics/katieversion_bigbins_tot.SBNcovar.root","read");
-    covFracSys = (TMatrixD*)_fsys.Get("frac_covariance");
-    _fsys.Close();
+
+    // get the config obj through SBNgen
+    TiXmlDocument doc(_gen.xmlname.c_str());
+    bool loadOkay = doc.LoadFile();
+    std::string otag = "SBNllminimizer::SBNllminimizer\t||\t";
+    if(!loadOkay){
+      std::cout<<otag<<"ERROR: Failed to load XML configuration file: "<<_gen.xmlname<<std::endl;
+      std::cout<<otag<<"ERROR: This generally means broken .xml brackets or attribute syntax."<<std::endl;
+      exit(EXIT_FAILURE);
+    }
+    TiXmlHandle hDoc(&doc);
+    // look at preloaded list
+    TiXmlElement *ppreload = doc.FirstChildElement("Precalced");
+    if ( !ppreload ) {
+      std::cout << otag << "Filed to load required precalced covariance matrix." << std::endl;
+      std::cout << otag << "Need it listed in a <Precalced> block in the xml file" << std::endl;
+      std::cout << otag << "looked in: " << _gen.xmlname << std::endl;      
+      exit(EXIT_FAILURE);
+    }
+    else {
+      TiXmlElement *pquantity = ppreload->FirstChildElement("quantity");
+      while(pquantity){
+	std::string quantity_type = pquantity->Attribute("type");
+	if ( quantity_type=="covar" ) {
+	  std::string cov_fpath = pquantity->Attribute("filename");
+	  std::string cov_name  = pquantity->Attribute("name");
+	  TFile _fsys(cov_fpath.c_str(),"read");
+	  covFracSys = (TMatrixD*)_fsys.Get(cov_name.c_str()); //"frac_covariance"
+	  _fsys.Close();
+	  // check the matrix, it should be NxN where N=_gen.num_bins_total
+	  if ( covFracSys->GetNcols()!=_gen.num_bins_total || covFracSys->GetNrows()!=_gen.num_bins_total ) {
+	    std::cout << otag << "loaded total covar matrix does not have the expected shape" << std::endl;
+	    std::cout << otag << "  cov.shape=(" << covFracSys->GetNcols() << "," << covFracSys->GetNrows() << ")" << std::endl;
+	    std::cout << otag << "  num_bins_total=" << _gen.num_bins_total << " (all subchannel bins, before collapsed)" << std::endl;
+	    exit(EXIT_FAILURE);
+	  }
+	  else {
+	    std::cout << otag << "Total (all subchannel) covar loaded. "
+		      << "cov.shape=(" << covFracSys->GetNcols() << "," << covFracSys->GetNrows() << ")"
+		      << std::endl;
+	  }
+	}
+	pquantity = pquantity->NextSiblingElement("quantity");
+      }
+    }//end of preloaded xml element
+
+    _chi = new SBNchi( _gen.spec_central_value, covFracSys );
     
   }
-
+  
   SBNllminimizer::~SBNllminimizer()
   {
     if ( covFracSys )
       delete covFracSys;
+    if ( _chi )
+      delete _chi;
   }
   
   double SBNllminimizer::negative_likelihood_ratio( const double* par )
@@ -35,65 +81,48 @@ namespace sbn {
     std::cout << _active_copy << std::endl;
 
     // function to calculate the chi2 between fake universe and the mc events with osc weights
-    float dm4x  = par[0];
-    float Ue4   = par[1];
-    float Um4   = par[2];
-    float e_app = 4*pow(Ue4,2)*pow(Um4,2);     // sin^2(2theta_mue)
-    float e_dis = 4*pow(Ue4,2)*(1-pow(Ue4,2)); // sin^2(2theta_ee)
-    float m_dis = 4*pow(Um4,2)*(1-pow(Um4,2)); // sin^2(2theta_mumu)
+    float logdm2 = par[0];
+    float dm     = sqrt( exp(logdm2) ); // gross
+    float Ue4    = par[1];
+    float Um4    = par[2];
+    float e_app  = 4*pow(Ue4,2)*pow(Um4,2);     // sin^2(2theta_mue)
+    float e_dis  = 4*pow(Ue4,2)*(1-pow(Ue4,2)); // sin^2(2theta_ee)
+    float m_dis  = 4*pow(Um4,2)*(1-pow(Um4,2)); // sin^2(2theta_mumu)
 
-    // find the closest mass spectra
-    // Note: this is from Katie's LL calc. We do not need to do this with cached events.
-    // int lowidx, highidx;
-    // double prevval = 0;
-    // for(int i = 1;i<a_sinsqSpec.size();i++){
-    //   // std::cout<<std::get<1>(a_sinsqSpec.at(i))<<" "<<par[0]<<" "<<prevval<<std::endl;
-    //   if (par[0]==std::get<1>(a_sinsqSpec.at(i))){
-    // 	lowidx = i;
-    // 	highidx =i;
-    // 	break;
-    //   }
-    //   else if (par[0]<std::get<1>(a_sinsqSpec.at(i)) && par[0] >prevval ){
-    // 	lowidx = i-1;
-    // 	highidx =i;
-    // 	break;
-    //   }
-    //   else if( i == a_sinsqSpec.size()-1){
-    // 	lowidx = i;
-    // 	highidx =i;
-    //   }
-    //   else prevval = std::get<1>(a_sinsqSpec.at(i));
-    // }
-
-    // int closeidx = lowidx;
-    // if (lowidx <0) lowidx =0;
-    // if (lowidx<a_sinsqSpec.size()-2){
-    //   double diff1 = par[0] - std::get<1>(a_sinsqSpec.at(lowidx));
-    //   double diff2 = std::get<1>(a_sinsqSpec.at(highidx)) - par[0];
-    //   if (diff2 <diff1) closeidx =highidx;
-    // }
-    // // get spectra and covar
-    // SBNspec inspec = std::get<0>(a_sinsqSpec.at(closeidx));
-    // SBNspec newSpec = GetOscillatedSpectra(cvSpec, inspec,e_app,e_dis, m_dis);
+    std::cout << "dm=" << dm << " logdm^2=" << logdm2 << " Ue4=" << Ue4 << " Um4=" << Um4 << std::endl;
 
     // update the osc model
-    _active_copy->_osc_model = NeutrinoModel( dm4x, Ue4, Um4 );
+    _active_copy->_osc_model = NeutrinoModel( dm, Ue4, Um4 );
     _active_copy->_gen.regenerate_osc( _active_copy->_osc_model ); ///< regenerates spectrum with new dm4x
-
+    
     // now we scale the different components
-    _active_copy->_gen.spec_osc_sinsq.Scale("fullosc",0.0);
+    _active_copy->_gen.spec_osc_sinsq.Scale("fullosc",e_app);
     _active_copy->_gen.spec_osc_sinsq.Scale("bnb",-1*m_dis);    
     _active_copy->_gen.spec_osc_sinsq.Scale("nue",-1*e_dis);
     _active_copy->_gen.spec_osc_sinsq.Scale("ext",0.0);
-    _active_copy->_gen.spec_central_value.Scale("fullosc",0.0);    
-    _active_copy->_gen.spec_central_value.Add(&(_active_copy->_gen.spec_osc_sinsq));
+    _active_copy->_gen.spec_central_value.Scale("fullosc",0.0);
 
-    TMatrixD tmp1_covFracSys( *(_active_copy->covFracSys) );
-    TMatrixD tmp2_covFracSys( *(_active_copy->covFracSys) );    
-    SBNchi tmpChi(_active_copy->_gen.spec_central_value, &tmp1_covFracSys );
-    int b = tmpChi.FillCollapsedFractionalMatrix( &tmp2_covFracSys );
+    std::cout << "pre-osc full central value -------- " << std::endl;
+    _active_copy->_gen.spec_central_value.PrintFullVector(true);
+    std::cout << "pre-scale oscillated value -------- " << std::endl;
+    _active_copy->_gen.spec_osc_sinsq.PrintFullVector(true);
+    std::cout << "----------------------------------- " << std::endl;    
+    
+    _active_copy->_gen.spec_central_value.Add(&(_active_copy->_gen.spec_osc_sinsq));
+    _active_copy->_gen.spec_central_value.PrintFullVector(true);
+
+    // pass oscillated spectrum prediction to SBNchi instance
+    // this will store bin values and also build covariance matrix for this prediction
+    _active_copy->_chi->ReloadCoreSpectrum( &(_active_copy->_gen.spec_central_value) );
+
+    // get fractional inverse cov matrix
+    TMatrixD inv_frac_cov(2,2);
+    int b = _active_copy->_chi->FillCollapsedFractionalMatrix( &inv_frac_cov );
+
+    // scalce frac inverse cov matrix to expectation and include CNP stat error to the diag
     TMatrixD tmpcov = SBNllminimizer::GetTotalCov(_active_copy->_observed_bins,
-						  _active_copy->_gen.spec_central_value, tmp2_covFracSys );
+						  _active_copy->_gen.spec_central_value,
+						  inv_frac_cov );
     // calculate -2LLH
     double f = SBNllminimizer::GetLLHFromVector(_active_copy->_observed_bins,
 						_active_copy->_gen.spec_central_value,
@@ -104,8 +133,8 @@ namespace sbn {
   
   int SBNllminimizer::doFit( std::vector<float>& obs_bins )
   {
-    std::string minName =  "Minuit2";
-    std::string algoName = "Scan";
+    std::string minName =  "Minuit";
+    std::string algoName = "Simplex";
     
     _active_copy = this;
     _active_copy->setObservedBinValues( obs_bins ); // we need a number of bins check
@@ -113,9 +142,39 @@ namespace sbn {
     ROOT::Math::Minimizer* min = 
       ROOT::Math::Factory::CreateMinimizer(minName, algoName);
 
+    if ( !min ) {
+      std::cout << "Trouble loading minimizer! minName=" << minName << " algo=" << algoName << std::endl;
+      return -1;
+    }
+
     ROOT::Math::Functor f(&SBNllminimizer::negative_likelihood_ratio,3); 
     min->SetFunction(f);
 
+    const float dm2_lowbound(0.01), dm2_hibound(100);
+    const float ue4_lowbound(0.00),  ue4_hibound(0.5);
+    const float umu4_lowbound(0.00), umu4_hibound(0.5);
+    float logdm2_low  = log(dm2_lowbound);
+    float logdm2_high = log(dm2_hibound);
+
+    min->SetVariable( 0, "log(dm^2)", 1.0, 0.1 );
+    min->SetVariable( 1, "Ue4", 0.1, 0.1 );
+    min->SetVariable( 2, "Um4", 0.1, 0.1 );
+    min->SetVariableLimits( 0, logdm2_low, logdm2_high );
+    min->SetVariableLimits( 1, ue4_lowbound, ue4_hibound );
+    min->SetVariableLimits( 2, umu4_lowbound, umu4_hibound );
+
+    min->SetMaxFunctionCalls(10000); // for Minuit/Minuit2 
+    min->SetMaxIterations(10000);  // for GSL 
+    min->SetTolerance(0.001);
+    min->SetPrintLevel(1);
+
+    min->Minimize();
+    const double* results = min->X();
+    std::cout << "RESULTS:" << std::endl;
+    std::cout << "  dm^2 = " << exp(results[0]) << " eV^2" << std::endl;
+    std::cout << "  Ue4 = "  << results[1] << std::endl;
+    std::cout << "  Um4 = "  << results[2] << std::endl;
+    
     delete min;
   }
 
@@ -198,7 +257,7 @@ namespace sbn {
     float m_dis = 4*pow(Um4,2)*(1-pow(Um4,2)); // sin^2(2theta_mumu)
     
     // now we scale the different components
-    _gen.spec_osc_sinsq.Scale("fullosc",0.0);
+    _gen.spec_osc_sinsq.Scale("fullosc",e_app);
     _gen.spec_osc_sinsq.Scale("bnb",-1*m_dis);    
     _gen.spec_osc_sinsq.Scale("nue",-1*e_dis);
     _gen.spec_osc_sinsq.Scale("ext",0.0);

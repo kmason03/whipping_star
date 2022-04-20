@@ -83,6 +83,13 @@ set (CMAKE_SO_CXX_FLAGS " ${ROOT_CXX_FLAGS} ${GSL_LIBS} ${GSL_CXX_FLAGS} ${CMAKE
 set (CMAKE_ACC_CXX_FLAGS "${CMAKE_GPU_CXX_FLAGS} ${CMAKE_SO_CXX_FLAGS} -g")
 set (CMAKE_PCC_CXX_FLAGS "-ta=multicore -Minfo=accel -acc -w ${CMAKE_SO_CXX_FLAGS}")
 
+# GOOGLE PROFILER
+if (USE_GPROFILER)
+  message("Use Gperftools, adding profiler library to link libs")
+  set( GPERFTOOLS_LIBDIR /usr/lib/x86_64-linux-gnu/ )
+  set( GPERFTOOLS_LIBS ${GPERFTOOLS_LIBDIR}/libprofiler.so )
+endif()
+
 set (CMAKE_CXX_FLAGS "${CMAKE_ACC_CXX_FLAGS}")
 
 message("@main CMAKE_SO_CXX_FLAGS: ${CMAKE_SO_CXX_FLAGS}")

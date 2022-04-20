@@ -9,6 +9,7 @@
 #include <cstring>
 #include <ctime>
 #include <chrono>
+#include <gperftools/profiler.h>
 
 #include "TFile.h"
 // #include "TTree.h"
@@ -35,8 +36,9 @@
 // #include "SBNfit.h"
 // #include "SBNfit3pN.h"
 #include "SBNllminimizer.h"
+#include "prob.h"
 // #include "SBNcovariance.h"
-// #include "prob.h"
+
 
 // #define no_argument 0
 // #define required_argument 1
@@ -84,6 +86,8 @@ std::string ZeroPadNumber(int num, int digits=3);
 // TMatrixD * covFracSys = (TMatrixD*)fsys->Get("frac_covariance");
 
 int main(int argc, char* argv[]){
+
+  ProfilerStart("DL3plus1_FCwregen.prof");
   
   // get the input integer: require 1
   //int specific_entry = atoi(argv[1]);
@@ -92,7 +96,7 @@ int main(int argc, char* argv[]){
   // --------------------------------------------------
   // other parameters
   std::string sbnfithome = "/home/twongjirad/working/larbys/sbnfit/";
-  std::string xml = sbnfithome+"/Appearence/TotalThreePlusOne_full_tmw.xml";  
+  std::string xml = sbnfithome+"/xml/TotalThreePlusOne_full_tmw.xml";  
   const int nBins_e(12),nBins_mu(19);
   const int nBins = nBins_e+nBins_mu;
   const int dm2_grdpts(25), ue4_grdpts(25), umu4_grdpts(25);
@@ -112,7 +116,7 @@ int main(int argc, char* argv[]){
   // --------------------------------------------------
 
   SBNllminimizer minimizer( xml );
-  
+
   // make array to  get the parameters
   std::vector<std::vector<float>> params_v;
   // first get the list of points we are throwing universes around
@@ -124,10 +128,6 @@ int main(int argc, char* argv[]){
       }
     }
   }
-
-  // resize fakeData vector
-  std::vector<float> fakeData;  
-  fakeData.resize(nBins);
 
   // open output files
   std::ofstream coordfile;
@@ -148,7 +148,7 @@ int main(int argc, char* argv[]){
   // cvSpec.Scale("1e1p_nue",0.0);
   cvSpec.RemoveMCError();
   std::vector<double> cv_v = cvSpec.collapsed_vector;
-  TFile * fsys = new TFile( (sbnfithome+"/Appearence/katieversion_bigbins_tot.SBNcovar.root").c_str(),"read");  
+  TFile * fsys = new TFile( (sbnfithome+"/data/systematics/katieversion_bigbins_tot.SBNcovar.root").c_str(),"read");  
   TMatrixD * covFracSys = (TMatrixD*)fsys->Get("frac_covariance");
 
 
@@ -179,8 +179,19 @@ int main(int argc, char* argv[]){
   float e_dis = 4*pow(ue_base,2)*(1-pow(ue_base,2));
   float m_dis = 4*pow(um_base,2)*(1-pow(um_base,2));
   // current test model
-  std::cout << "NU Base Model: m41:" <<pow(mnu_base,2) <<" m41^2:"<<mnu_base<< " ue:" << ue_base << " um:" << um_base << std::endl;
+  std::cout << "NU Base Model: m41^2:" <<pow(mnu_base,2) <<" m41:"<<mnu_base<< " ue:" << ue_base << " um:" << um_base << std::endl;
   std::cout<<"scale factors: "<<e_app<<" "<<e_dis<<" "<<m_dis<<std::endl;
+  NeutrinoModel start_model( mnu_base, uei_base, umui_base );
+  start_model.Printall();
+  std::cout << "mass tag: " << start_model.mass_tag << std::endl;
+
+  minimizer._gen.regenerate_osc( start_model ); 
+  std::cout << "Full Vector of pre-scale CV spectrum ===========" << std::endl;  
+  minimizer._gen.spec_central_value.PrintFullVector(true);
+  std::cout << "=================================================" << std::endl;
+  std::cout << "Full Vector of pre-scale dm2 spectrum ===========" << std::endl;  
+  minimizer._gen.spec_osc_sinsq.PrintFullVector(true);
+  std::cout << "=================================================" << std::endl;
 
   // get the oscillated spectra  
   SBNspec oscSpec =  minimizer.getOscSpectra( mi_base, uei_base, umui_base );
@@ -213,77 +224,85 @@ int main(int argc, char* argv[]){
     }
     covfile<<std::endl;
   }
+  std::cout << "CV-SPEC: PrintCollapsedVector =======================" << std::endl;
   cvSpec.PrintCollapsedVector();
-
-  oscSpec.PrintFullVector();
+  std::cout << "osc-SPEC: PrintFullVector =======================" << std::endl;  
+  oscSpec.PrintFullVector(true);
 
 
   TrueChi.pseudo_from_collapsed = true;
   TrueChi.GeneratePseudoExperiment();		// get the motor running with initial cholosky decomposition
 
-// 	// Across several fake experiments for this grid point:
-// 	for(int expi = 0; expi < nFakeExp; expi++){
-// 		fakeData = TrueChi.GeneratePseudoExperiment();
-// 		if(draw){
-// 			fout->cd();
-// 			TH1D * fakeSpec_1e1p_h = new TH1D("fakespec_1e1p","fakespec_1e1p ",nBins_e,0,nBins_e);
-// 			TH1D * fakeSpec_1mu1p_h = new TH1D("fakespec_1mu1p","fakespec_1mu1p",nBins_mu,0,nBins_mu);
-// 			for(int i=0;i<nBins;i++){
-// 				if (i<nBins_e) fakeSpec_1e1p_h->SetBinContent(i,fakeData[i]);
-// 				else fakeSpec_1mu1p_h->SetBinContent(i-nBins_e,fakeData[i]);
-// 			}
-// 		}
+  // Across several fake experiments for this grid point:
+  for(int expi = 0; expi < nFakeExp; expi++){
+    std::vector<float> fakeData = TrueChi.GeneratePseudoExperiment();
+    if(draw){
+      fout->cd();
+      char h1e1p_name[100];
+      sprintf(h1e1p_name,"fakespec_1e1p_expi%03d",expi);
+      char h1mu1p_name[100];
+      sprintf(h1mu1p_name,"fakespec_1mu1p_expi%03d",expi);
+      TH1D * fakeSpec_1e1p_h = new TH1D(h1e1p_name,h1e1p_name,nBins_e,0,nBins_e);
+      TH1D * fakeSpec_1mu1p_h = new TH1D(h1mu1p_name,h1mu1p_name,nBins_mu,0,nBins_mu);
+      for(int i=0;i<nBins;i++){
+	if (i<nBins_e) fakeSpec_1e1p_h->SetBinContent(i,fakeData[i]);
+	else fakeSpec_1mu1p_h->SetBinContent(i-nBins_e,fakeData[i]);
+      }
+    }
+    
+    minimizer.doFit( fakeData );
+    
+    // // start of comptest
+    // // 1 get chi2pt
+    // float e_app_in = 4*pow(ue_base,2)*pow(um_base,2);
+    // float e_dis_in = 4*pow(ue_base,2)*(1-pow(ue_base,2));
+    // float m_dis_in = 4*pow(um_base,2)*(1-pow(um_base,2));
+    // //TMatrixD cov_pT= GetTotalCov(fakeData, oscSpec, *oscFracSys_collapsed);
+    // //float chi_pT = GetLLHFromVector(fakeData, oscSpec, cov_pT,true);
+    // //		chifile<<chi_pT<<" "<<mnu_base<<" "<<ue_base<<" "<<um_base<<std::endl;
 
+    // //2 get classic grid search
+    // float chi_min_grid =1000000;
+    // float m41_grid,ue_grid,umu4_grid;
 
-// 		// start of comptest
-// 		// 1 get chi2pt
-// 		float e_app_in = 4*pow(ue_base,2)*pow(um_base,2);
-// 		float e_dis_in = 4*pow(ue_base,2)*(1-pow(ue_base,2));
-// 		float m_dis_in = 4*pow(um_base,2)*(1-pow(um_base,2));
-// 		TMatrixD cov_pT= GetTotalCov(fakeData, oscSpec, *oscFracSys_collapsed);
-// 		float chi_pT = GetLLHFromVector(fakeData, oscSpec, cov_pT,true);
-// 		chifile<<chi_pT<<" "<<mnu_base<<" "<<ue_base<<" "<<um_base<<std::endl;
+    // for(int mi_in = 0; mi_in <dm2_grdpts; mi_in++){
+    //   std::cout<<mi_in<<std::endl;
+    //   for(int uei_in = 0; uei_in < ue4_grdpts; uei_in++){
+    // 	for(int umui_in = 0; umui_in < umu4_grdpts; umui_in++){
+    // 	  int mi_in_new = mi_in*(400/dm2_grdpts);
+    // 	  float ue_val = pow(10.,(uei_in/float(ue4_grdpts)*TMath::Log10(ue4_hibound/ue4_lowbound) + TMath::Log10(ue4_lowbound)));
+    // 	  float um_val = pow(10.,(umui_in/float(umu4_grdpts)*TMath::Log10(umu4_hibound/umu4_lowbound) + TMath::Log10(umu4_lowbound)));
+    // 	  float mnu_val = pow(10.,((mi_in_new+.5)/float(400)*TMath::Log10(sqrt(dm2_hibound)/sqrt(dm2_lowbound)) + TMath::Log10(sqrt(dm2_lowbound))));
+    // 	  e_app_in = 4*pow(ue_val,2)*pow(um_val,2);
+    // 	  e_dis_in = 4*pow(ue_val,2)*(1-pow(ue_val,2));
+    // 	  m_dis_in = 4*pow(um_val,2)*(1-pow(um_val,2));
 
-// 		//2 get classic grid search
-// 		float chi_min_grid =1000000;
-// 		float m41_grid,ue_grid,umu4_grid;
-
-// 		for(int mi_in = 0; mi_in <dm2_grdpts; mi_in++){
-// 			std::cout<<mi_in<<std::endl;
-// 			for(int uei_in = 0; uei_in < ue4_grdpts; uei_in++){
-// 				for(int umui_in = 0; umui_in < umu4_grdpts; umui_in++){
-// 					int mi_in_new = mi_in*(400/dm2_grdpts);
-// 					float ue_val = pow(10.,(uei_in/float(ue4_grdpts)*TMath::Log10(ue4_hibound/ue4_lowbound) + TMath::Log10(ue4_lowbound)));
-// 					float um_val = pow(10.,(umui_in/float(umu4_grdpts)*TMath::Log10(umu4_hibound/umu4_lowbound) + TMath::Log10(umu4_lowbound)));
-// 					float mnu_val = pow(10.,((mi_in_new+.5)/float(400)*TMath::Log10(sqrt(dm2_hibound)/sqrt(dm2_lowbound)) + TMath::Log10(sqrt(dm2_lowbound))));
-// 					e_app_in = 4*pow(ue_val,2)*pow(um_val,2);
-// 					e_dis_in = 4*pow(ue_val,2)*(1-pow(ue_val,2));
-// 					m_dis_in = 4*pow(um_val,2)*(1-pow(um_val,2));
-// 					// get the oscillated spectra
-// 					SBNspec inSpec =  GetOscillatedSpectra(cvSpec, std::get<0>(a_sinsqSpec.at(mi_in_new)), e_app_in, e_dis_in, m_dis_in);
-// 					SBNchi innerChi(inSpec, *covFracSys);
-// 					TMatrixD * inFracSys_collapsed =(TMatrixD*)fsys->Get("frac_covariance");
-// 					int c = innerChi.FillCollapsedFractionalMatrix(inFracSys_collapsed);
-// 					TMatrixD cov_grid = GetTotalCov(fakeData, inSpec, *inFracSys_collapsed);
-// 					float chi_test = GetLLHFromVector(fakeData, inSpec, cov_grid, false);
-// 					delete inFracSys_collapsed;
-// 					spacefile<<chi_test<<std::endl;
-// 					if(mi_in ==0 && uei_in==0 && umui_in==0){
-// 						for(int bin=0;bin<nBins;bin++){
-// 							specfile<<fakeData[bin]<<" ";
-// 						}
-// 						specfile<<std::endl;
-// 					}
-// 					if (chi_test<chi_min_grid){
-// 						chi_min_grid = chi_test;
-// 						m41_grid = mnu_val;
-// 						ue_grid = ue_val;
-// 						umu4_grid = um_val;
-// 					}
-// 				}
-// 			}
-// 		}//end of trad grid inner loops
-// 		chifile<<chi_min_grid<<" "<<m41_grid<<" "<<ue_grid<<" "<<umu4_grid<<std::endl;
+    // 	  SBNspec inSpec = minimizer.getOscSpectra( mnu_val, ue_val, um_val );
+    // 	  // get the oscillated spectra
+    // 	  // SBNspec inSpec =  GetOscillatedSpectra(cvSpec, std::get<0>(a_sinsqSpec.at(mi_in_new)), e_app_in, e_dis_in, m_dis_in);
+    // 	  // SBNchi innerChi(inSpec, *covFracSys);
+    // 	  // TMatrixD * inFracSys_collapsed =(TMatrixD*)fsys->Get("frac_covariance");
+    // 	  // int c = innerChi.FillCollapsedFractionalMatrix(inFracSys_collapsed);
+    // 	  // TMatrixD cov_grid = GetTotalCov(fakeData, inSpec, *inFracSys_collapsed);
+    // 	  // float chi_test = GetLLHFromVector(fakeData, inSpec, cov_grid, false);
+    // 	  // delete inFracSys_collapsed;
+    // 	  // spacefile<<chi_test<<std::endl;
+    // 	  // if(mi_in ==0 && uei_in==0 && umui_in==0){
+    // 	  //   for(int bin=0;bin<nBins;bin++){
+    // 	  //     specfile<<fakeData[bin]<<" ";
+    // 	  //   }
+    // 	  //   specfile<<std::endl;
+    // 	  // }
+    // 	  // if (chi_test<chi_min_grid){
+    // 	  //   chi_min_grid = chi_test;
+    // 	  //   m41_grid = mnu_val;
+    // 	  //   ue_grid = ue_val;
+    // 	  //   umu4_grid = um_val;
+    // 	  // }
+    // 	}
+    //   }
+    // }//end of dm2 grid search loop
+    //chifile<<chi_min_grid<<" "<<m41_grid<<" "<<ue_grid<<" "<<umu4_grid<<std::endl;
 
 
 
@@ -388,9 +407,7 @@ int main(int argc, char* argv[]){
 
 // 		delete gMinuit_simple;
 
-
-
-// 	} //end of universeloop
+  } //end of fake experiment loop
 // 	std::cout<<mnu_base<<" "<<ue_base<<" "<<um_base<<std::endl;
 // 	delete oscFracSys_collapsed;
 // // chifile<< std::endl;
@@ -398,6 +415,8 @@ int main(int argc, char* argv[]){
   fout->Write();
   fout->Close();
 
+  ProfilerStop();
+  
   return 0;
 } // end of main function
 

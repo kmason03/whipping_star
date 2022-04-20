@@ -355,12 +355,33 @@ double SBNspec::GetTotalEvents(){
 
 }
 
-int SBNspec::PrintFullVector(){
-    for(double d: full_vector){
-        std::cout<<d<<" ";
+int SBNspec::PrintFullVector( bool with_bin_nums ){
+  int current_hist = -1;
+  int current_bin_boundary = 0;
+  std::string current_hist_name = "__null__";
+  for(size_t i=0; i<full_vector.size(); i++) {
+
+    double d =  full_vector[i];    
+
+    if (with_bin_nums) {
+      int histnum = GetHistNumber(i);
+      if ( current_hist!=histnum ) {
+	current_hist = histnum;
+	for (auto it=map_hist.begin(); it!=map_hist.end(); it++) {
+	  if (it->second==current_hist ) {
+	    current_hist_name = it->first;
+	    break;
+	  }
+	}
+      }
+      std::cout<< "[" << i << ", " << current_hist_name << "(" << histnum << "): " << d<<"]  " << std::endl;
     }
-    std::cout<<std::endl;
-    return 0;
+    else {
+      std::cout<<d<<" ";
+    }
+  }
+  std::cout<<std::endl;
+  return 0;
 }
 
 int SBNspec::PrintCollapsedVector(){
