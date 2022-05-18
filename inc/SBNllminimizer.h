@@ -28,11 +28,12 @@ namespace sbn {
     int nBins_e; // want to not hard code this info
     int nBins_mu; // want to not hard code this info
     int nBins; // want to not hard code this info
-    
+
     static double negative_likelihood_ratio( const double* par );
-    int doFit( std::vector<float>& obs_bins );
+    double doFit( std::vector<float>& obs_bins, float dm_start,float ue_start, float um_start );
 
     TMatrixD* covFracSys;
+  
 
     static TMatrixD GetTotalCov(const std::vector<float>& obsSpec,
 				const SBNspec& expSpec,
@@ -44,14 +45,14 @@ namespace sbn {
 
     std::vector<float> _observed_bins;
     void setObservedBinValues( std::vector<float>& obs ) { _observed_bins = obs; };
-    
+
     SBNspec getOscSpectra( float dm41, float ue4, float um4 );
-    
+
   protected:
-    
+
     int _niters; // steps we've taken
     static SBNllminimizer* _active_copy;
-    
+
   };
 
   typedef  double (SBNllminimizer::*SBNllminizerFCN)( const double* par );

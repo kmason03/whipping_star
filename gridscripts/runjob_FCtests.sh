@@ -29,9 +29,9 @@ pwd
 cp ${WORK_DIR}/DL3plus1_FCTests .
 
 # run your command
-# ./DL3plus1_FCTests 0  >${WORK_DIR}/logs/log_${arrayid}.txt
-# mv chis_*txt  ${WORK_DIR}/textfiles/chis_${arrayid}.txt
-# mv spec_*txt  ${WORK_DIR}/textfiles/spec_${arrayid}.txt
+./DL3plus1_FCTests 0  >${WORK_DIR}/logs/log_${arrayid}.txt
+mv chis_*txt  ${WORK_DIR}/textfiles/chis_${arrayid}.txt
+mv spec_*txt  ${WORK_DIR}/textfiles/spec_${arrayid}.txt
 #
 # ./DL3plus1_FCTests 8542 >${WORK_DIR}/logs/log_${arrayid}.txt
 # mv chis_*txt  ${WORK_DIR}/textfiles2/chis_${arrayid}.txt
@@ -61,9 +61,9 @@ cp ${WORK_DIR}/DL3plus1_FCTests .
 # mv chis_*txt  ${WORK_DIR}/textfiles8/chis_${arrayid}.txt
 # mv spec_*txt  ${WORK_DIR}/textfiles8/spec_${arrayid}.txt
 
-./DL3plus1_FCTests 10600  >${WORK_DIR}/logs/log_${arrayid}.txt
-mv chis_*txt  ${WORK_DIR}/textfiles9/chis_${arrayid}.txt
-mv spec_*txt  ${WORK_DIR}/textfiles9/spec_${arrayid}.txt
+# ./DL3plus1_FCTests 10600  >${WORK_DIR}/logs/log_${arrayid}.txt
+# mv chis_*txt  ${WORK_DIR}/textfiles9/chis_${arrayid}.txt
+# mv spec_*txt  ${WORK_DIR}/textfiles9/spec_${arrayid}.txt
 
 # remove temporary job directory
 cd ${WORK_DIR}

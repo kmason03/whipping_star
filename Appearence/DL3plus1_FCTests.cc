@@ -9,7 +9,7 @@
 #include <cstring>
 #include <ctime>
 #include <chrono>
-#include <gperftools/profiler.h>
+// #include <gperftools/profiler.h>
 
 #include "TFile.h"
 #include "TTree.h"
@@ -58,7 +58,7 @@ std::string ZeroPadNumber(int num, int digits=3);
 std::string SBNHOME="/home/twongjirad/working/larbys/sbnfit/";
 //std::string SBNHOME="/cluster/tufts/wongjiradlabnu/kmason03/whipping_star/";
 //std::string xml = "/cluster/tufts/wongjiradlabnu/kmason03/whipping_star/xml/TotalThreePlusOne_full.xml";
-std::string xml = SBNHOME+"/xml/TotalThreePlusOne_full_tmw.xml";  
+std::string xml = SBNHOME+"/xml/TotalThreePlusOne_full_tmw.xml";
 bool draw = true;
 bool printbins = true;
 int mass_start = -1;
@@ -96,8 +96,8 @@ TMatrixD * covFracSys = (TMatrixD*)fsys->Get("frac_covariance");
 
 int main(int argc, char* argv[]){
 
-    ProfilerStart("DL3plus1_FCTests.prof");
-    
+    // ProfilerStart("DL3plus1_FCTests.prof");
+
   // get the input integer: require 1
   int specific_entry = atoi(argv[1]);
 	// make array to  get the parameters
@@ -139,7 +139,7 @@ int main(int argc, char* argv[]){
 		stream << std::fixed << std::setprecision(4) << 2*log10(mnu);
 		//std::string infile = "/cluster/tufts/wongjiradlabnu/kmason03/whipping_star/data/MassSpectraBigBins/"+tag+"_SINSQ_dm_"+stream.str()+".SBNspec.root";
 		std::string infile = SBNHOME+"/data/MassSpectraBigBins/"+tag+"_SINSQ_dm_"+stream.str()+".SBNspec.root";
-		std::cout<<"pre-calc dm2[" << mi << "]: " << infile << std::endl;		
+		std::cout<<"pre-calc dm2[" << mi << "]: " << infile << std::endl;
 		auto inspec = SBNspec(infile,xml);
 		inspec.CollapseVector();
 		inspec.RemoveMCError();
@@ -180,7 +180,7 @@ int main(int argc, char* argv[]){
 	oscSpec =  GetOscillatedSpectra(cvSpec, std::get<0>(a_sinsqSpec.at(mi_base_new)), e_app, e_dis, m_dis);
 	std::cout << "Full Vector of CV spectrum =========================" << std::endl;
 	cvSpec.PrintFullVector(true);
-	std::cout << "======================================================" << std::endl;	
+	std::cout << "======================================================" << std::endl;
 	std::cout << "Matching dm2 parameter: " << std::get<1>(a_sinsqSpec.at(mi_base_new)) << std::endl;
 	std::cout << "Full Vector of this spectrum =========================" << std::endl;
 	std::get<0>(a_sinsqSpec.at(mi_base_new)).PrintFullVector(true);
@@ -222,7 +222,7 @@ int main(int argc, char* argv[]){
 	// if ( true ) {
 	//   return 0;
 	// }
-	
+
 	TrueChi.pseudo_from_collapsed = true;
 	TrueChi.GeneratePseudoExperiment();		// get the motor running with initial cholosky decomposition
 
@@ -406,8 +406,8 @@ int main(int argc, char* argv[]){
 	fout->Close();
 	delete oscFracSys_collapsed;
 
-	ProfilerStop();
-	
+	// ProfilerStop();
+
 // chifile<< std::endl;
 	return 0;
 } // end of main function

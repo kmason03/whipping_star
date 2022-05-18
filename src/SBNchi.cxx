@@ -202,9 +202,11 @@ int SBNchi::ReloadCoreSpectrum(SBNspec *bkgin){
         exit(EXIT_FAILURE);
     }
 
-    if(is_verbose)std::cout<<otag<<"Go from fracCovariance to fullCovariance. matrix_systematics.GetNcols(): "<<matrix_systematics.GetNcols()<<" matrix_systematics.GetNrows(): "<<matrix_systematics.GetNrows()<<" core->fullvec.size(): "<<core_spectrum.full_vector.size()<<std::endl;
+    std::cout<<otag<<"Go from fracCovariance to fullCovariance. matrix_systematics.GetNcols(): "<<matrix_systematics.GetNcols()<<" matrix_systematics.GetNrows(): "<<matrix_systematics.GetNrows()<<" core->fullvec.size(): "<<core_spectrum.full_vector.size()<<std::endl;
     // systematics per scaled event
     // std::cout<<"bin, cov[i,i], full_error[i], full_error[i]^2"<<std::endl;
+    // std::cout<< matrix_systematics[0][0]<<std::endl;
+    std::cout<<std::endl;
     for(int i =0; i<matrix_systematics.GetNcols(); i++)
     {
         for(int j =0; j<matrix_systematics.GetNrows(); j++)
@@ -222,7 +224,7 @@ int SBNchi::ReloadCoreSpectrum(SBNspec *bkgin){
             }
         }
     }
-
+    // std::cout<<std::endl;
     if(is_verbose)std::cout<<otag<<"Filling stats into cov matrix"<<std::endl;
     // Fill stats from the back ground vector
     TMatrixT <double> Mstat(num_bins_total, num_bins_total);
@@ -261,10 +263,10 @@ int SBNchi::ReloadCoreSpectrum(SBNspec *bkgin){
 
 
     if(is_stat_only){
-        if(is_verbose)std::cout<<otag<<"Using stats only in covariance matrix"<<std::endl;
+        std::cout<<otag<<"Using stats only in covariance matrix"<<std::endl;
         Mtotal = Mstat;
     }else{
-        if(is_verbose)std::cout<<otag<<" Using stats+sys in covariance matrix"<<std::endl;
+        std::cout<<otag<<" Using stats+sys in covariance matrix"<<std::endl;
         Mtotal = Mstat + matrix_systematics;
     }
 
@@ -275,9 +277,10 @@ int SBNchi::ReloadCoreSpectrum(SBNspec *bkgin){
     CollapseModes(matrix_systematics, m_matrix_systematics_collapsed);
 
 
-    if(is_verbose) std::cout<<otag<<"Mstat: "<<Mstat.GetNrows()<<" x "<<Mstat.GetNcols()<<std::endl;
-    if(is_verbose) std::cout<<otag<<"matrix_systematics: "<<matrix_systematics.GetNrows()<<" x "<<matrix_systematics.GetNcols()<<std::endl;
-    if(is_verbose) std::cout<<otag<<"Mtotal: "<<Mtotal.GetNrows()<<" x "<<Mtotal.GetNcols()<<std::endl;
+    // std::cout<<otag<<"Mstat: "<<Mstat.GetNrows()<<" x "<<Mstat.GetNcols()<<std::endl;
+    // std::cout<<otag<<"matrix_systematics: "<<matrix_systematics.GetNrows()<<" x "<<matrix_systematics.GetNcols()<<std::endl;
+    // std::cout<<otag<<"Mtotal: "<<Mtotal.GetNrows()<<" x "<<Mtotal.GetNcols()<<std::endl;
+    // std::cout<< Mtotal[0][0]<<" "<<Mstat[0][0]<<" "<<matrix_systematics[0][0]<<" " <<std::endl;
 
     if(Mtotal.IsSymmetric() ){
         if(is_verbose)	std::cout<<otag<<"Total Mstat +matrix_systematics is symmetric"<<std::endl;
@@ -326,6 +329,7 @@ int SBNchi::ReloadCoreSpectrum(SBNspec *bkgin){
     matrix_collapsed = Mctotal;
 
     vec_matrix_collapsed = TMatrixDToVector(Mctotal);
+    // std::cout<< vec_matrix_collapsed[0][0]<<std::endl;
     double invdet=0;
 
     TMatrixD McI(num_bins_total_compressed,num_bins_total_compressed);
@@ -1023,13 +1027,15 @@ int SBNchi::FillCovarianceMatrix(TMatrixT<double>*in){
 
 
 int SBNchi::FillCollapsedCovarianceMatrix(TMatrixT<double>*in){
-    in->ResizeTo(num_bins_total_compressed,num_bins_total_compressed) ;
-    for(int i=0; i<num_bins_total_compressed;i++){
-        for(int j=0; j<num_bins_total_compressed;j++){
-            (*in)(i,j) = vec_matrix_collapsed.at(i).at(j) - (i==j? core_spectrum.collapsed_vector.at(i) : 0.0 );
-        }
-    }
-
+  std::cout<<"testcov"<<std::endl;
+  in->ResizeTo(num_bins_total_compressed,num_bins_total_compressed) ;
+  for(int i=0; i<num_bins_total_compressed;i++){
+      for(int j=0; j<num_bins_total_compressed;j++){
+          std::cout<<vec_matrix_collapsed.at(i).at(j) - (i==j? core_spectrum.collapsed_vector.at(i) : 0.0 )<<" ";
+          (*in)(i,j) = vec_matrix_collapsed.at(i).at(j) - (i==j? core_spectrum.collapsed_vector.at(i) : 0.0 );
+      }
+  }
+  std::cout<<std::endl;
     return 0;
 }
 
@@ -1078,7 +1084,7 @@ int SBNchi::FillCollapsedFractionalMatrix(TMatrixT<double>*in){
     in->ResizeTo(num_bins_total_compressed,num_bins_total_compressed) ;
     for(int i=0; i<num_bins_total_compressed;i++){
         for(int j=0; j<num_bins_total_compressed;j++){
-            // std::cout<<vec_matrix_collapsed.at(i).at(j)<<" "<<core_spectrum.collapsed_vector.at(i)<<" "<<core_spectrum.collapsed_vector.at(j)<<std::endl;
+            if(i==j) std::cout<<vec_matrix_collapsed.at(i).at(j)<<" "<<core_spectrum.collapsed_vector.at(i)<<" "<<core_spectrum.collapsed_vector.at(j)<<std::endl;
             (*in)(i,j) = ( vec_matrix_collapsed.at(i).at(j) - (i==j? core_spectrum.collapsed_vector.at(i) : 0.0 ) )/(core_spectrum.collapsed_vector.at(i)*core_spectrum.collapsed_vector.at(j));
         }
     }
