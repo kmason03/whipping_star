@@ -132,7 +132,7 @@ namespace sbn{
 
 
 			//Just some debugging/checking
-			int PrintFullVector();
+			int PrintFullVector( bool with_bin_nums=false );
 			int PrintCollapsedVector();
 			//WriteOut saves all to an externam rootfile, each individual subchannel and a stacked channel plot.
 			int WriteOut(std::string);

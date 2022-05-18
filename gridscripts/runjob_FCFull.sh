@@ -26,18 +26,21 @@ ls
 pwd
 #copy your script to temp directory
 # this assumes you already made your cxx code
-cp ${WORK_DIR}/DL3plus1_FC .
-let startid="$arrayid*10"
-let endid="$arrayid*10+10"
+cp ${WORK_DIR}/DL3plus1_FCwregen .
+let startid="$arrayid*8"
+let endid="$arrayid*8+8"
 # run your command
 
-for (( i=${startid}; i<=${endid}; i++ ))
+for (( i=${startid}; i<${endid}; i++ ))
 do
-   ./DL3plus1_FC i  > ${WORK_DIR}/logs/${arrayid}_log.txt
+  echo $i
+  ./DL3plus1_FCwregen $i  > ${WORK_DIR}/logs/${arrayid}_log.txt
+  mv chis*txt ${WORK_DIR}/FCresults/.
 done
+ls
 # move outputs to dedicated directory
 #rm ${WORK_DIR}/textfiles2/chis_${arrayid}.txt 
-mv chis*txt  ${WORK_DIR}/textfiles2/.
+#mv chis*txt  ${WORK_DIR}/FCresults/.
 # remove temporary job directory
 cd ${WORK_DIR}
 rm -r job_${arrayid}

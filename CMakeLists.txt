@@ -9,9 +9,7 @@ if (CMAKE_VERSION VERSION_LESS "3.1")
     if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
           set (CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
     endif ()
-else ()
-	  set (CMAKE_CXX_STANDARD 11)
-endif ()
+endif()
 
 message("@main CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS}")
 unset (CMAKE_CXX_FLAGS)
@@ -43,6 +41,22 @@ ELSE()
 	message("ROOT cxx flags set to: ${ROOT_CXX_FLAGS}")
 ENDIF()
 
+# we set the compiler version based on the one used for ROOT
+execute_process(
+    COMMAND bash "-c" "root-config --features | awk '{print $1}'"
+    OUTPUT_VARIABLE ROOT_CXX_STANDARD )
+if (${ROOT_CXX_STANDARD} MATCHES "cxx17")
+  message( STATUS "using cxx17")
+  set(CMAKE_CXX_STANDARD 17)
+elseif (${ROOT_CXX_STANDARD} MATCHES "cxx14")
+  message(STATUS "using cxx14")
+  set(CMAKE_CXX_STANDARD 14)
+else ()
+  message( STATUS "using cxx11")  
+  set(CMAKE_CXX_STANDARD 11)
+endif()
+
+
 #Get our GSL libraries
 FIND_PROGRAM(GSL_CONFIG gsl-config)
 EXEC_PROGRAM(${GSL_CONFIG} ARGS --cflags OUTPUT_VARIABLE GSL_CXX_FLAGS)
@@ -68,6 +82,13 @@ ENDIF()
 set (CMAKE_SO_CXX_FLAGS " ${ROOT_CXX_FLAGS} ${GSL_LIBS} ${GSL_CXX_FLAGS} ${CMAKE_CXX_FLAGS} -w -Wno-deprecated-declarations")
 set (CMAKE_ACC_CXX_FLAGS "${CMAKE_GPU_CXX_FLAGS} ${CMAKE_SO_CXX_FLAGS} -g")
 set (CMAKE_PCC_CXX_FLAGS "-ta=multicore -Minfo=accel -acc -w ${CMAKE_SO_CXX_FLAGS}")
+
+# GOOGLE PROFILER
+if (USE_GPROFILER)
+  message("Use Gperftools, adding profiler library to link libs")
+  set( GPERFTOOLS_LIBDIR /usr/lib/x86_64-linux-gnu/ )
+  set( GPERFTOOLS_LIBS ${GPERFTOOLS_LIBDIR}/libprofiler.so )
+endif()
 
 set (CMAKE_CXX_FLAGS "${CMAKE_ACC_CXX_FLAGS}")
 

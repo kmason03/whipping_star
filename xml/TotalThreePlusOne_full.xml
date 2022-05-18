@@ -28,7 +28,7 @@
   <subchannel name="ext" osc="0"/>
 </channel>
 
-<plotpot value=6.818153e20/>
+<plotpot value=6.67e20/>
 
 <!-- first do all the nue subchannels -->
 

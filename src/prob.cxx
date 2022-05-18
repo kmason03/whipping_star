@@ -509,12 +509,15 @@ void NeutrinoModel::zero(){
 }
 
 void NeutrinoModel::difference(){
-	dm41Sq = pow(mNu[0],2);
-	dm51Sq = pow(mNu[1],2);
-	dm61Sq = pow(mNu[2],2);
-	dm54Sq = dm51Sq - dm41Sq;
-	dm64Sq = dm61Sq - dm41Sq;
-	dm65Sq = dm61Sq - dm51Sq;
+  // dm41Sq = pow(mNu[0],2);
+  // dm51Sq = pow(mNu[1],2);
+  // dm61Sq = pow(mNu[2],2);
+  dm41Sq = mNu[0]*mNu[0];
+  dm51Sq = mNu[1]*mNu[1];
+  dm61Sq = mNu[2]*mNu[2];
+  dm54Sq = dm51Sq - dm41Sq;
+  dm64Sq = dm61Sq - dm41Sq;
+  dm65Sq = dm61Sq - dm51Sq;
 }
 
 
@@ -539,7 +542,10 @@ double NeutrinoModel::oscProbSinSq(double Ev, double L)
 	} 
 	else 
 	{
-		return pow(sin(1.26711*dm41Sq*L/Ev),2.0);
+	  
+	  //return pow(sin(1.26711*dm41Sq*L/Ev),2.0);
+	  float x = sin(1.26711*dm41Sq*L/Ev);
+	  return x*x;
 	}
 
 
