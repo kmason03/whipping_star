@@ -44,7 +44,7 @@
 using namespace sbn;
 
 // define helper functions
-void generate_sys(int massid);
+void generate_sys();
 
 // define some global variables
 std::string xml = "/uboone/app/users/kmason/whipping_star/xml/TotalThreePlusOne_full.xml";
