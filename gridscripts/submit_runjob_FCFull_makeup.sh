@@ -2,12 +2,11 @@
 
 #SBATCH --job-name=FCFull
 #SBATCH --output=log-FCFull
-#SBATCH --partition wongjiradlab,batch
-#SBATCH --time=0-12:00:00
+#SBATCH --partition wongjiradlab
+#SBATCH --time=0-60:00:00
 #SBATCH --mem-per-cpu=4000
-#SBATCH --array=0-1901
-#SBATCH --exclude=i2cmp001,i2cmp023,c1cmp003,c1cmp004
-
+#SBATCH --array=923,926,929,1085,1164,1242,1317
+#SBATCH --exclude=i2cmp001,i2cmp023
 
 CONTAINER=/cluster/tufts/wongjiradlab/larbys/larbys-containers/ubdl_depsonly_py3.6.11_u16.04_cu11_pytorch1.7.1.simg
 TOP_DIR=/cluster/tufts/wongjiradlabnu/kmason03/whipping_star/

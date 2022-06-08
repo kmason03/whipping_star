@@ -30,10 +30,10 @@ namespace sbn {
     int nBins; // want to not hard code this info
 
     static double negative_likelihood_ratio( const double* par );
-    double doFit( std::vector<float>& obs_bins, float dm_start,float ue_start, float um_start );
+    std::vector<double> doFit( std::vector<float>& obs_bins, float dm_start,float ue_start, float um_start );
 
     TMatrixD* covFracSys;
-  
+
 
     static TMatrixD GetTotalCov(const std::vector<float>& obsSpec,
 				const SBNspec& expSpec,

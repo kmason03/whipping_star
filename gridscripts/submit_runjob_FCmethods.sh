@@ -1,11 +1,11 @@
 #!/bin/bash
 
-#SBATCH --job-name=FCFull
-#SBATCH --output=log-FCFull
+#SBATCH --job-name=FCmethod
+#SBATCH --output=log-FCmethods
 #SBATCH --partition wongjiradlab,batch
-#SBATCH --time=0-12:00:00
+#SBATCH --time=0-6:00:00
 #SBATCH --mem-per-cpu=4000
-#SBATCH --array=0-1901
+#SBATCH --array=0-999
 #SBATCH --exclude=i2cmp001,i2cmp023,c1cmp003,c1cmp004
 
 
@@ -20,4 +20,4 @@ sleep timer
 
 module load singularity/3.5.3
 cvmfs_config probe fermilab.opensciencegrid.org uboone.opensciencegrid.org
-singularity exec -B /cluster:/cluster,/cvmfs:/cvmfs ${CONTAINER} bash -c "cd ${SCRIPT_DIR} && source runjob_FCFull.sh ${TOP_DIR} ${WORK_DIR}"
+singularity exec -B /cluster:/cluster,/cvmfs:/cvmfs ${CONTAINER} bash -c "cd ${SCRIPT_DIR} && source runjob_FCmethods.sh ${TOP_DIR} ${WORK_DIR}"

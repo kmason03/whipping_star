@@ -53,7 +53,7 @@ int main(int argc, char* argv[]){
   // tag for some save files
   std::string tag = "DL_full";
   // Number of universes!
-  const int nFakeExp(1);
+  const int nFakeExp(1000);
   // --------------------------------------------------
 
   // initialize the minimizer
@@ -78,7 +78,7 @@ int main(int argc, char* argv[]){
   // open output files
   std::ofstream chifile;
   std::string textid = ZeroPadNumber(specific_entry, 5);
-  chifile.open("chis_"+textid+".txt", std::ios_base::app);
+  chifile.open("chis_seek_"+textid+".txt", std::ios_base::app);
 
 
   // load in saved cvSpec - change to your location
@@ -134,12 +134,12 @@ int main(int argc, char* argv[]){
   SBNchi TrueChi(oscSpec, *covFracSys);
   TrueChi.ReloadCoreSpectrum(&oscSpec);
   fsys->cd();
-  TMatrixD * oscFracSys_collapsed =(TMatrixD*)fsys->Get("collapsed_frac_covariance");
+  TMatrixD * oscFracSys_collapsed =(TMatrixD*)fsys->Get("frac_covariance");
   int b = TrueChi.FillCollapsedFractionalMatrix(oscFracSys_collapsed);
 
   // print statements to confirm starting spectra
   std::cout << "CV-SPEC: PrintCollapsedVector =======================" << std::endl;
-  cvSpec.PrintCollapsedVector();
+  cvSpec.PrintFullVector();
   std::cout << "osc-SPEC: PrintFullVector =======================" << std::endl;
   oscSpec.PrintFullVector(true);
 
@@ -158,31 +158,32 @@ int main(int argc, char* argv[]){
     }
 
     // get the -2llh at the throw point (pt)
-		TMatrixD cov_grid =GetTotalCov(fakeData, oscSpec, *oscFracSys_collapsed);
-    float ptfit =GetLLHFromVector(fakeData, oscSpec, cov_grid, false);
+		TMatrixD cov_pt =GetTotalCov(fakeData, oscSpec, *oscFracSys_collapsed);
+    float ptfit =GetLLHFromVector(fakeData, oscSpec, cov_pt, false);
 
     // option to run traditional grid search
+    float chi_min_grid =1000000;
     if(false){
       float e_app_in = 4*pow(ue_base,2)*pow(um_base,2);
       float e_dis_in = 4*pow(ue_base,2)*(1-pow(ue_base,2));
       float m_dis_in = 4*pow(um_base,2)*(1-pow(um_base,2));
-
-      float chi_min_grid =1000000;
       int numgridpts =25;
 
       // loop over all the grid points
       for(int mi_in = 0; mi_in <numgridpts; mi_in++){
+        std::cout<<mi_in<<std::endl;
         for(int uei_in = 0; uei_in < numgridpts; uei_in++){
           for(int umui_in = 0; umui_in < numgridpts; umui_in++){
-
+            int mi_in_new = mi_in*(400/numgridpts);
             float ue_val = pow(10.,(uei_in/float(numgridpts)*TMath::Log10(ue4_hibound/ue4_lowbound) + TMath::Log10(ue4_lowbound)));
             float um_val = pow(10.,(umui_in/float(numgridpts)*TMath::Log10(umu4_hibound/umu4_lowbound) + TMath::Log10(umu4_lowbound)));
-            float mnu_val = pow(10.,((mi_in+.5)/float(numgridpts)*TMath::Log10(sqrt(dm2_hibound)/sqrt(dm2_lowbound)) + TMath::Log10(sqrt(dm2_lowbound))));
+            float mnu_val = pow(10.,((mi_in+.5)/float(400)*TMath::Log10(sqrt(dm2_hibound)/sqrt(dm2_lowbound)) + TMath::Log10(sqrt(dm2_lowbound))));
 
             // get the oscillated spectra and covariance matrix
             SBNspec inSpec =  minimizer.getOscSpectra( mnu_val, ue_val, um_val );
+            // inSpec.PrintCollapsedVector();
             inSpec.RemoveMCError();
-            SBNchi innerChi(inSpec, covFracSys);
+            SBNchi innerChi(inSpec, *covFracSys);
             TMatrixD * inFracSys_collapsed =(TMatrixD*)fsys->Get("frac_covariance");
             int c = innerChi.FillCollapsedFractionalMatrix(inFracSys_collapsed);
             TMatrixD cov_grid = GetTotalCov(fakeData, inSpec, *inFracSys_collapsed);
@@ -198,11 +199,38 @@ int main(int argc, char* argv[]){
     }
 
     // now run the minimizer
-    double bestfit = minimizer.doFit( fakeData, mnu_base, ue_base, um_base );
+    std::vector<double> bestfit = minimizer.doFit( fakeData, mnu_base, ue_base, um_base );
+    // double bestfit = 0;
 
-    // // save outputs to file
-    chifile<<bestfit<<std::endl;
+
+    // trying a variety of starts
+    double min_minimizer =100000000;
+    std::vector<float> beststart;
+    if(true){
+      std::vector<double> temp;
+      // std::vector<float> m_v={0.01,2,8};
+      // std::vector<float> u_v={0.01,0.08,0.4};
+      for(int x=0;x<5;x++){
+            int startval = 5*x;
+            int numgridpts=25;
+            float ue_val = pow(10.,(startval/float(numgridpts)*TMath::Log10(ue4_hibound/ue4_lowbound) + TMath::Log10(ue4_lowbound)));
+            float um_val = pow(10.,(startval/float(numgridpts)*TMath::Log10(umu4_hibound/umu4_lowbound) + TMath::Log10(umu4_lowbound)));
+            float mnu_val = pow(10.,((startval*(500/float(numgridpts))+.5)/float(400)*TMath::Log10(sqrt(dm2_hibound)/sqrt(dm2_lowbound)) + TMath::Log10(sqrt(dm2_lowbound))));
+
+            temp = minimizer.doFit( fakeData, mnu_val,ue_val,um_val);
+            if (temp[0] < min_minimizer){
+              min_minimizer=temp[0];
+              // beststart={m_v[x],u_v[y],u_v[z]};
+          //   }
+          // }
+        }
+      } //end of loop over start points
+    }
+
     chifile<<ptfit<<std::endl;
+    // chifile<<bestfit<<std::endl;
+    chifile<<min_minimizer<<std::endl;
+    // chifile<<chi_min_grid<<std::endl;
   } //end of fake experiment loop
   return 0;
 } // end of main function
@@ -283,36 +311,38 @@ std::string ZeroPadNumber(int num, int digits)
 }
 
 std::vector<float> SetFakeData(std::vector<float> fakeData){
-  fakeData[0] = 3;
-  fakeData[1] = 4;
-  fakeData[2] = 2;
-  fakeData[3] = 7;
+
+  // these are the data values!
+  fakeData[0] = 4;
+  fakeData[1] = 1;
+  fakeData[2] = 1;
+  fakeData[3] = 2;
   fakeData[4] = 5;
   fakeData[5] = 3;
-  fakeData[6] = 3;
+  fakeData[6] = 8;
   fakeData[7] = 0;
   fakeData[8] = 1;
-  fakeData[9] = 2;
-  fakeData[10] = 6;
-  fakeData[11] = 3;
-  fakeData[12] = 30;
-  fakeData[13] = 133;
-  fakeData[14] = 206;
-  fakeData[15] = 254;
-  fakeData[16] = 301;
-  fakeData[17] = 314;
-  fakeData[18] = 399;
-  fakeData[19] = 399;
-  fakeData[20] = 359;
-  fakeData[21] = 363;
-  fakeData[22] = 294;
-  fakeData[23] = 280;
-  fakeData[24] = 208;
-  fakeData[25] = 218;
-  fakeData[26] = 159;
-  fakeData[27] = 93;
-  fakeData[28] = 90;
-  fakeData[29] = 78;
-  fakeData[30] = 51;
+  fakeData[9] = 0;
+  fakeData[10] = 4;
+  fakeData[11] = 2;
+  fakeData[12] = 26;
+  fakeData[13] = 192;
+  fakeData[14] = 276;
+  fakeData[15] = 401;
+  fakeData[16] = 389;
+  fakeData[17] = 463;
+  fakeData[18] = 439;
+  fakeData[19] = 482;
+  fakeData[20] = 395;
+  fakeData[21] = 353;
+  fakeData[22] = 303;
+  fakeData[23] = 233;
+  fakeData[24] = 240;
+  fakeData[25] = 177;
+  fakeData[26] = 118;
+  fakeData[27] = 109;
+  fakeData[28] = 109;
+  fakeData[29] = 85;
+  fakeData[30] = 58;
   return fakeData;
 }

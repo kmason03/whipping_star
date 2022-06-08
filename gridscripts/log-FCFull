@@ -1,9 +1,42 @@
+sleep: invalid time interval ‘timer’
+Try 'sleep --help' for more information.
+Probing /cvmfs/fermilab.opensciencegrid.org... Probing /cvmfs/fermilab.opensciencegrid.org... OK
+OK
 Probing /cvmfs/fermilab.opensciencegrid.org... OK
+Probing /cvmfs/fermilab.opensciencegrid.org... OK
+Probing /cvmfs/uboone.opensciencegrid.org... Probing /cvmfs/uboone.opensciencegrid.org... OK
+OK
 Probing /cvmfs/uboone.opensciencegrid.org... OK
-0
+Probing /cvmfs/uboone.opensciencegrid.org... OK
+162
 
-/cluster/tufts/wongjiradlabnu/kmason03/whipping_star/gridscripts
+/cluster/tufts/wongjiradlabnu/kmason03/taritreetests/whipping_star/gridscripts
+164
 
-/cluster/tufts/wongjiradlabnu/kmason03/whipping_star/build/Appearence/job_0
-Welcome {0...10} times
-Finished
+/cluster/tufts/wongjiradlabnu/kmason03/taritreetests/whipping_star/gridscripts
+165
+
+/cluster/tufts/wongjiradlabnu/kmason03/taritreetests/whipping_star/gridscripts
+163
+
+/cluster/tufts/wongjiradlabnu/kmason03/taritreetests/whipping_star/gridscripts
+mkdir: cannot create directory 'job_164': File exists
+mkdir: cannot create directory 'job_162': File exists
+mkdir: cannot create directory 'job_165': File exists
+
+
+
+DL3plus1_FCwregen
+chis_seek_01314.txt
+DL3plus1_FCwregen
+chis_seek_01298.txt
+/cluster/tufts/wongjiradlabnu/kmason03/taritreetests/whipping_star/build/Appearence/job_164
+DL3plus1_FCwregen
+chis_seek_01322.txt
+/cluster/tufts/wongjiradlabnu/kmason03/taritreetests/whipping_star/build/Appearence/job_162
+/cluster/tufts/wongjiradlabnu/kmason03/taritreetests/whipping_star/build/Appearence/job_165
+mkdir: cannot create directory 'job_163': File exists
+
+DL3plus1_FCwregen
+chis_seek_01307.txt
+/cluster/tufts/wongjiradlabnu/kmason03/taritreetests/whipping_star/build/Appearence/job_163

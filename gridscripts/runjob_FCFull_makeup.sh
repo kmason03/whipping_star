@@ -27,12 +27,17 @@ pwd
 #copy your script to temp directory
 # this assumes you already made your cxx code
 cp ${WORK_DIR}/DL3plus1_FCwregen .
-let startid="$arrayid+0*1900"
+let startid="$arrayid*8"
+let endid="$arrayid*8+8"
 # run your command
 
-./DL3plus1_FCwregen ${startid}  > ${WORK_DIR}/logs/${arrayid}_log.txt
+#for (( i=${startid}; i<${endid}; i++ ))
+#do
+#  echo $i
+./DL3plus1_FCwregen ${array_id}  > ${WORK_DIR}/logs/${arrayid}_log.txt
 mv chis*txt ${WORK_DIR}/FCresults/.
-
+#done
+#ls
 # move outputs to dedicated directory
 #rm ${WORK_DIR}/textfiles2/chis_${arrayid}.txt 
 #mv chis*txt  ${WORK_DIR}/FCresults/.

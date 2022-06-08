@@ -155,10 +155,10 @@ namespace sbn {
     return f;
   }
 
-  double SBNllminimizer::doFit( std::vector<float>& obs_bins, float dm_start,float ue_start, float um_start )
+  std::vector<double> SBNllminimizer::doFit( std::vector<float>& obs_bins, float dm_start,float ue_start, float um_start )
   {
     std::string minName =  "Minuit";
-    std::string algoName = "Simplex";
+    std::string algoName = "Simplex"; //Migrad, Seek
 
     _active_copy = this;
     _active_copy->setObservedBinValues( obs_bins ); // we need a number of bins check
@@ -166,10 +166,6 @@ namespace sbn {
     ROOT::Math::Minimizer* min =
       ROOT::Math::Factory::CreateMinimizer(minName, algoName);
 
-    if ( !min ) {
-      std::cout << "Trouble loading minimizer! minName=" << minName << " algo=" << algoName << std::endl;
-      return -1;
-    }
 
     ROOT::Math::Functor f(&SBNllminimizer::negative_likelihood_ratio,3);
     min->SetFunction(f);
@@ -181,7 +177,7 @@ namespace sbn {
     float logdm2_high = log(dm2_hibound);
 
     // min->SetVariable( 0, "log(dm^2)", (dm_start), 1 );
-    min->SetVariable( 0, "log(dm^2)", log(dm_start), 0.1 );
+    min->SetVariable( 0, "log(dm^2)", log(dm_start*dm_start), 0.1 );
 
     min->SetVariable( 1, "Ue4", ue_start, 0.1 );
     min->SetVariable( 2, "Um4", um_start, 0.1 );
@@ -189,21 +185,21 @@ namespace sbn {
     min->SetVariableLimits( 1, ue4_lowbound, ue4_hibound );
     min->SetVariableLimits( 2, umu4_lowbound, umu4_hibound );
 
-    min->SetMaxFunctionCalls(10000); // for Minuit/Minuit2
-    min->SetMaxIterations(10000);  // for GSL
-    min->SetTolerance(0.01);
+    min->SetMaxFunctionCalls(1000); // for Minuit/Minuit2
+    min->SetMaxIterations(1000);  // for GSL
+    min->SetTolerance(0.1);
     min->SetPrintLevel(1);
 
     _active_copy->_niters = 0;
     min->Minimize();
-    // const double* results = min->X();
+    const double* results = min->X();
     // std::cout << "RESULTS:" << std::endl;
     // std::cout << "  dm^2 = " << exp(results[0]) << " eV^2" << std::endl;
     // std::cout << "  dm   = " << sqrt(exp(results[0])) << " eV" << std::endl;
     // std::cout << "  Ue4 = "  << results[1] << std::endl;
     // std::cout << "  Um4 = "  << results[2] << std::endl;
     std::cout<<"test min "<< min->MinValue()<<std::endl;
-    double bestfit=min->MinValue();
+    std::vector<double> bestfit{min->MinValue(),exp(results[0]),results[1],results[2]};
     delete min;
     // delete results;
     return bestfit;
