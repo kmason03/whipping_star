@@ -51,7 +51,7 @@ int main(){
   std::string xml = sbnfithome+"/xml/TotalThreePlusOne_full.xml";
   // tag for some saved files
   std::string tag = "DL_full";
-  // Number of universes! - set to 100 for this tutorial
+  // Number of universes! - set to 10 for this tutorial
   const int nFakeExp(10);
   // --------------------------------------------------
 
@@ -111,7 +111,9 @@ int main(){
 
         // I'll be generating a new universe around the oscillated spectrum
         // make the chi object and fill cov matrix for this point - the matrix changes with different spectrum contributions
-        SBNchi TrueChi(oscSpec, *covFracSys);
+        // inputs SBNspec in, TMatrixT<double> matrix_systematicsin, std::string inxml, bool is_verbose, double random_seed
+        // setting the random seed so we always get the same results for the tutorial
+        SBNchi TrueChi(oscSpec, *covFracSys, xml, false, 0);
         TrueChi.ReloadCoreSpectrum(&oscSpec);
         fsys->cd();
         TMatrixD * oscFracSys_collapsed =(TMatrixD*)fsys->Get("frac_covariance");
@@ -266,8 +268,8 @@ float GetLLHFromVector(const std::vector<float>& obsSpec,const SBNspec& expSpec,
 void printbinedges(){
 	// funtion that prints the bins to the output textfile
 	for(int mi = 0; mi <= dm2_grdpts; mi++){
-		double mnu = pow(10.,((mi+.5)/float(dm2_grdpts)*TMath::Log10(sqrt(dm2_hibound)/sqrt(dm2_lowbound)) + TMath::Log10(sqrt(dm2_lowbound))));
-		binsfile << pow(mnu,2) << " ";
+		double mnu = pow(10.,((mi)/float(dm2_grdpts)*TMath::Log10(sqrt(dm2_hibound)/sqrt(dm2_lowbound)) + TMath::Log10(sqrt(dm2_lowbound))));
+		binsfile << pow(mnu,1) << " ";
 	}
 	binsfile << std::endl;
 

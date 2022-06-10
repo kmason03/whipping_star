@@ -103,7 +103,7 @@ int main(int argc, char* argv[]){
 
 	// open output files
 	std::string textid = ZeroPadNumber(specific_entry, 5);
-	chifile.open("chis_sig_"+textid+"_5.txt", std::ios_base::app);
+	chifile.open("chis_sig_"+textid+".txt", std::ios_base::app);
 	bestfile.open("best_sig_"+textid+".txt", std::ios_base::app);
 
 

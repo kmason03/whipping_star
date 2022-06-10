@@ -57,6 +57,9 @@ double  mnu;
 
 int main(int argc, char* argv[]){
   // get the input integer: require 1
+  // this script pregenerates spectra for the given delta m^2 - not up to date with code speed up,
+  // used to make thesis plots
+  
   int specific_entry = atoi(argv[1]);
   std::cout<<specific_entry<<std::endl;
 	generate_spectra(specific_entry);
