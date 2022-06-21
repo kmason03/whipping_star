@@ -58,6 +58,7 @@ int main(int argc, char* argv[]){
 
   // initialize the minimizer
   SBNllminimizer minimizer( xml );
+  std::cout<<"Initialized minimizer"<<std::endl;
 
   // make array to  get the parameter ids and match to the entry we want
   std::vector<std::vector<float>> params_v;
@@ -199,7 +200,7 @@ int main(int argc, char* argv[]){
     }
 
     // now run the minimizer
-    std::vector<double> bestfit = minimizer.doFit( fakeData, mnu_base, ue_base, um_base );
+    double bestfit = minimizer.doFit( fakeData, mnu_base, ue_base, um_base )[0];
     // double bestfit = 0;
 
 
@@ -207,7 +208,8 @@ int main(int argc, char* argv[]){
     double min_minimizer =100000000;
     std::vector<float> beststart;
     if(true){
-      std::vector<double> temp;
+      std::cout<<"starting loop"<<std::endl;
+      double temp;
       // std::vector<float> m_v={0.01,2,8};
       // std::vector<float> u_v={0.01,0.08,0.4};
       for(int x=0;x<5;x++){
@@ -217,9 +219,9 @@ int main(int argc, char* argv[]){
             float um_val = pow(10.,(startval/float(numgridpts)*TMath::Log10(umu4_hibound/umu4_lowbound) + TMath::Log10(umu4_lowbound)));
             float mnu_val = pow(10.,((startval*(500/float(numgridpts))+.5)/float(400)*TMath::Log10(sqrt(dm2_hibound)/sqrt(dm2_lowbound)) + TMath::Log10(sqrt(dm2_lowbound))));
 
-            temp = minimizer.doFit( fakeData, mnu_val,ue_val,um_val);
-            if (temp[0] < min_minimizer){
-              min_minimizer=temp[0];
+            temp = minimizer.doFit( fakeData, mnu_val,ue_val,um_val)[0];
+            if (temp < min_minimizer){
+              min_minimizer=temp;
               // beststart={m_v[x],u_v[y],u_v[z]};
           //   }
           // }

@@ -36,6 +36,7 @@
 #include "SBNcovariance.h"
 #include "prob.h"
 #include "assert.h"
+#include "SBNllminimizer.h"
 
 #define no_argument 0
 #define required_argument 1
@@ -53,7 +54,7 @@ void testfcn(Int_t &npar, Double_t *gin, Double_t &f, Double_t *par, Int_t iflag
 std::string ZeroPadNumber(int num, int digits);
 
 // define some global variables
-std::string xml = "/cluster/tufts/wongjiradlabnu/kmason03/whipping_star/xml/TotalThreePlusOne_full.xml";
+std::string xml = "/cluster/tufts/wongjiradlabnu/kmason03/mergewfermi/whipping_star/xml/TotalThreePlusOne_full.xml";
 bool gen = false;
 bool printbins = true;
 int mass_start = -1;
@@ -173,58 +174,38 @@ int main(int argc, char* argv[]){
   std::cout<< grid_min <<" "<<ue_min <<" "<<um_min<<" "<<m_min ;
 
 
-  // first get the best fit using a minimizer
-  // will be the first line of the chis file
-  Int_t ierflg = 0;
-  Double_t dm2_step = .01;
-  TString dm2_name = "m41";
-  Double_t ue4_step = 0.001;
-  TString ue4_name = "ue4";
-  Double_t umu4_step = 0.001;
-  TString umu4_name = "umu4";
-  Double_t arglist[2];
-  Double_t dm2_val,dm2_err,dm_low,dm_high;
-  Int_t dm2_num;
-  Double_t ue4_val,ue4_err,ue4_low,ue4_high;
-  Int_t ue4_num;
-  Double_t umu4_val,umu4_err,umu4_low,umu4_high;
-  Int_t umu4_num;
-  Int_t npari,nparx,istat;
-  // Now ready for minimization step 0 = max steps, 1=tolerance
-  // give a large maximum number of steps (tends to take ~125 calls)
-  arglist[0] = 500;
-  arglist[1] = 3;
+	// trying a variety of starts
+	SBNllminimizer minimizer( xml );
+	double min_minimizer =100000000;
+	std::vector<double> beststart;
+	if(true){
+		std::cout<<"starting loop"<<std::endl;
+		std::vector<double> temp;
+		for(int x=0;x<5;x++){
+					int startval = 5*x;
+					int numgridpts=25;
+					float ue_val = pow(10.,(startval/float(numgridpts)*TMath::Log10(ue4_hibound/ue4_lowbound) + TMath::Log10(ue4_lowbound)));
+					float um_val = pow(10.,(startval/float(numgridpts)*TMath::Log10(umu4_hibound/umu4_lowbound) + TMath::Log10(umu4_lowbound)));
+					float mnu_val = pow(10.,((startval*(500/float(numgridpts))+.5)/float(400)*TMath::Log10(sqrt(dm2_hibound)/sqrt(dm2_lowbound)) + TMath::Log10(sqrt(dm2_lowbound))));
 
-  // next initialize the minimizer
-  TMinuit * gMinuit_simple= new TMinuit(3);
-  gMinuit_simple->SetFCN(testfcn);
-  Double_t dm2_start = m_min;
-  Double_t ue4_start =ue_min;
-  Double_t umu4_start = um_min;
-  // start values near lower bound, but some wiggle room
-  // initialize the parameters
-  gMinuit_simple->mnparm(0,dm2_name,dm2_start,dm2_step,sqrt(dm2_lowbound),sqrt(dm2_hibound),ierflg);
-  gMinuit_simple->mnparm(1,ue4_name,ue4_start,ue4_step,ue4_lowbound,ue4_hibound,ierflg);
-  gMinuit_simple->mnparm(2,umu4_name,umu4_start,umu4_step,umu4_lowbound,umu4_hibound,ierflg);
-  // run the minimizer
-  gMinuit_simple->mnexcm("SEEk", arglist ,2,ierflg);
-  // get the parameter outputs
-  Double_t fmin,fedm,errdef;
-  gMinuit_simple->mnpout(0,dm2_name,dm2_val,dm2_err,dm_low,dm_high,dm2_num);
-  gMinuit_simple->mnpout(1,ue4_name,ue4_val,ue4_err,ue4_low,ue4_high,ue4_num);
-  gMinuit_simple->mnpout(2,umu4_name,umu4_val,umu4_err,umu4_low,umu4_high,umu4_num);
-  gMinuit_simple->mnstat(fmin,fedm,errdef,npari,nparx,istat);
-  // std::cout<<"pt, fmin, coarse grid, fine grid"<<std::endl;
-  std::cout<<fmin<<" "<<dm2_val<<" "<<ue4_val<<" "<<umu4_val<<std::endl;
-  chifile<<fmin<<" "<<dm2_val<<" "<<ue4_val<<" "<<umu4_val<<std::endl;
+					temp = minimizer.doFit( data_v, mnu_val,ue_val,um_val);
+					if (temp[0] < min_minimizer){
+						min_minimizer=temp[0];
+						beststart=temp;
+				//   }
+				// }
+			}
+		} //end of loop over start points
+	}
+  chifile<<beststart[0]<<" "<<beststart[1]<<" "<<beststart[2]<<" "<<beststart[3]<<std::endl;
 
 	// float ue4_val = 0;
 	// float umu4_val = .21;
 	// float dm2_val = sqrt(3.37);
 	// finally get some stuff to print...
-	float e_app_best = 4*pow(ue4_val,2)*pow(umu4_val,2);
-	float e_dis_best = 4*pow(ue4_val,2)*(1-pow(ue4_val,2));
-	float m_dis_best = 4*pow(umu4_val,2)*(1-pow(umu4_val,2));
+	float e_app_best = 4*pow(beststart[2],2)*pow(beststart[3],2);
+	float e_dis_best = 4*pow(beststart[2],2)*(1-pow(beststart[2],2));
+	float m_dis_best = 4*pow(beststart[3],2)*(1-pow(beststart[3],2));
 	std::cout<<e_app_best<<" "<<e_dis_best<<" "<<m_dis_best<<std::endl;
 
   if(sin2slice){
@@ -330,11 +311,11 @@ int main(int argc, char* argv[]){
   }
 
 
-	NeutrinoModel testModel(dm2_val, sqrt(.5), sqrt(.5));
+	NeutrinoModel testModel(beststart[1], sqrt(.5), sqrt(.5));
 	SBNgenerate * gen = new SBNgenerate(xml,testModel);
 	gen->WritePrecomputedOscSpecs("data");
 	std::stringstream stream;
-	stream << std::fixed << std::setprecision(4) << 2*log10(dm2_val);
+	stream << std::fixed << std::setprecision(4) << 2*log10(beststart[1]);
 	std::string infile = "data_SINSQ_dm_"+stream.str()+".SBNspec.root";
 	auto inspec = SBNspec(infile,xml);
 	SBNspec bestSpec =  GetOscillatedSpectra(cvSpec, inspec, e_app_best, e_dis_best, m_dis_best);
@@ -347,20 +328,20 @@ int main(int argc, char* argv[]){
 	TMatrixD invcov = bestFracSys_tot;
 	invcov.Invert();
 	float chisqTest_e = 0;
-	for(int i = 0; i < nBins_e; i++){
-		for(int j = 0; j < nBins_e; j++){
+	for(int i = 0; i < nBins; i++){
+		for(int j = 0; j < nBins;j++){
 			chisqTest_e += (data_v[i] - cvSpec.collapsed_vector[i])*invcov[i][j]*(data_v[j] -cvSpec.collapsed_vector[j]);
 		}
 	}
-	std::cout<<"chi2test_e: "<<chisqTest_e<<std::endl;
+	std::cout<<"chi2test: "<<chisqTest_e<<std::endl;
 
-	float chisqTest_m = 0;
-	for(int i = nBins_e; i < nBins; i++){
-		for(int j = nBins_e; j < nBins; j++){
-			chisqTest_m += (data_v[i] - cvSpec.collapsed_vector[i])*invcov[i][j]*(data_v[j] -cvSpec.collapsed_vector[j]);
-		}
-	}
-	std::cout<<"chi2test_m: "<<chisqTest_m<<std::endl;
+	// float chisqTest_m = 0;
+	// for(int i = nBins_e; i < nBins; i++){
+	// 	for(int j = nBins_e; j < nBins; j++){
+	// 		chisqTest_m += (data_v[i] - cvSpec.collapsed_vector[i])*invcov[i][j]*(data_v[j] -cvSpec.collapsed_vector[j]);
+	// 	}
+	// }
+	// std::cout<<"chi2test_m: "<<chisqTest_m<<std::endl;
 
 
 	std::cout<<"best spec:"<<std::endl;
