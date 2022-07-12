@@ -9,6 +9,8 @@
 #include <TMatrixT.h>
 #include <sstream>
 #include <iomanip>
+#include "assert.h"
+
 
 #include <gsl/gsl_math.h>
 #include <gsl/gsl_eigen.h>
@@ -32,7 +34,7 @@ double SmearEnergyGaussian(double E, double percen, TRandom3 * rangen);
 
 struct ComplexMatrix{
 	ComplexMatrix(int dim);
-	
+
 	int dimension;
 	TMatrixT<double> real;
 	TMatrixT<double> imag;
@@ -67,17 +69,18 @@ struct ComplexMatrix{
 struct NeutrinoModel{
 	double mNu[3], Ue[3], Um[3], phi[3];
 	double dm41Sq, dm51Sq, dm61Sq, dm54Sq, dm64Sq, dm65Sq;
-	std::vector< std::vector < std::complex<double> > >  U; 
+	std::vector< std::vector < std::complex<double> > >  U;
 	//std::vector<std::vector<double>> dm;
 
 	int numsterile;
 	std::string mass_tag;
+	std::string um4_tag;
 
 	//constructors!! Should overload these immensely for  3+1, 3+2, 3+3 and NULL
 	NeutrinoModel();
 	NeutrinoModel(double * mn, double * ue, double *um, double *ph);
 	NeutrinoModel(double m4, double ue4, double um4);
-	
+
 	//
 	NeutrinoModel(std::vector<double> mass_splittings, std::vector<double>angles, std::vector<double> phases);
 
@@ -85,6 +88,8 @@ struct NeutrinoModel{
 	double UUme;
 	double UUmm;
 	double UUee;
+	// Coupling strength for Sterile Decay process
+	double g_decay;
 
  	void Printall();
 
@@ -98,6 +103,9 @@ struct NeutrinoModel{
 
 	double oscProbSin(double Ev, double L);
 	double oscProbSinSq(double Ev, double L);
+	// For Invisible Decay, J.Mills
+	double oscProbDecay(double Ev, double L);
+
 
 
 	double oscAmp(int a, int b, int which_dm, int sqornot);
