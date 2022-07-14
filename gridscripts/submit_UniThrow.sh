@@ -4,7 +4,7 @@
 #SBATCH --partition batch,preempt
 #SBATCH --time=0-24:00:00
 #SBATCH --mem-per-cpu=6000
-#SBATCH --array=1-24
+#SBATCH --array=0-24
 #SBATCH --cpus-per-task=4
 # should be 0-24
 
