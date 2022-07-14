@@ -26,7 +26,7 @@ LDFLAGS=$$(root-config --libs) \
 
 UNAME := $(shell uname -s)
 
-all: form_input_to_sbnfit_run1 form_input_to_sbnfit_run2 form_input_to_sbnfit_run3
+all: form_input_to_sbnfit_run1 form_input_to_sbnfit_run2 form_input_to_sbnfit_run3 form_input_to_sbnfit_forJosh1 form_input_to_sbnfit_forJosh2 form_input_to_sbnfit_forJosh3
 
 form_input_to_sbnfit_run1: form_input_to_sbnfit_forAppearence_run1.cpp
 	@echo Building $(EXEC)
@@ -37,6 +37,18 @@ form_input_to_sbnfit_run2: form_input_to_sbnfit_forAppearence_run2.cpp
 	@$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -o $@ $^
 
 form_input_to_sbnfit_run3: form_input_to_sbnfit_forAppearence_run3.cpp
+	@echo Building $(EXEC)
+	@$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -o $@ $^
+
+form_input_to_sbnfit_forJosh1: form_input_to_sbnfit_forJosh1.cpp
+	@echo Building $(EXEC)
+	@$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -o $@ $^
+
+form_input_to_sbnfit_forJosh2: form_input_to_sbnfit_forJosh2.cpp
+	@echo Building $(EXEC)
+	@$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -o $@ $^
+
+form_input_to_sbnfit_forJosh3: form_input_to_sbnfit_forJosh3.cpp
 	@echo Building $(EXEC)
 	@$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -o $@ $^
 clean: 
